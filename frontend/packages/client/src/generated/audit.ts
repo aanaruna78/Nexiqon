@@ -21,7 +21,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/context": {
+    "/v1/events": {
         parameters: {
             query?: never;
             header?: never;
@@ -29,10 +29,30 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Context
-         * @description Echo the verified tenant context (skeleton endpoint used by isolation smoke tests).
+         * List Events
+         * @description Newest first. Filter by event type (prefix with '*' suffix), actor, subject or time.
          */
-        get: operations["context_v1_context_get"];
+        get: operations["list_events_v1_events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Verify Chain
+         * @description Recompute the tenant's whole chain from genesis.
+         */
+        get: operations["verify_chain_v1_verify_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -45,14 +65,72 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** ContextEcho */
-        ContextEcho: {
+        /** AuditEventOut */
+        AuditEventOut: {
             /** Actor Id */
             actor_id: string;
-            /** Actor Type */
-            actor_type: string;
-            /** Tenant Id */
-            tenant_id: string;
+            /** Data */
+            data: {
+                [key: string]: unknown;
+            };
+            /**
+             * Event Id
+             * Format: uuid
+             */
+            event_id: string;
+            /** Hash */
+            hash: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Seq */
+            seq: number;
+            /** Source */
+            source: string;
+            /** Subject */
+            subject: string | null;
+            /** Trace Id */
+            trace_id: string | null;
+            /** Type */
+            type: string;
+        };
+        /** AuditPage */
+        AuditPage: {
+            /** Items */
+            items: components["schemas"]["AuditEventOut"][];
+            /** Next Before Seq */
+            next_before_seq: number | null;
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
+        };
+        /** ValidationError */
+        ValidationError: {
+            /** Context */
+            ctx?: Record<string, never>;
+            /** Input */
+            input?: unknown;
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
+        };
+        /** Verification */
+        Verification: {
+            /** First Broken Seq */
+            first_broken_seq?: number | null;
+            /** Head */
+            head: string;
+            /** Length */
+            length: number;
+            /** Ok */
+            ok: boolean;
         };
     };
     responses: never;
@@ -85,7 +163,44 @@ export interface operations {
             };
         };
     };
-    context_v1_context_get: {
+    list_events_v1_events_get: {
+        parameters: {
+            query?: {
+                type?: string | null;
+                actor_id?: string | null;
+                subject?: string | null;
+                since?: string | null;
+                until?: string | null;
+                before_seq?: number | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    verify_chain_v1_verify_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -100,7 +215,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ContextEcho"];
+                    "application/json": components["schemas"]["Verification"];
                 };
             };
         };

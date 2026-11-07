@@ -16,6 +16,17 @@ static_resources:
                 stat_prefix: public
                 use_remote_address: true
                 generate_request_id: true
+                # The gateway starts each trace (W3C traceparent) and exports spans over OTLP.
+                tracing:
+                  random_sampling: { value: 100 }
+                  provider:
+                    name: envoy.tracers.opentelemetry
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
+                      service_name: gateway
+                      grpc_service:
+                        envoy_grpc: { cluster_name: otel-collector }
+                        timeout: 1s
                 route_config:
                   name: nexiqon
                   virtual_hosts:
@@ -142,6 +153,17 @@ static_resources:
       load_assignment:
         cluster_name: tool-gateway
         endpoints: [{ lb_endpoints: [{ endpoint: { address: { socket_address: { address: tool-gateway, port_value: 8000 } } } }] }]
+
+    - name: otel-collector
+      type: STRICT_DNS
+      connect_timeout: 1s
+      typed_extension_protocol_options:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          explicit_http_config: { http2_protocol_options: {} }
+      load_assignment:
+        cluster_name: otel-collector
+        endpoints: [{ lb_endpoints: [{ endpoint: { address: { socket_address: { address: lgtm, port_value: 4317 } } } }] }]
 
 admin:
   address:

@@ -69,7 +69,7 @@ dev-secrets: ## Generate local signing keys (deploy/compose/config/dev-secrets.y
 	uv run python tools/dev/gen_dev_secrets.py
 
 dev-up: dev-secrets ## Start local stack (PROFILES=platform,apps,observability,scan,models)
-	$(COMPOSE) $(PROFILE_FLAGS) up -d --build
+	NEXIQON_TELEMETRY=$(if $(findstring observability,$(PROFILES)),true,false) $(COMPOSE) $(PROFILE_FLAGS) up -d --build
 
 dev-down: ## Stop local stack (all profiles)
 	$(COMPOSE) --profile '*' down

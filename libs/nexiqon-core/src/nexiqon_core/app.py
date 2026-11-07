@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 
 from nexiqon_core.authz import Authorizer, HttpAuthorizer
+from nexiqon_core.bus import EventRuntime
 from nexiqon_core.directory import Topology
 from nexiqon_core.errors import install_error_handlers
 from nexiqon_core.lifecycle import NoTenantData, TenantLifecycle
@@ -39,6 +40,7 @@ def create_service_app(
     lifecycle: TenantLifecycle | None = None,
     lifespan: Lifespan | None = None,
     authorizer: Authorizer | None = None,
+    events: EventRuntime | None = None,
 ) -> FastAPI:
     """Build a FastAPI app with the chassis wired in.
 
@@ -49,11 +51,15 @@ def create_service_app(
     settings = settings or CoreSettings(service_name=name)
     configure_logging(name, settings.log_level, settings.log_json)
     checks = dict(readiness_checks or {})
+    if events is not None:
+        checks.setdefault("events", events.ready)
 
     @asynccontextmanager
     async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         log = structlog.get_logger().bind(service=name)
         log.info("service_starting", version=version, plane=plane)
+        if events is not None:
+            await events.start()
         try:
             if lifespan is not None:
                 async with lifespan(app):
@@ -61,6 +67,8 @@ def create_service_app(
             else:
                 yield
         finally:
+            if events is not None:
+                await events.stop()
             closer = getattr(app.state.authorizer, "aclose", None)
             if closer is not None:
                 await closer()
@@ -73,6 +81,7 @@ def create_service_app(
     app.state.lifecycle = lifecycle or NoTenantData(name)
     app.state.readiness_checks = checks
     app.state.authorizer = authorizer or _default_authorizer(settings)
+    app.state.events = events
     install_error_handlers(app)
 
     @app.middleware("http")

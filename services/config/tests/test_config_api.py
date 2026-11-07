@@ -375,3 +375,15 @@ def test_tenants_are_isolated(make_client: ClientFactory) -> None:
     # Same names are independent per tenant.
     bootstrap(c, t.b)
     assert ok(c.get("/v1/objects/agent/support", headers=t.b.headers))["deployments"] == {"dev": 1}
+
+
+def test_flags_evaluate_with_safe_defaults(make_client: ClientFactory) -> None:
+    t = TwoTenants.create()
+    flags = {
+        f["key"]: f["enabled"] for f in ok(make_client(t).get("/v1/flags", headers=t.a.headers))
+    }
+    assert flags == {
+        "studio-answer-inspector": False,
+        "studio-domain-pack-editor": False,
+        "widget-streaming": True,
+    }

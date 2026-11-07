@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from nexiqon_config import kinds, packs
 from nexiqon_config.diff import diff
 from nexiqon_config.models import ENVIRONMENTS, ConfigObject, ConfigVersion
-from nexiqon_config.store import Store, canonical_digest
+from nexiqon_config.store import Store, _defaults, canonical_digest
 from nexiqon_core.authz import Resource, check_permission
 from nexiqon_core.db import TenantSessionFactory
 from nexiqon_core.errors import BadRequest, NotFound, ServiceUnavailable
@@ -391,3 +391,24 @@ async def snapshot(
 async def snapshot_keys(request: Request) -> dict[str, Any]:
     """Public keys for verifying configuration snapshots."""
     return jwks(request.app.state.settings.snapshot_signing)
+
+
+class FlagOut(BaseModel):
+    key: str
+    description: str
+    enabled: bool
+
+
+@tenant_router.get("/flags", response_model=list[FlagOut])
+async def flags(request: Request, ctx: Ctx) -> list[FlagOut]:
+    """Feature flags evaluated for the caller's tenant (Studio and widget read these)."""
+    await _allow(request, "config.flags.read", "flag")
+    evaluator = request.app.state.flags
+    return [
+        FlagOut(
+            key=f["key"],
+            description=f.get("description", ""),
+            enabled=evaluator.enabled(f["key"], ctx, default=bool(f.get("default", False))),
+        )
+        for f in _defaults("flags").get("flags", [])
+    ]

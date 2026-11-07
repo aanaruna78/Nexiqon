@@ -153,6 +153,31 @@ def main() -> int:
         )
         check("member API key cannot change config", r.status_code == 403, r.status_code)
 
+        # ---- events: identity + config outboxes -> NATS -> audit hash chain
+        types: set[str] = set()
+        for _ in range(30):
+            r = gw.get("/audit/v1/events?limit=100", headers=tenant)
+            types = (
+                {e["type"] for e in r.json().get("items", [])} if r.status_code == 200 else set()
+            )
+            if {"nexiqon.identity.tenant.created", "nexiqon.config.deployment.changed"} <= types:
+                break
+            time.sleep(1)
+        check(
+            "identity and config events reached the audit log",
+            "nexiqon.config.deployment.changed" in types,
+            types,
+        )
+        r = gw.get("/audit/v1/verify", headers=tenant)
+        check("audit hash chain verifies", r.status_code == 200 and r.json()["ok"] is True, r.text)
+        r = gw.get("/audit/v1/events", headers={"Authorization": f"Bearer {key}"})
+        check("member API key cannot read the audit log", r.status_code == 403, r.status_code)
+        r = gw.get("/config/v1/flags", headers=tenant)
+        flags = {f["key"]: f["enabled"] for f in r.json()} if r.status_code == 200 else {}
+        check(
+            "feature flags evaluated by flagd", flags.get("studio-answer-inspector") is True, r.text
+        )
+
         for path in (
             "/identity/internal/ext-authz/x",
             "/authz/v1/decisions",

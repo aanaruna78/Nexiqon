@@ -40,6 +40,14 @@ owner_only := {
 	"config.security_floors.write",
 }
 
+# Sensitive reads that "**.read" must not grant: only owners, admins and services.
+admin_only := {
+	"audit.events.read",
+	"audit.chain.verify",
+}
+
+admin_roles := {"owner", "admin", "service"}
+
 # Actor types that may never hold administrative permissions, even if a role says so.
 restricted_actor_types := {"widget"}
 
@@ -60,6 +68,14 @@ owner_check_ok if {
 	"owner" in input.actor.roles
 }
 
+admin_check_ok if not input.action in admin_only
+
+admin_check_ok if {
+	input.action in admin_only
+	some role in input.actor.roles
+	role in admin_roles
+}
+
 actor_type_ok if not input.actor.type in restricted_actor_types
 
 actor_type_ok if {
@@ -73,6 +89,7 @@ allow if {
 	same_tenant
 	count(granting_roles) > 0
 	owner_check_ok
+	admin_check_ok
 	actor_type_ok
 }
 
@@ -83,6 +100,8 @@ reasons contains "no role grants this action" if count(granting_roles) == 0
 reasons contains "owner-only action" if not owner_check_ok
 
 reasons contains "actor type not permitted" if not actor_type_ok
+
+reasons contains "admin-only action" if not admin_check_ok
 
 reasons contains sprintf("granted by role %s", [role]) if {
 	allow

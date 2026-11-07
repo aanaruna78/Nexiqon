@@ -81,6 +81,32 @@ class DatabaseSettings(BaseModel):
     pool_size: int = 5
 
 
+class EventSettings(BaseModel):
+    """Event bus (NATS JetStream). Disabled: outbox rows accumulate until a relay runs."""
+
+    enabled: bool = False
+    nats_url: str = "nats://nats:4222"
+    stream: str = "NEXIQON_EVENTS"
+    relay_interval_ms: int = 500
+    max_deliver: int = 5  # then the message goes to the dead-letter subject
+
+
+class WorkflowSettings(BaseModel):
+    """Temporal. Disabled: services that need workflows report not-ready."""
+
+    enabled: bool = False
+    address: str = "temporal:7233"
+    namespace: str = "default"
+
+
+class FlagSettings(BaseModel):
+    """Feature flags via OpenFeature. provider=flagd in deployments, in_memory for tests."""
+
+    provider: Literal["none", "flagd", "in_memory"] = "none"
+    flagd_host: str = "flagd"
+    flagd_port: int = 8013
+
+
 class TelemetrySettings(BaseModel):
     enabled: bool = False
     otlp_endpoint: str | None = None  # e.g. http://otel-collector:4318
@@ -103,6 +129,9 @@ class CoreSettings(BaseSettings):
     context_token: ContextTokenSettings = Field(default_factory=ContextTokenSettings)
     telemetry: TelemetrySettings = Field(default_factory=TelemetrySettings)
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
+    events: EventSettings = Field(default_factory=EventSettings)
+    workflows: WorkflowSettings = Field(default_factory=WorkflowSettings)
+    flags: FlagSettings = Field(default_factory=FlagSettings)
     # Base URL of the authz service; derived from deploy/groups.yaml when unset.
     authz_url: str | None = None
 

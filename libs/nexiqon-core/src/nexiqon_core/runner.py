@@ -90,8 +90,11 @@ def main(argv: Sequence[str] | None = None) -> None:
         services = tuple(s.strip() for s in args.services.split(",") if s.strip())
         name = "+".join(services)
 
+    import os
+
     import uvicorn
 
+    os.environ.setdefault("NEXIQON_DEPLOYMENT_GROUP", name)  # telemetry resource name
     uvicorn.run(
         build_group_app(name, services),
         host=args.host,

@@ -41,6 +41,29 @@
         "title": "DraftIn",
         "type": "object"
       },
+      "FlagOut": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "description",
+          "enabled"
+        ],
+        "title": "FlagOut",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -403,6 +426,32 @@
         "summary": "Meta",
         "tags": [
           "ops"
+        ]
+      }
+    },
+    "/v1/flags": {
+      "get": {
+        "description": "Feature flags evaluated for the caller's tenant (Studio and widget read these).",
+        "operationId": "flags_v1_flags_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FlagOut"
+                  },
+                  "title": "Response Flags V1 Flags Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Flags",
+        "tags": [
+          "config"
         ]
       }
     },

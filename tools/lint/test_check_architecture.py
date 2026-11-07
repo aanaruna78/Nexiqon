@@ -22,3 +22,9 @@ def test_domain_words_are_flagged() -> None:
     assert domain_violations(path, "SUBSCRIPTIONS = []\n")
     assert not domain_violations(path, "def create_record(): ...\n")
     assert not domain_violations(path, "ticket = 1  # arch: allow\n")
+
+
+def test_dotted_vendor_prefixes() -> None:
+    path = ROOT / "libs" / "x" / "core.py"
+    assert not vendor_violations(path, "from openfeature import api\n")
+    assert vendor_violations(path, "from openfeature.contrib.provider.flagd import FlagdProvider\n")

@@ -24,7 +24,13 @@ SIGNING_PRIVATE, SIGNING_PUBLIC = make_keypair()
 # Mirrors services/authz/policies: security floors are owner-only.
 ROLES = {
     "owner": ["**"],
-    "admin": ["config.kinds.*", "config.objects.*", "config.snapshots.*", "config.deployments.*"]
+    "admin": [
+        "config.kinds.*",
+        "config.objects.*",
+        "config.snapshots.*",
+        "config.deployments.*",
+        "config.flags.*",
+    ]
     + [
         f"config.{k}.*"
         for k in (

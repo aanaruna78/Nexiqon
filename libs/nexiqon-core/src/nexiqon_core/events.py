@@ -45,6 +45,8 @@ class OutboxMixin:
     published_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), default=None, index=True
     )
+    # W3C trace context of the request that produced the event (CloudEvents distributed tracing).
+    traceparent: Mapped[str | None] = mapped_column(String(64), default=None)
 
     def to_cloudevent(self) -> dict[str, Any]:
         event: dict[str, Any] = {
@@ -60,6 +62,8 @@ class OutboxMixin:
         }
         if self.subject:
             event["subject"] = self.subject
+        if self.traceparent:
+            event["traceparent"] = self.traceparent
         return event
 
 
@@ -86,8 +90,17 @@ def add_event[T: OutboxMixin](
     event.subject = subject
     event.actor_id = ctx.actor_id
     event.data = data
+    event.traceparent = current_traceparent()
     session.add(event)
     return event
+
+
+def current_traceparent() -> str | None:
+    from opentelemetry import propagate
+
+    carrier: dict[str, str] = {}
+    propagate.inject(carrier)
+    return carrier.get("traceparent")
 
 
 class EventPublisher(Protocol):

@@ -20,10 +20,13 @@ SCAN = [ROOT / "libs", ROOT / "services"]
 # Top-level modules of vendor SDKs that must stay behind ports.
 VENDOR_MODULES = {
     "openai", "anthropic", "google", "vertexai", "boto3", "botocore", "aiobotocore", "azure",
-    "nats", "temporalio", "redis", "valkey", "minio", "hvac", "clerk_backend_api", "auth0",
+    # temporalio is absent on purpose: Temporal is the workflow port itself (ADR 0007).
+    "nats", "redis", "valkey", "minio", "hvac", "clerk_backend_api", "auth0",
     "keycloak", "neo4j", "qdrant_client", "opensearchpy", "pymilvus", "langchain_openai",
     "langchain_anthropic", "ollama", "vllm", "cohere", "voyageai", "clamd", "digitalocean",
     "pydo",
+    # Dotted entries match that package only: the OpenFeature API is the port, providers are vendors.
+    "openfeature.contrib",
 }
 
 # Domain words that belong in Domain Packs, not core code.
@@ -56,8 +59,8 @@ def vendor_violations(path: Path, source: str) -> list[str]:
         elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
             names = [node.module]
         for name in names:
-            top = name.split(".")[0]
-            if top in VENDOR_MODULES and ALLOW not in lines[node.lineno - 1]:
+            vendor = any(name == m or name.startswith(f"{m}.") for m in VENDOR_MODULES)
+            if vendor and ALLOW not in lines[node.lineno - 1]:
                 problems.append(
                     f"{path.relative_to(ROOT)}:{node.lineno}: vendor SDK '{name}' imported "
                     "outside an adapters package"

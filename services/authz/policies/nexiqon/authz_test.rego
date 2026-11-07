@@ -46,3 +46,11 @@ test_decision_lists_granting_role if {
 	d.allow
 	"granted by role editor" in d.reasons
 }
+
+test_audit_log_is_admin_only if {
+	not authz.allow with input as {"actor": actor(["member"]), "action": "audit.events.read", "resource": {"type": "audit_event"}}
+	not authz.allow with input as {"actor": actor(["editor"]), "action": "audit.chain.verify", "resource": {"type": "audit_event"}}
+	authz.allow with input as {"actor": actor(["admin"]), "action": "audit.events.read", "resource": {"type": "audit_event"}}
+	d := authz.decision with input as {"actor": actor(["member"]), "action": "audit.events.read", "resource": {"type": "audit_event"}}
+	"admin-only action" in d.reasons
+}

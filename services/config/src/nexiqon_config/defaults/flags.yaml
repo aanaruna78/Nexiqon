@@ -1,0 +1,12 @@
+# Feature flag catalog: every flag Studio and services may ask about, with its safe default.
+# Targeting rules live in the flag provider (flagd: deploy/compose/flags/flags.json).
+flags:
+  - key: studio-answer-inspector
+    description: Answer Inspector panel in the Playground (UX G1)
+    default: false
+  - key: studio-domain-pack-editor
+    description: Domain Pack editor in Studio (UX G12)
+    default: false
+  - key: widget-streaming
+    description: Stream answers token by token in the chat widget
+    default: true

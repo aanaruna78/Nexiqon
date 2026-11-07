@@ -9,6 +9,7 @@ from sqlalchemy import text
 
 from nexiqon_core.app import create_service_app
 from nexiqon_core.authz import Authorizer
+from nexiqon_core.bus import Bus, EventRuntime
 from nexiqon_core.db import TenantSessionFactory, create_engine
 from nexiqon_identity import __version__
 from nexiqon_identity.access import AccessPolicy, AccessService
@@ -16,6 +17,7 @@ from nexiqon_identity.adapters.oidc import JwksFetcher, OidcVerifier, http_fetch
 from nexiqon_identity.api import public_router, tenant_router
 from nexiqon_identity.keys import build_issuer
 from nexiqon_identity.lifecycle import lifecycle
+from nexiqon_identity.models import Outbox
 from nexiqon_identity.settings import ServiceSettings
 from nexiqon_identity.webhooks import ClerkWebhooks
 
@@ -27,6 +29,7 @@ def create_app(
     settings: ServiceSettings | None = None,
     *,
     authorizer: Authorizer | None = None,
+    bus: Bus | None = None,
     jwks_fetcher: JwksFetcher = http_fetch_jwks,
 ) -> FastAPI:
     settings = settings or ServiceSettings()
@@ -52,6 +55,11 @@ def create_app(
         if engine is not None:
             await engine.dispose()
 
+    events = None
+    if settings.events.enabled and db is not None:
+        events = EventRuntime(settings.events, SERVICE_NAME, bus)
+        events.relay(db, Outbox)
+
     app = create_service_app(
         name=SERVICE_NAME,
         version=__version__,
@@ -63,6 +71,7 @@ def create_app(
         readiness_checks={"database": database_ready},
         lifespan=lifespan,
         authorizer=authorizer,
+        events=events,
     )
     issuer = build_issuer(settings.signing, settings.context_token, settings.context_ttl_seconds)
     app.state.db = db

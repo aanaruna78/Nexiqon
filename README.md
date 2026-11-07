@@ -33,6 +33,10 @@ uv run python tools/dev/smoke_gateway.py   # end-to-end check through the gatewa
 make dev-down
 ```
 
+With `observability` in `PROFILES`, Grafana (`localhost:3000`, admin/admin) shows traces (Tempo), metrics
+and the **Nexiqon services** dashboard; every request is traced from the gateway through services and
+events. Feature flags are served by flagd from `deploy/compose/flags/flags.json`.
+
 The gateway listens on `localhost:8000` and routes `/<service>/...` to the right group. Requests carry
 `Authorization: Bearer <IdP token or nxq_ API key>` and, for users in several tenants,
 `X-Nexiqon-Tenant: <slug or id>`. The dev Keycloak realm (`localhost:8080`, realm `nexiqon`) has a user

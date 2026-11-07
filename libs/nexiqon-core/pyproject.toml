@@ -19,6 +19,11 @@ dependencies = [
   "opentelemetry-sdk>=1.29",
   "opentelemetry-exporter-otlp-proto-http>=1.29",
   "opentelemetry-instrumentation-fastapi>=0.50b0",
+  "nats-py>=2.9",
+  "temporalio>=1.9",
+  "openfeature-sdk>=0.7",
+  "openfeature-provider-flagd>=0.1.5",
+  "opentelemetry-instrumentation-httpx>=0.50b0",
 ]
 
 [project.scripts]

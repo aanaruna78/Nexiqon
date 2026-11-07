@@ -11,3 +11,12 @@ idp_providers:
     issuer: http://localhost:8080/realms/nexiqon
     jwks_url: http://keycloak:8080/realms/nexiqon/protocol/openid-connect/certs
     audiences: []
+events:
+  enabled: true
+  nats_url: nats://nats:4222
+flags:
+  provider: flagd
+  flagd_host: flagd
+  flagd_port: 8013
+workflows:
+  address: temporal:7233

@@ -15,13 +15,16 @@ x-app: &app
     NEXIQON_ENVIRONMENT: dev
     NEXIQON_CONFIG_FILES: /app/config/dev.yaml,/app/config/dev-secrets.yaml
     NEXIQON_DATABASE__URL: postgresql+asyncpg://nexiqon_app:nexiqon_app_dev@postgres:5432/nexiqon
-    NEXIQON_TELEMETRY__ENABLED: "false"
+    # Telemetry follows the observability profile: make dev-up PROFILES=...,observability
+    NEXIQON_TELEMETRY__ENABLED: ${NEXIQON_TELEMETRY:-false}
+    NEXIQON_TELEMETRY__OTLP_ENDPOINT: http://lgtm:4318
   volumes:
     - ./config:/app/config:ro
   depends_on:
     postgres: { condition: service_healthy }
     nats: { condition: service_started }
     migrate: { condition: service_completed_successfully }
+    flagd: { condition: service_started }
 
 services:
   # ---------- core infrastructure (always on) ----------
@@ -110,11 +113,22 @@ services:
     volumes:
       - ../../services/authz/policies:/policies:ro
 
+  flagd:
+    image: ghcr.io/open-feature/flagd:v0.14.0
+    profiles: [platform, apps]
+    command: ["start", "--uri", "file:/flags/flags.json"]
+    ports: ["8013:8013"]
+    volumes:
+      - ./flags:/flags:ro
+
   # ---------- optional ----------
   lgtm:
     image: grafana/otel-lgtm:0.8.1
     profiles: [observability]
     ports: ["3000:3000", "4317:4317", "4318:4318"]
+    volumes:
+      - ../observability/dashboards.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/nexiqon.yaml:ro
+      - ../observability/dashboards:/otel-lgtm/nexiqon-dashboards:ro
 
   clamav:
     image: clamav/clamav:1.4

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://flagd.dev/schema/v0/flags.json",
+  "flags": {
+    "studio-answer-inspector": {
+      "state": "ENABLED",
+      "variants": { "on": true, "off": false },
+      "defaultVariant": "on",
+      "targeting": {}
+    },
+    "studio-domain-pack-editor": {
+      "state": "ENABLED",
+      "variants": { "on": true, "off": false },
+      "defaultVariant": "off",
+      "targeting": {
+        "if": [{ "in": [{ "var": "region" }, ["eu", "default"]] }, "on", "off"]
+      }
+    },
+    "widget-streaming": {
+      "state": "ENABLED",
+      "variants": { "on": true, "off": false },
+      "defaultVariant": "on"
+    }
+  }
+}
