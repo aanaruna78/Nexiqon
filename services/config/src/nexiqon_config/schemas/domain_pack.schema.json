@@ -1,0 +1,482 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexiqon.dev/schemas/config/domain_pack.json",
+  "title": "Domain Pack",
+  "description": "Versioned bundle of everything domain-specific. Core services contain no domain logic.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "metadata",
+    "intents",
+    "graph",
+    "prompts",
+    "guardrails"
+  ],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "pack_version"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 2
+        },
+        "description": {
+          "type": "string"
+        },
+        "pack_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "locales": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "vocabulary": {
+      "type": "object",
+      "description": "Domain terms and UI labels per locale",
+      "additionalProperties": {
+        "type": "object",
+        "description": "Text per locale, e.g. {\"en\": \"...\", \"ar\": \"...\"}",
+        "propertyNames": {
+          "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+        },
+        "additionalProperties": {
+          "type": "string"
+        },
+        "minProperties": 1
+      },
+      "x-ui": {
+        "widget": "term-table"
+      }
+    },
+    "intents": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "route"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "description": {
+            "type": "string"
+          },
+          "examples": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "route": {
+            "enum": [
+              "knowledge",
+              "action",
+              "handoff",
+              "smalltalk",
+              "clarify"
+            ]
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+            }
+          }
+        }
+      }
+    },
+    "graph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entry",
+        "nodes",
+        "edges"
+      ],
+      "description": "Declarative agent workflow built from the node library (compiled to LangGraph).",
+      "properties": {
+        "entry": {
+          "type": "string"
+        },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "type"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "type": {
+                "enum": [
+                  "route",
+                  "retrieve",
+                  "classify",
+                  "call_tool",
+                  "clarify",
+                  "validate_evidence",
+                  "approve",
+                  "escalate",
+                  "respond"
+                ]
+              },
+              "config": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "from",
+              "to"
+            ],
+            "properties": {
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": "string"
+              },
+              "when": {
+                "type": "string",
+                "description": "Branch label emitted by the source node"
+              }
+            }
+          }
+        }
+      }
+    },
+    "prompts": {
+      "type": "object",
+      "description": "Prompt templates by purpose; {{variables}} only, never secrets",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "template"
+        ],
+        "properties": {
+          "template": {
+            "type": "object",
+            "description": "Text per locale, e.g. {\"en\": \"...\", \"ar\": \"...\"}",
+            "propertyNames": {
+              "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+            },
+            "additionalProperties": {
+              "type": "string"
+            },
+            "minProperties": 1
+          },
+          "variables": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "connector"
+        ],
+        "properties": {
+          "connector": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "retrieval_profile": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+          },
+          "recommended": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+          },
+          "risk_level": {
+            "enum": [
+              "read",
+              "write",
+              "high"
+            ]
+          },
+          "confirmation": {
+            "enum": [
+              "never",
+              "always",
+              "write_only"
+            ]
+          }
+        }
+      }
+    },
+    "entities": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "description": "JSON Schema of the entity"
+      }
+    },
+    "guardrails": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allowed_topics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "blocked_topics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "min_evidence_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "x-ui": {
+            "advanced": true
+          }
+        },
+        "max_answer_tokens": {
+          "type": "integer",
+          "minimum": 50,
+          "maximum": 8000,
+          "x-ui": {
+            "advanced": true
+          }
+        },
+        "pii_redaction": {
+          "type": "boolean"
+        },
+        "cite_sources": {
+          "type": "boolean"
+        }
+      }
+    },
+    "escalation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "on_low_evidence": {
+          "type": "boolean"
+        },
+        "on_user_request": {
+          "type": "boolean"
+        },
+        "after_failed_turns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "handoff_tool": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+        }
+      }
+    },
+    "channels": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "widget": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "title": {
+              "type": "object",
+              "description": "Text per locale, e.g. {\"en\": \"...\", \"ar\": \"...\"}",
+              "propertyNames": {
+                "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+              },
+              "additionalProperties": {
+                "type": "string"
+              },
+              "minProperties": 1
+            },
+            "greeting": {
+              "type": "object",
+              "description": "Text per locale, e.g. {\"en\": \"...\", \"ar\": \"...\"}",
+              "propertyNames": {
+                "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+              },
+              "additionalProperties": {
+                "type": "string"
+              },
+              "minProperties": 1
+            },
+            "starter_questions": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 6
+              }
+            },
+            "accent_color": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "x-ui": {
+                "widget": "color"
+              }
+            }
+          }
+        }
+      }
+    },
+    "evals": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "test_sets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "cases"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "cases": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "question"
+                  ],
+                  "properties": {
+                    "question": {
+                      "type": "string"
+                    },
+                    "locale": {
+                      "type": "string"
+                    },
+                    "expect": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "intent": {
+                          "type": "string"
+                        },
+                        "must_cite": {
+                          "type": "boolean"
+                        },
+                        "escalate": {
+                          "type": "boolean"
+                        },
+                        "contains": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "thresholds": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "analytics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kpis": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "event"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "event": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "agent_defaults": {
+      "type": "object",
+      "description": "Partial agent settings applied as a configuration layer."
+    }
+  }
+}

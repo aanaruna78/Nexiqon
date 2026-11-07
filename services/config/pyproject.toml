@@ -3,7 +3,11 @@ name = "nexiqon-config"
 version = "0.1.0"
 description = "Config registry: domain packs, agents, graphs, tools, model profiles, versions"
 requires-python = ">=3.12,<3.14"
-dependencies = ["nexiqon-core"]
+dependencies = [
+    "jsonschema>=4.23",
+    "nexiqon-core",
+    "pyyaml>=6.0",
+]
 
 [tool.uv.sources]
 nexiqon-core = { workspace = true }

@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexiqon.dev/schemas/config/tool.json",
+  "title": "Tool",
+  "description": "A business API the agent may call through tool-gateway. Never contains raw secrets.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "description",
+    "kind",
+    "input_schema",
+    "risk_level"
+  ],
+  "properties": {
+    "description": {
+      "type": "string",
+      "minLength": 5
+    },
+    "kind": {
+      "enum": [
+        "rest",
+        "openapi",
+        "approval"
+      ]
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "method",
+        "url_template"
+      ],
+      "properties": {
+        "method": {
+          "enum": [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE"
+          ]
+        },
+        "url_template": {
+          "type": "string",
+          "pattern": "^https://"
+        },
+        "host_allowlist": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "not": {
+              "pattern": "(?i)(bearer|basic) "
+            }
+          }
+        }
+      }
+    },
+    "openapi": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "spec_ref",
+        "operation_id"
+      ],
+      "properties": {
+        "spec_ref": {
+          "type": "string"
+        },
+        "operation_id": {
+          "type": "string"
+        }
+      }
+    },
+    "input_schema": {
+      "type": "object"
+    },
+    "output_schema": {
+      "type": "object"
+    },
+    "credential_ref": {
+      "type": "string",
+      "pattern": "^secret://",
+      "description": "Reference resolved by tool-gateway's secrets port"
+    },
+    "risk_level": {
+      "enum": [
+        "read",
+        "write",
+        "high"
+      ]
+    },
+    "confirmation": {
+      "enum": [
+        "never",
+        "always",
+        "write_only"
+      ]
+    },
+    "timeout_ms": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 30000
+    },
+    "retries": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "rate_limit_per_minute": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "idempotent": {
+      "type": "boolean"
+    }
+  }
+}

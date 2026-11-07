@@ -36,6 +36,7 @@ class NexiqonError(Exception):
     def __init__(self, detail: str | None = None) -> None:
         super().__init__(detail or self.title)
         self.detail = detail
+        self.errors: list[dict[str, Any]] | None = None  # itemised problems, if any
 
 
 class BadRequest(NexiqonError):
@@ -74,7 +75,14 @@ def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(NexiqonError)
     async def _nexiqon(request: Request, exc: NexiqonError) -> JSONResponse:
         return _response(
-            request, Problem(title=exc.title, status=exc.status, code=exc.code, detail=exc.detail)
+            request,
+            Problem(
+                title=exc.title,
+                status=exc.status,
+                code=exc.code,
+                detail=exc.detail,
+                errors=exc.errors,
+            ),
         )
 
     @app.exception_handler(RequestValidationError)

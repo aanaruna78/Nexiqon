@@ -99,6 +99,19 @@ def _match(pattern: str, action: str) -> bool:
     return re.fullmatch("".join(parts), action) is not None
 
 
+async def check_permission(request: Request, action: str, resource: Resource) -> Decision:
+    """Imperative check for actions that depend on request data (e.g. a path parameter)."""
+    ctx = getattr(request.state, "tenant_context", None)
+    token = getattr(request.state, "context_token", None)
+    if not isinstance(ctx, TenantContext) or token is None:
+        raise Unauthorized("Missing tenant context")
+    authorizer: Authorizer = request.app.state.authorizer
+    decision = await authorizer.decide(ctx, token, action, resource)
+    if not decision.allow:
+        raise Forbidden(f"Not allowed: {action}")
+    return decision
+
+
 ResourceResolver = Callable[[Request], Awaitable[Resource] | Resource]
 
 

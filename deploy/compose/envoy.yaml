@@ -49,6 +49,9 @@ static_resources:
                         - match: { prefix: /identity/.well-known/ }
                           route: { cluster: control-core }
                           typed_per_filter_config: *no_authz
+                        - match: { prefix: /config/.well-known/ }
+                          route: { cluster: control-core }
+                          typed_per_filter_config: *no_authz
                         # Everything else requires a tenant context.
                         - match: { prefix: /identity/ }
                           route: { cluster: control-core }

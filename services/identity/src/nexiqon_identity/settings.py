@@ -3,6 +3,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, SecretStr
 
 from nexiqon_core.settings import CoreSettings
+from nexiqon_core.signing import SigningSettings
 
 
 class IdpProviderSettings(BaseModel):
@@ -20,13 +21,6 @@ class IdpProviderSettings(BaseModel):
     claim_name: str = "name"
     claim_org: str | None = None  # e.g. Clerk "org_id"
     mfa_acr_values: list[str] = Field(default_factory=list)
-
-
-class SigningSettings(BaseModel):
-    """Keys for tenant-context tokens. Old keys stay listed (in JWKS) during rotation."""
-
-    active_kid: str = ""
-    private_keys: dict[str, SecretStr] = Field(default_factory=dict)  # kid -> PEM
 
 
 class ServiceSettings(CoreSettings):

@@ -1,0 +1,22 @@
+# Platform security floors. Tenants and deployments can add rules; nobody can remove these.
+rules:
+  - path: guardrails.pii_redaction
+    op: equals
+    value: true
+    reason: PII must be redacted before logs and providers (design §7)
+  - path: guardrails.cite_sources
+    op: equals
+    value: true
+    reason: grounded answers must cite sources (FR-03)
+  - path: escalation.on_user_request
+    op: equals
+    value: true
+    reason: a person must always be reachable on request
+  - path: tools_policy.write_confirmation
+    op: equals
+    value: always
+    reason: write actions require explicit confirmation (design §5)
+  - path: model.data_policy.allow_training
+    op: equals
+    value: false
+    reason: customer data is never used for model training (design §7)

@@ -15,6 +15,7 @@ dev = [
   "pre-commit>=4.0",
   "copier>=9.4",
   "pip-audit>=2.7",
+  "types-jsonschema>=4.26.0.20261006",
 ]
 
 [tool.ruff]

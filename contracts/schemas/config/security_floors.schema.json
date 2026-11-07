@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexiqon.dev/schemas/config/security_floors.json",
+  "title": "Security floors",
+  "description": "Extra constraints on resolved agents. They add to platform floors; they can never remove them.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "rules"
+  ],
+  "properties": {
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "op",
+          "value"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^[a-z_]+(\\.[a-z_]+)*$"
+          },
+          "op": {
+            "enum": [
+              "equals",
+              "subset_of",
+              "min",
+              "max"
+            ]
+          },
+          "value": {},
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

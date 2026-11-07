@@ -40,6 +40,9 @@ PUBLIC: dict[str, set[str]] = {
         "/v1/session/tenants",  # authenticates the IdP token itself
         "/v1/webhooks/clerk",  # Svix signature verified
     },
+    "config": {
+        "/.well-known/jwks.json",  # snapshot verification keys (public only)
+    },
 }
 
 

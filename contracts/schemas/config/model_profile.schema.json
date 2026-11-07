@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexiqon.dev/schemas/config/model_profile.json",
+  "title": "Model profile",
+  "description": "Which models an agent uses and where data may go.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "chat",
+    "embedding",
+    "data_policy"
+  ],
+  "properties": {
+    "chat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "model"
+      ],
+      "properties": {
+        "provider": {
+          "enum": [
+            "openai",
+            "anthropic",
+            "gemini",
+            "openai_compatible"
+          ]
+        },
+        "model": {
+          "type": "string"
+        },
+        "base_url": {
+          "type": "string",
+          "format": "uri",
+          "x-ui": {
+            "advanced": true
+          }
+        },
+        "temperature": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "max_output_tokens": {
+          "type": "integer",
+          "minimum": 16
+        }
+      }
+    },
+    "embedding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "model",
+        "dimensions"
+      ],
+      "properties": {
+        "provider": {
+          "enum": [
+            "openai",
+            "openai_compatible"
+          ]
+        },
+        "model": {
+          "type": "string"
+        },
+        "base_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "dimensions": {
+          "const": 1024
+        }
+      }
+    },
+    "reranker": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tool_calling": {
+          "type": "boolean"
+        },
+        "json_schema_output": {
+          "type": "boolean"
+        },
+        "context_tokens": {
+          "type": "integer"
+        }
+      }
+    },
+    "budgets": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "monthly_usd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "per_conversation_tokens": {
+          "type": "integer",
+          "minimum": 1000
+        }
+      }
+    },
+    "data_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "location"
+      ],
+      "properties": {
+        "location": {
+          "enum": [
+            "cloud",
+            "on_prem"
+          ]
+        },
+        "allow_training": {
+          "const": false
+        }
+      }
+    },
+    "routing": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "classification",
+          "use_profile"
+        ],
+        "properties": {
+          "classification": {
+            "enum": [
+              "public",
+              "internal",
+              "confidential",
+              "restricted"
+            ]
+          },
+          "use_profile": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+          }
+        }
+      }
+    }
+  }
+}

@@ -54,3 +54,8 @@ code · policy before model · the isolation suite grows with every endpoint · 
 Details: [PLAN.md §6](docs/plan/PLAN.md) and [ADRs](docs/adr/README.md).
 
 Add a service: `make new-service NAME=<kebab-name> PLANE=<control|data>`.
+
+Domain Packs live in `packs/<name>/pack.yaml` (format: `docs/plan/ARCHITECTURE.md` §6.2, schema:
+`contracts/schemas/config/domain_pack.schema.json`). Validate with
+`uv run python -m tools.packs.apply --tenant x --token y --validate-only`; apply to a tenant with
+`--tenant <slug> --token <IdP token> --publish --deploy dev`.

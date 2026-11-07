@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexiqon.dev/schemas/config/channel.json",
+  "title": "Channel",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type"
+  ],
+  "properties": {
+    "type": {
+      "enum": [
+        "widget",
+        "api",
+        "slack",
+        "teams",
+        "email"
+      ]
+    },
+    "widget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allowed_origins": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^https?://"
+          }
+        },
+        "title": {
+          "type": "object",
+          "description": "Text per locale, e.g. {\"en\": \"...\", \"ar\": \"...\"}",
+          "propertyNames": {
+            "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+          },
+          "additionalProperties": {
+            "type": "string"
+          },
+          "minProperties": 1
+        },
+        "greeting": {
+          "type": "object",
+          "description": "Text per locale, e.g. {\"en\": \"...\", \"ar\": \"...\"}",
+          "propertyNames": {
+            "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+          },
+          "additionalProperties": {
+            "type": "string"
+          },
+          "minProperties": 1
+        },
+        "accent_color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "x-ui": {
+            "widget": "color"
+          }
+        }
+      }
+    },
+    "agent_overrides": {
+      "type": "object",
+      "description": "Partial agent settings applied as a configuration layer."
+    }
+  }
+}

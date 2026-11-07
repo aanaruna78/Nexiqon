@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexiqon.dev/schemas/config/retention_profile.json",
+  "title": "Retention profile",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "conversations_days": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "traces_days": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "tool_results_days": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "legal_hold": {
+      "type": "boolean"
+    }
+  }
+}

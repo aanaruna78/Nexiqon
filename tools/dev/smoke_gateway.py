@@ -11,10 +11,13 @@ from __future__ import annotations
 import sys
 import time
 import uuid
+from pathlib import Path
 
 import httpx
+import jwt
 
 GATEWAY = "http://localhost:8000"
+ROOT = Path(__file__).resolve().parents[2]
 KEYCLOAK_TOKEN_URL = "http://localhost:8080/realms/nexiqon/protocol/openid-connect/token"  # noqa: S105 - a URL, not a secret
 
 
@@ -103,6 +106,52 @@ def main() -> int:
 
         r = gw.get("/identity/v1/tenant", headers={**auth, "X-Nexiqon-Tenant": "does-not-exist"})
         check("unknown tenant is forbidden", r.status_code == 403, r.status_code)
+
+        # ---- config: Domain Pack -> agent -> resolve -> signed snapshot
+        tenant = {**auth, "X-Nexiqon-Tenant": slug}
+        base = "/config/v1/objects"
+        pack = (ROOT / "packs/saas-knowledge-assistant/pack.yaml").read_text()
+        r = gw.post(
+            "/config/v1/packs/import",
+            content=pack,
+            headers={**tenant, "content-type": "application/yaml"},
+        )
+        check("domain pack imported", r.status_code == 201, r.text)
+        r = gw.post(
+            f"{base}/domain_pack/saas-knowledge-assistant/versions/1/publish", headers=tenant
+        )
+        check("pack published", r.status_code == 200, r.text)
+        r = gw.put(
+            f"{base}/domain_pack/saas-knowledge-assistant/deployments/dev",
+            json={"version": 1},
+            headers=tenant,
+        )
+        check("pack deployed to dev", r.status_code == 200, r.text)
+        agent = {"pack": {"name": "saas-knowledge-assistant"}, "display_name": "Smoke Help"}
+        r = gw.post(base, json={"kind": "agent", "name": "help", "spec": agent}, headers=tenant)
+        check("agent created", r.status_code == 201, r.text)
+        gw.post(f"{base}/agent/help/versions/1/publish", headers=tenant).raise_for_status()
+        r = gw.put(f"{base}/agent/help/deployments/dev", json={"version": 1}, headers=tenant)
+        check("agent deployed to dev", r.status_code == 200, r.text)
+        r = gw.get("/config/v1/resolve/agents/help?environment=dev", headers=tenant)
+        resolved = (
+            r.status_code == 200 and r.json()["config"]["guardrails"]["pii_redaction"] is True
+        )
+        check("agent resolves through all layers within floors", resolved, r.text)
+        r = gw.get("/config/v1/snapshots/dev", headers=tenant)
+        keys = gw.get("/config/.well-known/jwks.json").json()["keys"]
+        claims = jwt.decode(r.json()["signature"], jwt.PyJWK(keys[0]).key, algorithms=["ES256"])
+        check(
+            "signed snapshot verifies with the published key",
+            claims["digest"] == r.json()["digest"],
+            claims,
+        )
+        r = gw.put(
+            f"{base}/agent/help/draft",
+            json={"spec": agent},
+            headers={"Authorization": f"Bearer {key}"},
+        )
+        check("member API key cannot change config", r.status_code == 403, r.status_code)
 
         for path in (
             "/identity/internal/ext-authz/x",

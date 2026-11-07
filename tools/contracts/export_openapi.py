@@ -1,4 +1,5 @@
-"""Export each service's OpenAPI document to contracts/openapi/<service>.json.
+"""Export contracts: each service's OpenAPI document (contracts/openapi/<service>.json) and the
+configuration JSON Schemas owned by the config service (contracts/schemas/config/<kind>.schema.json).
 
     python -m tools.contracts.export_openapi          # write
     python -m tools.contracts.export_openapi --check  # fail if contracts are stale (CI)
@@ -19,6 +20,16 @@ from nexiqon_core.runner import load_factory
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "contracts" / "openapi"
+SCHEMAS_OUT = ROOT / "contracts" / "schemas" / "config"
+
+
+def config_schemas() -> dict[str, str]:
+    from nexiqon_config import kinds
+
+    return {
+        f"{kind}.schema.json": json.dumps(kinds.schema(kind), indent=2) + "\n"
+        for kind in kinds.KINDS
+    }
 
 
 def render(service: str) -> str:
@@ -44,6 +55,14 @@ def main() -> int:
             else:
                 OUT.mkdir(parents=True, exist_ok=True)
                 target.write_text(content, encoding="utf-8")
+    for filename, content in config_schemas().items():
+        target = SCHEMAS_OUT / filename
+        if args.check:
+            if not target.exists() or target.read_text(encoding="utf-8") != content:
+                stale.append(f"schemas/config/{filename}")
+        else:
+            SCHEMAS_OUT.mkdir(parents=True, exist_ok=True)
+            target.write_text(content, encoding="utf-8")
     if stale:
         print("stale contracts (run `make contracts`):", ", ".join(stale))
         return 1

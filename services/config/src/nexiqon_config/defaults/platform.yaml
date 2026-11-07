@@ -1,0 +1,21 @@
+# Platform defaults: the least specific configuration layer (ARCHITECTURE §6.1).
+# Sections apply to resolved agents. Operators add deployment/region layers via settings.
+agent:
+  behaviour:
+    tone: neutral
+    language: auto
+    max_turns: 30
+  guardrails:
+    pii_redaction: true
+    cite_sources: true
+    min_evidence_score: 0.55
+    max_answer_tokens: 900
+  escalation:
+    on_low_evidence: true
+    on_user_request: true
+    after_failed_turns: 2
+  tools_policy:
+    write_confirmation: always
+  model_profile: cloud-frontier
+  retrieval_profile: standard
+  retention_profile: standard

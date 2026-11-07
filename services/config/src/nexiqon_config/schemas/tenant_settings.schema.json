@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexiqon.dev/schemas/config/tenant_settings.json",
+  "title": "Tenant settings",
+  "description": "Tenant-wide defaults. One object named 'default'.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "locale": {
+      "type": "string"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "agent_defaults": {
+      "type": "object",
+      "description": "Partial agent settings applied as a configuration layer."
+    },
+    "environments": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "dev": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "agent_overrides": {
+              "type": "object",
+              "description": "Partial agent settings applied as a configuration layer."
+            }
+          }
+        },
+        "staging": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "agent_overrides": {
+              "type": "object",
+              "description": "Partial agent settings applied as a configuration layer."
+            }
+          }
+        },
+        "prod": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "agent_overrides": {
+              "type": "object",
+              "description": "Partial agent settings applied as a configuration layer."
+            }
+          }
+        }
+      }
+    },
+    "promotion": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "require_order": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

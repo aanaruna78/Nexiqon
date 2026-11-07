@@ -1,0 +1,248 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexiqon.dev/schemas/config/agent.json",
+  "title": "Agent",
+  "description": "An assistant built from a Domain Pack plus tenant choices.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "pack",
+    "display_name"
+  ],
+  "properties": {
+    "pack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Pin a pack version; default: the version deployed in the environment"
+        }
+      }
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 80
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "model_profile": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+    },
+    "retrieval_profile": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+    },
+    "retention_profile": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+    },
+    "knowledge": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "collections": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+          }
+        }
+      }
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+      }
+    },
+    "tools_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "write_confirmation": {
+          "enum": [
+            "always",
+            "never"
+          ]
+        }
+      }
+    },
+    "behaviour": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tone": {
+          "enum": [
+            "neutral",
+            "friendly",
+            "formal",
+            "concise"
+          ]
+        },
+        "language": {
+          "type": "string",
+          "description": "'auto' or a locale"
+        },
+        "max_turns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      }
+    },
+    "guardrails": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allowed_topics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "blocked_topics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "min_evidence_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "x-ui": {
+            "advanced": true
+          }
+        },
+        "max_answer_tokens": {
+          "type": "integer",
+          "minimum": 50,
+          "maximum": 8000,
+          "x-ui": {
+            "advanced": true
+          }
+        },
+        "pii_redaction": {
+          "type": "boolean"
+        },
+        "cite_sources": {
+          "type": "boolean"
+        }
+      }
+    },
+    "escalation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "on_low_evidence": {
+          "type": "boolean"
+        },
+        "on_user_request": {
+          "type": "boolean"
+        },
+        "after_failed_turns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "handoff_tool": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+        }
+      }
+    },
+    "channels": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+      }
+    },
+    "graph_override": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entry",
+        "nodes",
+        "edges"
+      ],
+      "description": "Declarative agent workflow built from the node library (compiled to LangGraph).",
+      "properties": {
+        "entry": {
+          "type": "string"
+        },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "type"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "type": {
+                "enum": [
+                  "route",
+                  "retrieve",
+                  "classify",
+                  "call_tool",
+                  "clarify",
+                  "validate_evidence",
+                  "approve",
+                  "escalate",
+                  "respond"
+                ]
+              },
+              "config": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "from",
+              "to"
+            ],
+            "properties": {
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": "string"
+              },
+              "when": {
+                "type": "string",
+                "description": "Branch label emitted by the source node"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

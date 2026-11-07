@@ -12,10 +12,11 @@ from nexiqon_core.authz import StaticAuthorizer
 from nexiqon_core.migrations import upgrade
 from nexiqon_core.pytest_plugin import PgUrls
 from nexiqon_core.settings import ContextTokenSettings, DatabaseSettings
+from nexiqon_core.signing import SigningSettings
 from nexiqon_core.tenancy import ContextTokenVerifier
 from nexiqon_core.testing import make_keypair
 from nexiqon_identity.main import create_app
-from nexiqon_identity.settings import IdpProviderSettings, ServiceSettings, SigningSettings
+from nexiqon_identity.settings import IdpProviderSettings, ServiceSettings
 from nexiqon_identity.testing import (
     CLERK_ISSUER,
     OIDC_ISSUER,
