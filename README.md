@@ -27,11 +27,16 @@ Prerequisites: Docker, [uv](https://docs.astral.sh/uv/), Node 22.
 ```bash
 make setup                         # Python + frontend deps, git hooks
 make check                         # what CI runs
-make dev-up                        # Postgres+pgvector, Valkey, NATS, S3 storage
-make dev-up PROFILES=platform,apps # + Temporal, Keycloak, OpenBao, OPA and the 6 service groups
-curl localhost:8101/healthz        # control-core group: identity, authz, config, audit
+make dev-up                        # Postgres+pgvector, Valkey, NATS, S3 storage (+ local signing keys)
+make dev-up PROFILES=platform,apps # + Temporal, Keycloak, OpenBao, OPA, migrations, gateway, 6 groups
+uv run python tools/dev/smoke_gateway.py   # end-to-end check through the gateway
 make dev-down
 ```
+
+The gateway listens on `localhost:8000` and routes `/<service>/...` to the right group. Requests carry
+`Authorization: Bearer <IdP token or nxq_ API key>` and, for users in several tenants,
+`X-Nexiqon-Tenant: <slug or id>`. The dev Keycloak realm (`localhost:8080`, realm `nexiqon`) has a user
+`dev` / `dev-password`.
 
 | Group | Local port | Services |
 |---|---|---|

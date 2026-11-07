@@ -6,7 +6,7 @@ PNPM := npx --yes pnpm@12.15.0 --dir frontend
 comma := ,
 PROFILE_FLAGS := $(foreach p,$(subst $(comma), ,$(PROFILES)),--profile $(p))
 
-.PHONY: help setup lint format typecheck test test-unit arch contracts contracts-check \
+.PHONY: dev-secrets help setup lint format typecheck test test-unit arch contracts contracts-check \
         fe-install fe-lint fe-test fe-build check new-service dev-up dev-down dev-logs run-group image
 
 help: ## Show targets
@@ -65,7 +65,10 @@ new-service: ## Generate a service: make new-service NAME=foo PLANE=data
 	uv sync --all-packages
 	@echo "Now add '$(NAME)' to a group in deploy/groups.yaml and run 'make contracts'."
 
-dev-up: ## Start local stack (PROFILES=platform,apps,observability,scan,models)
+dev-secrets: ## Generate local signing keys (deploy/compose/config/dev-secrets.yaml, git-ignored)
+	uv run python tools/dev/gen_dev_secrets.py
+
+dev-up: dev-secrets ## Start local stack (PROFILES=platform,apps,observability,scan,models)
 	$(COMPOSE) $(PROFILE_FLAGS) up -d --build
 
 dev-down: ## Stop local stack (all profiles)

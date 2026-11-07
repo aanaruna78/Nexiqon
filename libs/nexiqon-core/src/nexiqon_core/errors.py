@@ -58,6 +58,10 @@ class Conflict(NexiqonError):
     status, code, title = 409, "conflict", "Conflict"
 
 
+class ServiceUnavailable(NexiqonError):
+    status, code, title = 503, "service_unavailable", "Service unavailable"
+
+
 def _response(request: Request, problem: Problem) -> JSONResponse:
     problem.instance = problem.instance or request.url.path
     problem.request_id = getattr(request.state, "request_id", None)

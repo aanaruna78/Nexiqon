@@ -1,7 +1,18 @@
 import uuid
 
-from nexiqon_core.events import InMemoryPublisher, OutboxEvent
+from sqlalchemy.orm import DeclarativeBase
+
+from nexiqon_core.db import service_metadata
+from nexiqon_core.events import InMemoryPublisher, OutboxMixin
 from nexiqon_core.ids import uuid7
+
+
+class _Base(DeclarativeBase):
+    metadata = service_metadata("events_test")
+
+
+class Outbox(OutboxMixin, _Base):
+    __tablename__ = "outbox_events"
 
 
 def test_uuid7_version_variant_and_order() -> None:
@@ -16,7 +27,7 @@ async def test_cloudevent_shape() -> None:
     from datetime import UTC, datetime
 
     tenant = uuid.uuid4()
-    e = OutboxEvent(
+    e = Outbox(
         id=uuid7(),
         tenant_id=tenant,
         type="nexiqon.ingestion.document.indexed",

@@ -47,4 +47,5 @@ def configure_logging(service: str, level: str = "INFO", json: bool = True) -> N
         logger_factory=structlog.PrintLoggerFactory(sys.stdout),
         cache_logger_on_first_use=False,
     )
-    structlog.contextvars.bind_contextvars(service=service)
+    # The service name is bound per request (app middleware), not per process: in a deployment
+    # group several services share one process.

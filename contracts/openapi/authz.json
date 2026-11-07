@@ -1,27 +1,135 @@
 {
   "components": {
     "schemas": {
-      "ContextEcho": {
+      "Decision": {
         "properties": {
-          "actor_id": {
-            "title": "Actor Id",
+          "allow": {
+            "title": "Allow",
+            "type": "boolean"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "allow"
+        ],
+        "title": "Decision",
+        "type": "object"
+      },
+      "DecisionRequest": {
+        "properties": {
+          "action": {
+            "pattern": "^[a-z][a-z0-9_-]*(\\.[a-z0-9_-]+){1,4}$",
+            "title": "Action",
             "type": "string"
           },
-          "actor_type": {
-            "title": "Actor Type",
-            "type": "string"
+          "resource": {
+            "$ref": "#/components/schemas/Resource"
+          }
+        },
+        "required": [
+          "action",
+          "resource"
+        ],
+        "title": "DecisionRequest",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "Resource": {
+        "properties": {
+          "attributes": {
+            "additionalProperties": true,
+            "title": "Attributes",
+            "type": "object"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
           },
           "tenant_id": {
-            "title": "Tenant Id",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tenant Id"
+          },
+          "type": {
+            "title": "Type",
             "type": "string"
           }
         },
         "required": [
-          "tenant_id",
-          "actor_id",
-          "actor_type"
+          "type"
         ],
-        "title": "ContextEcho",
+        "title": "Resource",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
         "type": "object"
       }
     }
@@ -57,23 +165,43 @@
         ]
       }
     },
-    "/v1/context": {
-      "get": {
-        "description": "Echo the verified tenant context (skeleton endpoint used by isolation smoke tests).",
-        "operationId": "context_v1_context_get",
+    "/v1/decisions": {
+      "post": {
+        "description": "Evaluate whether the calling actor may perform ``action`` on ``resource``.",
+        "operationId": "decide_v1_decisions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ContextEcho"
+                  "$ref": "#/components/schemas/Decision"
                 }
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
-        "summary": "Context",
+        "summary": "Decide",
         "tags": [
           "authz"
         ]

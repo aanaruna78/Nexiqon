@@ -1,0 +1,274 @@
+"""Turns verified credentials into a signed tenant-context token (ADR 0009).
+
+Credentials are either an IdP token (Clerk/Keycloak/Auth0/OIDC) or a Nexiqon API key. Every lookup
+runs under narrowly scoped RLS variables set from *verified* values only.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import time
+import uuid
+from collections import OrderedDict
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
+
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from nexiqon_core.db import TenantSessionFactory, set_variables
+from nexiqon_core.errors import BadRequest, Forbidden, Unauthorized
+from nexiqon_core.events import add_event
+from nexiqon_core.tenancy import ContextTokenIssuer, TenantContext
+from nexiqon_identity import apikeys
+from nexiqon_identity.idp import IdentityClaims, IdentityProvider
+from nexiqon_identity.models import ApiKey, Group, GroupMember, Membership, Outbox, Tenant, User
+
+ADMIN_ROLES = frozenset({"owner", "admin"})
+SOURCE = "identity"
+NOT_MEMBER = "Not a member of this tenant"
+
+
+def system_context(tenant_id: uuid.UUID, actor: str) -> TenantContext:
+    return TenantContext(tenant_id=tenant_id, actor_id=actor, actor_type="service")
+
+
+@dataclass
+class AccessPolicy:
+    jit_provisioning: bool = True
+    require_admin_mfa: bool = True
+    cache_seconds: int = 30
+
+
+class TokenCache:
+    """Small TTL cache so the gateway check does not hit the IdP JWKS and DB on every request."""
+
+    def __init__(self, max_entries: int = 10_000) -> None:
+        self._items: OrderedDict[str, tuple[str, float]] = OrderedDict()
+        self._max = max_entries
+
+    @staticmethod
+    def key(*parts: str) -> str:
+        return hashlib.sha256("\x1f".join(parts).encode()).hexdigest()
+
+    def get(self, key: str) -> str | None:
+        item = self._items.get(key)
+        if item is None or item[1] <= time.monotonic():
+            self._items.pop(key, None)
+            return None
+        self._items.move_to_end(key)
+        return item[0]
+
+    def clear(self) -> None:
+        self._items.clear()
+
+    def put(self, key: str, token: str, ttl: float) -> None:
+        if ttl <= 0:
+            return
+        self._items[key] = (token, time.monotonic() + ttl)
+        self._items.move_to_end(key)
+        while len(self._items) > self._max:
+            self._items.popitem(last=False)
+
+
+class AccessService:
+    def __init__(
+        self,
+        db: TenantSessionFactory,
+        idp: IdentityProvider,
+        issuer: ContextTokenIssuer | None,
+        policy: AccessPolicy,
+    ) -> None:
+        self.db = db
+        self.idp = idp
+        self.issuer = issuer
+        self.policy = policy
+        self.cache = TokenCache()
+
+    # ---------------------------------------------------------------- users (IdP tokens)
+    async def upsert_user(self, s: AsyncSession, claims: IdentityClaims) -> User:
+        """Find or JIT-create the user. Caller must have set the ``login`` RLS variables."""
+        user = await s.scalar(
+            select(User).where(User.idp_issuer == claims.issuer, User.idp_subject == claims.subject)
+        )
+        if user is None:
+            if not self.policy.jit_provisioning:
+                raise Unauthorized("Unknown user")
+            user = User(
+                idp_issuer=claims.issuer,
+                idp_subject=claims.subject,
+                email=claims.email,
+                display_name=claims.name,
+            )
+            s.add(user)
+            await s.flush()
+        else:
+            if claims.email and claims.email != user.email:
+                user.email = claims.email
+            if claims.name and claims.name != user.display_name:
+                user.display_name = claims.name
+        user.last_login_at = datetime.now(UTC)
+        await set_variables(
+            s,
+            user_id=str(user.id),
+            user_email=claims.email if (claims.email and claims.email_verified) else "",
+        )
+        return user
+
+    async def accept_invites(self, s: AsyncSession, user: User, claims: IdentityClaims) -> None:
+        """Activate invitations addressed to the user's *verified* email."""
+        if not (claims.email and claims.email_verified):
+            return
+        invites = (
+            await s.scalars(
+                select(Membership).where(
+                    Membership.status == "invited",
+                    func.lower(Membership.invited_email) == claims.email,
+                )
+            )
+        ).all()
+        for invite in invites:
+            invite.user_id = user.id
+            invite.status = "active"
+            await s.flush()
+            add_event(
+                s,
+                Outbox,
+                system_context(invite.tenant_id, str(user.id)),
+                source=SOURCE,
+                type="nexiqon.identity.membership.accepted",
+                subject=str(invite.id),
+                data={"user_id": str(user.id), "role": invite.role},
+            )
+
+    async def _select_tenant(
+        self, s: AsyncSession, user: User, claims: IdentityClaims, selector: str | None
+    ) -> Tenant:
+        tenant: Tenant | None = None
+        if selector:
+            try:
+                tenant_id = uuid.UUID(selector)
+            except ValueError:
+                await set_variables(s, tenant_slug=selector.lower())
+                tenant = await s.scalar(select(Tenant).where(Tenant.slug == selector.lower()))
+            else:
+                await set_variables(s, tenant_id=str(tenant_id))
+                tenant = await s.scalar(select(Tenant).where(Tenant.id == tenant_id))
+        elif claims.org_ref:
+            await set_variables(s, idp_provider=claims.provider, idp_org_ref=claims.org_ref)
+            tenant = await s.scalar(
+                select(Tenant).where(
+                    Tenant.idp_provider == claims.provider, Tenant.idp_org_ref == claims.org_ref
+                )
+            )
+        else:
+            ids = (
+                await s.scalars(
+                    select(Membership.tenant_id).where(
+                        Membership.user_id == user.id, Membership.status == "active"
+                    )
+                )
+            ).all()
+            if len(ids) > 1:
+                raise BadRequest("Several tenants: select one with the X-Nexiqon-Tenant header")
+            if ids:
+                await set_variables(s, tenant_id=str(ids[0]))
+                tenant = await s.scalar(select(Tenant).where(Tenant.id == ids[0]))
+        if tenant is None:
+            raise Forbidden(NOT_MEMBER)
+        await set_variables(s, tenant_id=str(tenant.id))
+        return tenant
+
+    async def resolve_user(self, bearer: str, selector: str | None) -> tuple[str, float]:
+        """Return (context token, cache ttl) for an IdP-authenticated user."""
+        if self.issuer is None:
+            raise Unauthorized("Context token signing is not configured")
+        claims = await self.idp.verify(bearer)
+        async with self.db.scoped(
+            {"idp_issuer": claims.issuer, "idp_subject": claims.subject}
+        ) as s:
+            user = await self.upsert_user(s, claims)
+            await self.accept_invites(s, user, claims)
+            tenant = await self._select_tenant(s, user, claims, selector)
+            membership = await s.scalar(
+                select(Membership).where(
+                    Membership.tenant_id == tenant.id, Membership.user_id == user.id
+                )
+            )
+            if membership is None or membership.status != "active":
+                raise Forbidden(NOT_MEMBER)
+            if tenant.status != "active":
+                raise Forbidden("Tenant is not active")
+            if self.policy.require_admin_mfa and membership.role in ADMIN_ROLES and not claims.mfa:
+                raise Forbidden("Multi-factor authentication is required for administrators")
+            groups = (
+                await s.scalars(
+                    select(Group.name)
+                    .join(GroupMember, GroupMember.group_id == Group.id)
+                    .where(GroupMember.membership_id == membership.id)
+                )
+            ).all()
+        ctx = TenantContext(
+            tenant_id=tenant.id,
+            actor_id=str(user.id),
+            actor_type="user",
+            roles=frozenset({membership.role}),
+            groups=frozenset(groups),
+            region=tenant.region,
+        )
+        ttl = min(float(self.policy.cache_seconds), claims.expires_at - time.time())
+        return self.issuer.issue(ctx), ttl
+
+    # ---------------------------------------------------------------- API keys
+    async def resolve_api_key(self, raw: str, origin: str | None) -> tuple[str, float]:
+        if self.issuer is None:
+            raise Unauthorized("Context token signing is not configured")
+        parsed = apikeys.parse(raw)
+        if parsed is None:
+            raise Unauthorized("Invalid API key")
+        now = datetime.now(UTC)
+        async with self.db.scoped({"api_key_prefix": parsed.prefix}) as s:
+            key = await s.scalar(select(ApiKey).where(ApiKey.prefix == parsed.prefix))
+            if (
+                key is None
+                or key.kind != parsed.kind
+                or not apikeys.matches(parsed.secret, key.secret_hash)
+                or key.revoked_at is not None
+                or (key.expires_at is not None and key.expires_at <= now)
+            ):
+                raise Unauthorized("Invalid API key")
+            if key.kind == "widget" and (origin is None or origin not in key.allowed_origins):
+                raise Forbidden("Origin not allowed for this key")
+            await set_variables(s, tenant_id=str(key.tenant_id))
+            tenant = await s.scalar(select(Tenant).where(Tenant.id == key.tenant_id))
+            if tenant is None or tenant.status != "active":
+                raise Forbidden("Tenant is not active")
+            if key.last_used_at is None or now - key.last_used_at > timedelta(minutes=5):
+                key.last_used_at = now
+            roles = key.roles or (["end_user"] if key.kind == "widget" else ["member"])
+            ctx = TenantContext(
+                tenant_id=key.tenant_id,
+                actor_id=f"key:{key.id}",
+                actor_type="widget" if key.kind == "widget" else "api_key",
+                roles=frozenset(roles),
+                region=tenant.region,
+            )
+        return self.issuer.issue(ctx), float(self.policy.cache_seconds)
+
+    async def context_for(
+        self, authorization: str | None, selector: str | None, origin: str | None
+    ) -> str:
+        """Entry point for the gateway check (Envoy ext_authz)."""
+        if not authorization or not authorization.lower().startswith("bearer "):
+            raise Unauthorized("Missing credentials")
+        credential = authorization[7:].strip()
+        cache_key = TokenCache.key(credential, selector or "", origin or "")
+        cached = self.cache.get(cache_key)
+        if cached is not None:
+            return cached
+        if credential.startswith("nxq_"):
+            token, ttl = await self.resolve_api_key(credential, origin)
+        else:
+            token, ttl = await self.resolve_user(credential, selector)
+        self.cache.put(cache_key, token, ttl)
+        return token

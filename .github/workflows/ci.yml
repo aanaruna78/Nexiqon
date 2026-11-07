@@ -30,6 +30,14 @@ jobs:
       - run: uv run python -m tools.contracts.export_openapi --check
       - run: uv run pytest --cov=libs --cov=services --cov-report=term-missing:skip-covered
 
+  policies:
+    name: Authorization policies (OPA unit tests)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: opa test
+        run: docker run --rm -v "$PWD/services/authz/policies:/policies:ro" openpolicyagent/opa:0.70.0 test /policies -v
+
   contracts-breaking:
     name: Contracts (breaking changes vs base)
     if: github.event_name == 'pull_request'

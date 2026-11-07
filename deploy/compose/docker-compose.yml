@@ -2,21 +2,26 @@
 #
 #   make dev-up                     core infra: postgres, valkey, nats, object storage
 #   make dev-up PROFILES=platform   + temporal, keycloak, openbao, opa
-#   make dev-up PROFILES=apps       + the 6 Nexiqon deployment groups
+#   make dev-up PROFILES=apps       + gateway (:8000), migrations, OPA and the 6 deployment groups
+#   First run: make dev-secrets     (context-token signing keys, git-ignored)
 # Other profiles: observability (Grafana LGTM), scan (ClamAV), models (Ollama). Combine with commas.
 name: nexiqon
 
 x-app: &app
-  image: nexiqon/platform:dev  # built once by control-core, reused by every group
+  image: nexiqon/platform:dev  # built once by the migrate job, reused by every group
   pull_policy: never
   profiles: [apps]
   environment: &app-env
     NEXIQON_ENVIRONMENT: dev
-    NEXIQON_DATABASE_URL: postgresql+asyncpg://nexiqon_app:nexiqon_app_dev@postgres:5432/nexiqon
+    NEXIQON_CONFIG_FILES: /app/config/dev.yaml,/app/config/dev-secrets.yaml
+    NEXIQON_DATABASE__URL: postgresql+asyncpg://nexiqon_app:nexiqon_app_dev@postgres:5432/nexiqon
     NEXIQON_TELEMETRY__ENABLED: "false"
+  volumes:
+    - ./config:/app/config:ro
   depends_on:
     postgres: { condition: service_healthy }
     nats: { condition: service_started }
+    migrate: { condition: service_completed_successfully }
 
 services:
   # ---------- core infrastructure (always on) ----------
@@ -79,11 +84,14 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
     profiles: [platform]
-    command: ["start-dev"]
+    command: ["start-dev", "--import-realm"]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin_dev
+      KC_HOSTNAME: http://localhost:8080   # issuer seen by browsers and by Nexiqon
     ports: ["8080:8080"]
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
 
   openbao:
     image: openbao/openbao:2.1.0
@@ -96,9 +104,11 @@ services:
 
   opa:
     image: openpolicyagent/opa:0.70.0
-    profiles: [platform]
-    command: ["run", "--server", "--addr=0.0.0.0:8181"]
+    profiles: [platform, apps]
+    command: ["run", "--server", "--addr=0.0.0.0:8181", "--watch", "/policies"]
     ports: ["8181:8181"]
+    volumes:
+      - ../../services/authz/policies:/policies:ro
 
   # ---------- optional ----------
   lgtm:
@@ -117,13 +127,33 @@ services:
     ports: ["11434:11434"]
     volumes: [ollama:/root/.ollama]
 
-  # ---------- Nexiqon deployment groups (deploy/groups.yaml) ----------
-  control-core:
-    <<: *app
+  # ---------- Nexiqon: gateway, migrations, deployment groups (deploy/groups.yaml) ----------
+  gateway:
+    image: envoyproxy/envoy:v1.40.0
+    profiles: [apps]
+    command: ["-c", "/etc/envoy/envoy.yaml", "--log-level", "warn"]
+    ports: ["8000:8080", "9901:9901"]
+    volumes:
+      - ./envoy.yaml:/etc/envoy/envoy.yaml:ro
+    depends_on: [control-core]
+
+  migrate:
+    # Builds the shared platform image, then runs every service's migrations once.
+    image: nexiqon/platform:dev
     pull_policy: build
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile
+    profiles: [apps]
+    entrypoint: ["nexiqon-migrate", "all"]
+    environment:
+      NEXIQON_DATABASE__MIGRATION_URL: postgresql+asyncpg://nexiqon:nexiqon_dev@postgres:5432/nexiqon
+      NEXIQON_GROUPS_FILE: /app/deploy/groups.yaml
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  control-core:
+    <<: *app
     environment: { <<: *app-env, NEXIQON_GROUP: control-core }
     ports: ["8101:8000"]
   control-ops:

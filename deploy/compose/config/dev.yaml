@@ -1,0 +1,13 @@
+# Non-secret settings layer for the local stack (NEXIQON_CONFIG_FILES). Secrets: dev-secrets.yaml.
+environment: dev
+log_json: false
+require_admin_mfa: false          # local Keycloak users have no MFA
+context_cache_seconds: 30
+opa_url: http://opa:8181
+idp_providers:
+  - name: keycloak
+    kind: keycloak
+    # Browser-facing issuer (KC_HOSTNAME); JWKS fetched over the compose network.
+    issuer: http://localhost:8080/realms/nexiqon
+    jwks_url: http://keycloak:8080/realms/nexiqon/protocol/openid-connect/certs
+    audiences: []

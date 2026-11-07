@@ -72,6 +72,15 @@ class ContextTokenSettings(BaseModel):
     leeway_seconds: int = 5
 
 
+class DatabaseSettings(BaseModel):
+    """Each service owns one schema. Apps connect as a non-owner role so FORCE RLS applies."""
+
+    url: SecretStr | None = None  # app role, e.g. postgresql+asyncpg://nexiqon_app:...@host/db
+    migration_url: SecretStr | None = None  # schema owner, used only by migrations
+    app_role: str = "nexiqon_app"
+    pool_size: int = 5
+
+
 class TelemetrySettings(BaseModel):
     enabled: bool = False
     otlp_endpoint: str | None = None  # e.g. http://otel-collector:4318
@@ -90,10 +99,12 @@ class CoreSettings(BaseSettings):
     environment: Literal["dev", "test", "staging", "prod"] = "dev"
     log_level: str = "INFO"
     log_json: bool = True
-    database_url: SecretStr | None = None
     groups_file: Path = Path("deploy/groups.yaml")
     context_token: ContextTokenSettings = Field(default_factory=ContextTokenSettings)
     telemetry: TelemetrySettings = Field(default_factory=TelemetrySettings)
+    database: DatabaseSettings = Field(default_factory=DatabaseSettings)
+    # Base URL of the authz service; derived from deploy/groups.yaml when unset.
+    authz_url: str | None = None
 
     @classmethod
     def settings_customise_sources(

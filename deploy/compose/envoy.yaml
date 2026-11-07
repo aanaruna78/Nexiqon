@@ -1,0 +1,145 @@
+# Edge gateway for local development (PL-01). Mirrors what Envoy Gateway does on Kubernetes:
+#   1. strip any client-supplied X-Nexiqon-Context header,
+#   2. ext_authz: identity turns the IdP token / API key into a signed tenant-context token,
+#   3. route /<service>/... to the service's deployment group (deploy/groups.yaml).
+# Internal-only services (authz, model-gateway) and /identity/internal/* are never routed.
+static_resources:
+  listeners:
+    - name: public
+      address:
+        socket_address: { address: 0.0.0.0, port_value: 8080 }
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: public
+                use_remote_address: true
+                generate_request_id: true
+                route_config:
+                  name: nexiqon
+                  virtual_hosts:
+                    - name: nexiqon
+                      domains: ["*"]
+                      routes:
+                        # Gateway's own health check.
+                        - match: { path: /gateway/healthz }
+                          direct_response: { status: 200, body: { inline_string: "ok" } }
+                          typed_per_filter_config: &no_authz
+                            envoy.filters.http.ext_authz:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                              disabled: true
+                        # Never exposed.
+                        - match: { prefix: /identity/internal/ }
+                          direct_response: { status: 404 }
+                          typed_per_filter_config: *no_authz
+                        - match: { prefix: /authz/ }
+                          direct_response: { status: 404 }
+                          typed_per_filter_config: *no_authz
+                        - match: { prefix: /model-gateway/ }
+                          direct_response: { status: 404 }
+                          typed_per_filter_config: *no_authz
+                        # Identity endpoints that authenticate the IdP token themselves.
+                        - match: { prefix: /identity/v1/session/ }
+                          route: { cluster: control-core }
+                          typed_per_filter_config: *no_authz
+                        - match: { prefix: /identity/v1/webhooks/ }
+                          route: { cluster: control-core }
+                          typed_per_filter_config: *no_authz
+                        - match: { prefix: /identity/.well-known/ }
+                          route: { cluster: control-core }
+                          typed_per_filter_config: *no_authz
+                        # Everything else requires a tenant context.
+                        - match: { prefix: /identity/ }
+                          route: { cluster: control-core }
+                        - match: { prefix: /config/ }
+                          route: { cluster: control-core }
+                        - match: { prefix: /audit/ }
+                          route: { cluster: control-core }
+                        - match: { prefix: /evaluation/ }
+                          route: { cluster: control-ops }
+                        - match: { prefix: /metering/ }
+                          route: { cluster: control-ops }
+                        - match: { prefix: /governance/ }
+                          route: { cluster: control-ops }
+                        - match: { prefix: /notification/ }
+                          route: { cluster: control-ops }
+                        - match: { prefix: /ingestion/ }
+                          route: { cluster: knowledge }
+                        - match: { prefix: /retrieval/ }
+                          route: { cluster: knowledge }
+                        - match: { prefix: /agent-runtime/ }
+                          route: { cluster: agent }
+                        - match: { prefix: /conversation/ }
+                          route: { cluster: agent }
+                        - match: { prefix: /channel/ }
+                          route: { cluster: agent }
+                        - match: { prefix: /tool-gateway/ }
+                          route: { cluster: tool-gateway }
+                http_filters:
+                  - name: envoy.filters.http.header_mutation
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.header_mutation.v3.HeaderMutation
+                      mutations:
+                        request_mutations:
+                          - remove: x-nexiqon-context
+                  - name: envoy.filters.http.ext_authz
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+                      transport_api_version: V3
+                      failure_mode_allow: false
+                      http_service:
+                        server_uri:
+                          uri: http://control-core:8000
+                          cluster: control-core
+                          timeout: 2s
+                        path_prefix: /identity/internal/ext-authz
+                        authorization_request:
+                          allowed_headers:
+                            patterns:
+                              - exact: authorization
+                              - exact: x-nexiqon-tenant
+                              - exact: origin
+                        authorization_response:
+                          allowed_upstream_headers:
+                            patterns:
+                              - exact: x-nexiqon-context
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+  clusters:
+    - name: control-core
+      type: STRICT_DNS
+      connect_timeout: 2s
+      load_assignment:
+        cluster_name: control-core
+        endpoints: [{ lb_endpoints: [{ endpoint: { address: { socket_address: { address: control-core, port_value: 8000 } } } }] }]
+    - name: control-ops
+      type: STRICT_DNS
+      connect_timeout: 2s
+      load_assignment:
+        cluster_name: control-ops
+        endpoints: [{ lb_endpoints: [{ endpoint: { address: { socket_address: { address: control-ops, port_value: 8000 } } } }] }]
+    - name: knowledge
+      type: STRICT_DNS
+      connect_timeout: 2s
+      load_assignment:
+        cluster_name: knowledge
+        endpoints: [{ lb_endpoints: [{ endpoint: { address: { socket_address: { address: knowledge, port_value: 8000 } } } }] }]
+    - name: agent
+      type: STRICT_DNS
+      connect_timeout: 2s
+      load_assignment:
+        cluster_name: agent
+        endpoints: [{ lb_endpoints: [{ endpoint: { address: { socket_address: { address: agent, port_value: 8000 } } } }] }]
+    - name: tool-gateway
+      type: STRICT_DNS
+      connect_timeout: 2s
+      load_assignment:
+        cluster_name: tool-gateway
+        endpoints: [{ lb_endpoints: [{ endpoint: { address: { socket_address: { address: tool-gateway, port_value: 8000 } } } }] }]
+
+admin:
+  address:
+    socket_address: { address: 0.0.0.0, port_value: 9901 }

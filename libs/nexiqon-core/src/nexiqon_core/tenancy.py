@@ -43,9 +43,10 @@ def current_context() -> TenantContext | None:
     return _current.get()
 
 
-def require_current_context() -> TenantContext:
-    ctx = _current.get()
-    if ctx is None:
+def require_current_context(request: Request) -> TenantContext:
+    """FastAPI dependency: the context verified for *this* request (never a stale one)."""
+    ctx = getattr(request.state, "tenant_context", None)
+    if not isinstance(ctx, TenantContext):
         raise Unauthorized("No tenant context")
     return ctx
 
@@ -134,6 +135,7 @@ def tenant_context_dependency(verifier: ContextTokenVerifier) -> Any:
         ctx = verifier.verify(token)
         _current.set(ctx)
         request.state.tenant_context = ctx
+        request.state.context_token = token  # forwarded on service-to-service calls
         return ctx
 
     return dependency

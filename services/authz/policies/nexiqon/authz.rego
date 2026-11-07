@@ -1,0 +1,92 @@
+# Nexiqon authorization policy (ADR 0008).
+#
+# input = {
+#   "actor":    {"tenant_id", "id", "type": user|service|api_key|widget, "roles": [..], "groups": [..]},
+#   "action":   "<service>.<resource>.<verb>",          e.g. "identity.members.write"
+#   "resource": {"type", "id"?, "tenant_id"?, "attributes"?}
+# }
+# Deny by default. Same tenant is always required. Permissions are globs with "." as delimiter:
+# "*" matches one segment, "**" any number.
+package nexiqon.authz
+
+import rego.v1
+
+# Role -> permission globs. Owner-only actions are excluded from admin by `owner_only`.
+role_permissions := {
+	"owner": ["**"],
+	"admin": ["**"],
+	"editor": [
+		"**.read",
+		"config.**",
+		"knowledge.**",
+		"ingestion.**",
+		"retrieval.**",
+		"agent.**",
+		"conversation.**",
+		"evaluation.**",
+		"tool.definitions.read",
+	],
+	"member": ["**.read", "conversation.**", "agent.query.run"],
+	"end_user": ["agent.query.run", "conversation.messages.create", "conversation.own.read"],
+	"service": ["**"],
+}
+
+# Actions only an owner may perform, whatever other roles grant.
+owner_only := {
+	"identity.tenant.delete",
+	"identity.owners.write",
+	"governance.tenant.delete",
+	"governance.tenant.export",
+	"config.security_floors.write",
+}
+
+# Actor types that may never hold administrative permissions, even if a role says so.
+restricted_actor_types := {"widget"}
+
+resource_tenant := object.get(input.resource, "tenant_id", input.actor.tenant_id)
+
+same_tenant if resource_tenant == input.actor.tenant_id
+
+granting_roles contains role if {
+	some role in input.actor.roles
+	some pattern in role_permissions[role]
+	glob.match(pattern, ["."], input.action)
+}
+
+owner_check_ok if not input.action in owner_only
+
+owner_check_ok if {
+	input.action in owner_only
+	"owner" in input.actor.roles
+}
+
+actor_type_ok if not input.actor.type in restricted_actor_types
+
+actor_type_ok if {
+	input.actor.type in restricted_actor_types
+	input.action in {"agent.query.run", "conversation.messages.create", "conversation.own.read"}
+}
+
+default allow := false
+
+allow if {
+	same_tenant
+	count(granting_roles) > 0
+	owner_check_ok
+	actor_type_ok
+}
+
+reasons contains "cross-tenant resource" if not same_tenant
+
+reasons contains "no role grants this action" if count(granting_roles) == 0
+
+reasons contains "owner-only action" if not owner_check_ok
+
+reasons contains "actor type not permitted" if not actor_type_ok
+
+reasons contains sprintf("granted by role %s", [role]) if {
+	allow
+	some role in granting_roles
+}
+
+decision := {"allow": allow, "reasons": sort(reasons)}

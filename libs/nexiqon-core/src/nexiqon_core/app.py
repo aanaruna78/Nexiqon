@@ -8,9 +8,12 @@ from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from typing import Any, Literal
 
 import structlog
-from fastapi import APIRouter, FastAPI, Request, Response
+from fastapi import APIRouter, Depends, FastAPI, Request, Response
 from fastapi.responses import JSONResponse
+from fastapi.routing import APIRoute
 
+from nexiqon_core.authz import Authorizer, HttpAuthorizer
+from nexiqon_core.directory import Topology
 from nexiqon_core.errors import install_error_handlers
 from nexiqon_core.lifecycle import NoTenantData, TenantLifecycle
 from nexiqon_core.logging import configure_logging
@@ -35,11 +38,13 @@ def create_service_app(
     readiness_checks: dict[str, ReadinessCheck] | None = None,
     lifecycle: TenantLifecycle | None = None,
     lifespan: Lifespan | None = None,
+    authorizer: Authorizer | None = None,
 ) -> FastAPI:
     """Build a FastAPI app with the chassis wired in.
 
-    ``routers`` are public to the gateway (e.g. metadata); ``tenant_routers`` require a verified
-    tenant-context token on every route.
+    ``routers`` are reachable without a tenant context (each such route must be deliberate:
+    the isolation harness lists them); ``tenant_routers`` require a verified tenant-context token
+    on every route. ``authorizer`` defaults to the authz service resolved from the topology.
     """
     settings = settings or CoreSettings(service_name=name)
     configure_logging(name, settings.log_level, settings.log_json)
@@ -47,13 +52,19 @@ def create_service_app(
 
     @asynccontextmanager
     async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
-        structlog.get_logger().info("service_starting", version=version, plane=plane)
-        if lifespan is not None:
-            async with lifespan(app):
+        log = structlog.get_logger().bind(service=name)
+        log.info("service_starting", version=version, plane=plane)
+        try:
+            if lifespan is not None:
+                async with lifespan(app):
+                    yield
+            else:
                 yield
-        else:
-            yield
-        structlog.get_logger().info("service_stopped")
+        finally:
+            closer = getattr(app.state.authorizer, "aclose", None)
+            if closer is not None:
+                await closer()
+            log.info("service_stopped")
 
     app = FastAPI(title=f"nexiqon-{name}", version=version, lifespan=_lifespan)
     app.state.settings = settings
@@ -61,6 +72,7 @@ def create_service_app(
     app.state.plane = plane
     app.state.lifecycle = lifecycle or NoTenantData(name)
     app.state.readiness_checks = checks
+    app.state.authorizer = authorizer or _default_authorizer(settings)
     install_error_handlers(app)
 
     @app.middleware("http")
@@ -69,11 +81,11 @@ def create_service_app(
     ) -> Response:
         rid = request.headers.get(REQUEST_ID_HEADER) or uuid.uuid4().hex
         request.state.request_id = rid
-        structlog.contextvars.bind_contextvars(request_id=rid)
+        structlog.contextvars.bind_contextvars(request_id=rid, service=name)
         try:
             response = await call_next(request)
         finally:
-            structlog.contextvars.unbind_contextvars("request_id")
+            structlog.contextvars.unbind_contextvars("request_id", "service")
         response.headers[REQUEST_ID_HEADER] = rid
         return response
 
@@ -92,14 +104,15 @@ def create_service_app(
     async def meta() -> dict[str, str]:
         return {"service": name, "version": version, "plane": plane}
 
+    public_paths: set[str] = {"/healthz", "/readyz", "/meta"}
     for router in routers:
         app.include_router(router)
+        public_paths.update(r.path for r in router.routes if isinstance(r, APIRoute))
     if tenant_routers:
-        from fastapi import Depends
-
         dep = tenant_context_dependency(ContextTokenVerifier(settings.context_token))
         for router in tenant_routers:
             app.include_router(router, dependencies=[Depends(dep)])
+    app.state.public_paths = frozenset(public_paths)
 
     configure_telemetry(app, name, version, settings.telemetry)
     return app
@@ -113,3 +126,13 @@ async def run_readiness(checks: dict[str, ReadinessCheck]) -> dict[str, bool]:
         except Exception:  # a failing check means "not ready", never a crash
             results[check_name] = False
     return results
+
+
+def _default_authorizer(settings: CoreSettings) -> Authorizer:
+    url = settings.authz_url
+    if url is None:
+        try:
+            url = Topology.load(settings.groups_file).url_for("authz")
+        except (OSError, KeyError):
+            url = "http://authz:8000/authz"
+    return HttpAuthorizer(url)

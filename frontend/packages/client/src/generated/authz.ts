@@ -21,20 +21,20 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/context": {
+    "/v1/decisions": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * Context
-         * @description Echo the verified tenant context (skeleton endpoint used by isolation smoke tests).
-         */
-        get: operations["context_v1_context_get"];
+        get?: never;
         put?: never;
-        post?: never;
+        /**
+         * Decide
+         * @description Evaluate whether the calling actor may perform ``action`` on ``resource``.
+         */
+        post: operations["decide_v1_decisions_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -45,14 +45,49 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** ContextEcho */
-        ContextEcho: {
-            /** Actor Id */
-            actor_id: string;
-            /** Actor Type */
-            actor_type: string;
+        /** Decision */
+        Decision: {
+            /** Allow */
+            allow: boolean;
+            /** Reasons */
+            reasons?: string[];
+        };
+        /** DecisionRequest */
+        DecisionRequest: {
+            /** Action */
+            action: string;
+            resource: components["schemas"]["Resource"];
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
+        };
+        /** Resource */
+        Resource: {
+            /** Attributes */
+            attributes?: {
+                [key: string]: unknown;
+            };
+            /** Id */
+            id?: string | null;
             /** Tenant Id */
-            tenant_id: string;
+            tenant_id?: string | null;
+            /** Type */
+            type: string;
+        };
+        /** ValidationError */
+        ValidationError: {
+            /** Context */
+            ctx?: Record<string, never>;
+            /** Input */
+            input?: unknown;
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
         };
     };
     responses: never;
@@ -85,14 +120,18 @@ export interface operations {
             };
         };
     };
-    context_v1_context_get: {
+    decide_v1_decisions_post: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -100,7 +139,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ContextEcho"];
+                    "application/json": components["schemas"]["Decision"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

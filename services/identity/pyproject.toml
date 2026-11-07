@@ -3,7 +3,7 @@ name = "nexiqon-identity"
 version = "0.1.0"
 description = "Tenants, users, memberships, IdP adapters and tenant-context tokens"
 requires-python = ">=3.12,<3.14"
-dependencies = ["nexiqon-core"]
+dependencies = ["nexiqon-core", "pydantic[email]>=2.10"]
 
 [tool.uv.sources]
 nexiqon-core = { workspace = true }
