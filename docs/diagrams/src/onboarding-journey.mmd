@@ -1,0 +1,16 @@
+flowchart LR
+  classDef dark fill:#12233F,stroke:#12233F,color:#FFFFFF
+  classDef warm fill:#FDF1D6,stroke:#E0B04C,color:#12233F
+
+  S(["Sign up"]) --> P["Pick Domain Pack<br/>e.g. SaaS Knowledge Assistant"]
+  P --> SRC["Paste docs URL<br/>or drop files"]
+  SRC --> CR["Crawl + index<br/>live progress"]
+  CR --> Q["Suggested starter<br/>questions"]
+  Q --> T["Test in Playground<br/>cited answers"]
+  T --> E["Copy embed snippet"]
+  E --> L(["Live on site"])
+
+  TGT["Target: under 10 minutes, unassisted"]
+
+  class S,L dark
+  class TGT warm

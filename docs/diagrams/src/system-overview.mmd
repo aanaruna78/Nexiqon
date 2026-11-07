@@ -1,0 +1,67 @@
+flowchart TB
+  classDef dark fill:#12233F,stroke:#12233F,color:#FFFFFF
+  classDef warm fill:#FDF1D6,stroke:#E0B04C,color:#12233F
+
+  subgraph CLI["Clients"]
+    direction TB
+    W["Chat widget"]
+    API["REST API clients"]
+    ST["Studio (admin UI)"]
+  end
+
+  subgraph EDGE["Edge"]
+    GW["Gateway · TLS · JWT validation · rate limits · WAF"]
+  end
+
+  subgraph CP["Control plane"]
+    direction TB
+    ID["identity"]
+    AZ["authz (OPA)"]
+    CF["config / registry"]
+    AU["audit"]
+    EVL["evaluation"]
+    MT["metering"]
+    GV["governance"]
+    NT["notification"]
+  end
+
+  subgraph DP["Data plane"]
+    direction TB
+    CH["channel"]
+    CV["conversation"]
+    AG["agent-runtime"]
+    RT["retrieval"]
+    IN["ingestion"]
+    TG["tool-gateway"]
+    MG["model-gateway"]
+  end
+
+  subgraph INF["Portable infrastructure"]
+    direction TB
+    PG[("PostgreSQL + pgvector")]
+    OS[("S3-compatible storage")]
+    VK[("Valkey")]
+    NATS[["NATS JetStream"]]
+    TMP[["Temporal"]]
+    SEC[("OpenBao")]
+  end
+
+  subgraph EXT["External systems"]
+    direction TB
+    IDP["Clerk / Keycloak / Auth0"]
+    LLM["Frontier LLMs / vLLM"]
+    CAPI["Customer APIs"]
+  end
+
+  CLI --> EDGE
+  EDGE --> CP
+  EDGE --> DP
+  CP -. "config + policy" .-> DP
+  DP -. "events" .-> CP
+  CP --> INF
+  DP --> INF
+  CP --> EXT
+  DP --> EXT
+
+  class W,API,ST,GW dark
+  class IDP,LLM,CAPI warm

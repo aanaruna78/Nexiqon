@@ -1,0 +1,15 @@
+flowchart LR
+  classDef dark fill:#12233F,stroke:#12233F,color:#FFFFFF
+  classDef warm fill:#FDF1D6,stroke:#E0B04C,color:#12233F
+
+  REQ["Request<br/>+ data classification"] --> MG{"model-gateway<br/>routing rules +<br/>tenant data policy"}
+  MG -->|"public / general"| CLOUD["Cloud frontier profile<br/>OpenAI · Anthropic · Gemini"]
+  MG -->|"confidential, or cloud<br/>forbidden by policy"| ONP["On-prem profile (vLLM)<br/>Qwen MoE standard · Qwen3-8B small"]
+  CLOUD --> ACC["Budgets · PII redaction ·<br/>usage + cost events"]
+  ONP --> ACC
+
+  EMB["Embeddings: always 1024-d<br/>text-embedding-3-small @1024<br/>or Qwen3-Embedding-0.6B"]
+  RR["Reranker (optional)<br/>Qwen3-Reranker-0.6B"]
+
+  class REQ dark
+  class EMB,RR warm

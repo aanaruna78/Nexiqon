@@ -1,0 +1,15 @@
+stateDiagram-v2
+  [*] --> Draft
+  Draft --> Validating: save
+  Validating --> Draft: schema or security-floor error
+  Validating --> Evaluating: valid
+  Evaluating --> Draft: below release threshold
+  Evaluating --> Published: thresholds met (immutable version)
+  Published --> Staging: promote
+  Staging --> Production: promote
+  Production --> Production: rollback to earlier version
+  Production --> [*]: retired
+  note right of Evaluating
+    Eval + isolation suites run automatically.
+    Studio shows config diff and score diff.
+  end note

@@ -1,0 +1,19 @@
+flowchart LR
+  classDef dark fill:#12233F,stroke:#12233F,color:#FFFFFF
+  classDef warm fill:#FDF1D6,stroke:#E0B04C,color:#12233F
+  classDef block fill:#FBE3E3,stroke:#C0392B,color:#12233F
+
+  A["Tenant A user"] --> GW
+  B["Tenant B user"] --> GW
+  GW["Gateway<br/>verify IdP JWT"] --> ID["identity<br/>membership lookup"]
+  ID --> TOK["Tenant-context token<br/>signed · short-lived · audience-scoped"]
+  TOK --> SVC["Every service<br/>re-verifies token"]
+  SVC --> AZ["authz decision<br/>role · resource · action"]
+  SVC --> RLS["SET LOCAL app.tenant_id<br/>RLS with FORCE"]
+  RLS --> DA[("Tenant A data")]
+  RLS --x|"blocked"| DB[("Tenant B data")]
+  AZ --> LLM["LLM sees only authorized,<br/>minimized context"]
+
+  class A,B,GW dark
+  class DA warm
+  class DB block

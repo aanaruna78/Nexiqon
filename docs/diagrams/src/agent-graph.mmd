@@ -1,0 +1,22 @@
+flowchart TB
+  classDef dark fill:#12233F,stroke:#12233F,color:#FFFFFF
+  classDef warm fill:#FDF1D6,stroke:#E0B04C,color:#12233F
+
+  START(["Authenticated request"]) --> ROUTE{"route<br/>intent + policy check"}
+  ROUTE -->|"knowledge"| RET["retrieve<br/>authorized sources"]
+  ROUTE -->|"account / action"| RISK{"write or<br/>high risk?"}
+  ROUTE -->|"unclear"| CLAR["clarify"]
+  RISK -->|"yes"| APP["approve<br/>human confirmation"]
+  RISK -->|"no"| EXEC["call_tool<br/>via tool-gateway"]
+  APP --> EXEC
+  RET --> VAL{"validate_evidence"}
+  EXEC --> VAL
+  VAL -->|"sufficient"| RESP(["respond<br/>with citations"])
+  VAL -->|"insufficient"| CLAR
+  CLAR -->|"answered"| ROUTE
+  CLAR -->|"still unresolved"| ESC(["escalate<br/>with handoff summary"])
+
+  NOTE["Graph and nodes are defined in the Domain Pack;<br/>agent-runtime compiles them to LangGraph"]
+
+  class START,RESP dark
+  class ESC,NOTE warm

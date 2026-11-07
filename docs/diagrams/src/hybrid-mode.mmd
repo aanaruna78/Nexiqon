@@ -1,0 +1,44 @@
+flowchart TB
+  classDef dark fill:#12233F,stroke:#12233F,color:#FFFFFF
+  classDef warm fill:#FDF1D6,stroke:#E0B04C,color:#12233F
+
+  BR["Admin browser"]
+
+  subgraph TH["ThinkHive cloud · control plane"]
+    ST["Studio shell<br/>metadata only"]
+    CF["config + authz bundles"]
+    ID["identity"]
+    MT["metering<br/>redacted"]
+  end
+
+  subgraph CU["Customer environment · data plane"]
+    DGW["Data-plane gateway"]
+    SYNC["Sync agent<br/>outbound only"]
+    AG["agent-runtime"]
+    RT["retrieval"]
+    IN["ingestion"]
+    TG["tool-gateway"]
+    MG["model-gateway"]
+    DB[("Postgres / pgvector<br/>object storage")]
+    V["vLLM<br/>on-prem models"]
+    CAPI["Internal APIs"]
+  end
+
+  FR["Frontier LLM<br/>only if policy allows"]
+
+  BR -->|"config and metadata"| ST
+  BR -->|"documents, conversations, Inspector detail"| DGW
+  DGW --> AG
+  AG --> RT
+  AG --> TG
+  AG --> MG
+  IN --> DB
+  RT --> DB
+  TG --> CAPI
+  MG --> V
+  MG -.-> FR
+  SYNC -->|"pull config snapshots + policy bundles"| CF
+  SYNC -->|"push redacted telemetry + usage"| MT
+
+  class BR dark
+  class V,CAPI,FR warm

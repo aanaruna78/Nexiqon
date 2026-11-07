@@ -1,0 +1,18 @@
+flowchart LR
+  classDef dark fill:#12233F,stroke:#12233F,color:#FFFFFF
+  classDef warm fill:#FDF1D6,stroke:#E0B04C,color:#12233F
+
+  CODE["One codebase<br/>Helm umbrella chart · Compose · offline bundle"]
+
+  CODE --> S1["Shared SaaS"]
+  CODE --> S2["Dedicated SaaS"]
+  CODE --> S3["Hybrid"]
+  CODE --> S4["Private"]
+
+  S1 --> D1["Control + data plane: ThinkHive cloud<br/>pooled tenants + RLS"]
+  S2 --> D2["Control + data plane: ThinkHive cloud<br/>dedicated DB / storage / namespace"]
+  S3 --> D3["Control plane: ThinkHive cloud<br/>Data plane: customer cloud or DC"]
+  S4 --> D4["Both planes customer-hosted<br/>air-gapped capable"]
+
+  class CODE dark
+  class D1,D2,D3,D4 warm

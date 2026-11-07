@@ -1,0 +1,22 @@
+flowchart LR
+  classDef dark fill:#12233F,stroke:#12233F,color:#FFFFFF
+  classDef bad fill:#FBE3E3,stroke:#C0392B,color:#12233F
+
+  subgraph SVC["Any service · one DB transaction"]
+    TX["Business write"]
+    OBX[("Outbox row")]
+    TX --> OBX
+  end
+
+  OBX --> RELAY["Outbox relay"]
+  RELAY --> BUS[["NATS JetStream<br/>CloudEvents + tenant context"]]
+  BUS --> C1["audit<br/>hash-chained log"]
+  BUS --> C2["metering<br/>usage + cost"]
+  BUS --> C3["governance<br/>retention triggers"]
+  BUS --> C4["evaluation<br/>feedback → test sets"]
+  BUS -. "retries exhausted" .-> DLQ[["Dead-letter queue"]]
+
+  NOTE["Consumers are idempotent;<br/>redelivery has no duplicate effect"]
+
+  class BUS dark
+  class DLQ bad

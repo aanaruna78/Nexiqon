@@ -1,0 +1,17 @@
+flowchart LR
+  classDef dark fill:#12233F,stroke:#12233F,color:#FFFFFF
+  classDef bad fill:#FBE3E3,stroke:#C0392B,color:#12233F
+
+  BAD["Bad or low-confidence<br/>answer"] --> INS["Answer Inspector<br/>sources · ACL · tools · model · cost"]
+  INS --> FIX{"Choose fix"}
+  FIX -->|"missing info"| A1["Add Q&A snippet"]
+  FIX -->|"wrong or stale source"| A2["Edit or mark outdated"]
+  FIX -->|"behaviour"| A3["Adjust prompt<br/>or guardrail"]
+  A1 --> RE["Re-test instantly"]
+  A2 --> RE
+  A3 --> RE
+  RE --> EV["Save as eval case"]
+  EV --> GATE(["Protected by<br/>release gate"])
+
+  class BAD bad
+  class GATE dark

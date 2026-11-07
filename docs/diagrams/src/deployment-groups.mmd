@@ -1,0 +1,42 @@
+flowchart LR
+  classDef svc fill:#D8F0EC,stroke:#0E8A7E,color:#12233F
+
+  subgraph G1["edge"]
+    gw["gateway"]
+  end
+  subgraph G2["control-core"]
+    id["identity"]
+    az["authz"]
+    cf["config"]
+    au["audit"]
+  end
+  subgraph G3["control-ops"]
+    ev["evaluation"]
+    mt["metering"]
+    gv["governance"]
+    nt["notification"]
+  end
+  subgraph G4["knowledge"]
+    inn["ingestion"]
+    rt["retrieval"]
+  end
+  subgraph G5["agent"]
+    ag["agent-runtime"]
+    cv["conversation"]
+    ch["channel"]
+  end
+  subgraph G6["tool-gateway"]
+    tg["tool-gateway"]
+  end
+  subgraph G7["model-gateway"]
+    mg["model-gateway"]
+  end
+
+  G1 --> G2
+  G1 --> G5
+  G5 --> G4
+  G5 --> G6
+  G5 --> G7
+  G4 --> G7
+
+  class gw,id,az,cf,au,ev,mt,gv,nt,inn,rt,ag,cv,ch,tg,mg svc

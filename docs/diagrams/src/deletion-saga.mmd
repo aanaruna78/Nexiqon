@@ -1,0 +1,28 @@
+sequenceDiagram
+  autonumber
+  participant A as Tenant admin (Studio)
+  participant GV as governance
+  participant T as Temporal
+  participant IN as ingestion
+  participant RT as retrieval
+  participant CV as conversation
+  participant OT as other services
+  participant AU as audit
+
+  A->>GV: request tenant deletion
+  GV->>AU: record request
+  GV->>T: start DeleteTenant workflow
+  par fan-out
+    T->>IN: tenant.delete (files, versions, objects)
+    T->>RT: tenant.delete (chunks, vectors, caches)
+    T->>CV: tenant.delete (conversations, checkpoints)
+    T->>OT: tenant.delete (usage detail, traces, tools)
+  end
+  IN-->>T: confirmed
+  RT-->>T: confirmed
+  CV-->>T: confirmed
+  OT-->>T: confirmed
+  T->>T: verify no residue (isolation probes)
+  T-->>GV: completed (backups expire per policy)
+  GV->>AU: record completion
+  GV-->>A: deletion status + certificate

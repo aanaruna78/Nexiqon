@@ -1,0 +1,33 @@
+flowchart LR
+  classDef dark fill:#12233F,stroke:#12233F,color:#FFFFFF
+  classDef ux fill:#FDF1D6,stroke:#E0B04C,color:#12233F
+
+  A["Chassis + template<br/>+ contracts"] --> B["identity"]
+  B --> C["authz"]
+  C --> D["config<br/>packs + layering"]
+  A --> E["events + Temporal<br/>+ tracing + isolation harness"]
+  D --> F["ingestion"]
+  F --> G["retrieval"]
+  D --> H["model-gateway"]
+  G --> I["agent-runtime"]
+  H --> I
+  E --> I
+  I --> J["tool-gateway"]
+  J --> K["conversation<br/>+ handoff"]
+  I --> L["evaluation"]
+  L --> M["release gate"]
+  M --> N["hybrid mode"]
+
+  subgraph UXT["UX track (parallel)"]
+    U1["Design system"] --> U2["Studio shell"]
+    U2 --> U3["Knowledge UI"]
+    U3 --> U4["Builder + Inspector"]
+    U4 --> U5["Widget + onboarding"]
+  end
+
+  K --> PG(["Pilot gate"])
+  N --> PG
+  U5 --> PG
+
+  class A,PG dark
+  class U1,U2,U3,U4,U5 ux

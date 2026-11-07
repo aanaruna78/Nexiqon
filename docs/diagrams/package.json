@@ -1,0 +1,11 @@
+{
+  "name": "nexiqon-diagrams",
+  "private": true,
+  "description": "Renders Mermaid sources in src/ to SVG for the docs",
+  "scripts": {
+    "render": "node render.mjs"
+  },
+  "devDependencies": {
+    "@mermaid-js/mermaid-cli": "11.4.2"
+  }
+}

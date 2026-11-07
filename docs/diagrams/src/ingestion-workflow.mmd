@@ -1,0 +1,28 @@
+flowchart LR
+  classDef dark fill:#12233F,stroke:#12233F,color:#FFFFFF
+  classDef warm fill:#FDF1D6,stroke:#E0B04C,color:#12233F
+  classDef bad fill:#FBE3E3,stroke:#C0392B,color:#12233F
+
+  S["Source connector<br/>upload · crawler · S3 · Git"] --> F["Fetch<br/>SSRF-safe fetcher"]
+  F --> SC{"Malware scan<br/>+ type/size checks"}
+  SC -->|"clean"| P["Parse<br/>page + section coordinates"]
+  SC -->|"infected / invalid"| Q["Quarantine"]
+  P --> TR["Build document tree<br/>document › section › chunk (ltree)"]
+  TR --> N["Normalize + chunk<br/>profile from config"]
+  N --> SUM["Summary nodes<br/>section + document (optional, P1)"]
+  N --> E["Embed<br/>via model-gateway (1024-d)"]
+  SUM --> E
+  E --> I["Index<br/>HNSW + FTS + ACL + tree path + version"]
+  I --> A["Activate version<br/>atomic swap"]
+  A --> R["Retrievable"]
+
+  D["Replace / delete / model change"] --> X["Propagate: chunks, vectors,<br/>objects, caches · reindex"]
+  X --> I
+
+  T[["Temporal workflow: retries, soft-fail, resumable, progress events"]]
+  T -.-> F
+  T -.-> E
+
+  class S,R dark
+  class D,X warm
+  class Q bad

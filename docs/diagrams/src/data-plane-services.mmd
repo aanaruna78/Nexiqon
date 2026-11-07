@@ -1,0 +1,25 @@
+flowchart LR
+  classDef dark fill:#12233F,stroke:#12233F,color:#FFFFFF
+  classDef warm fill:#FDF1D6,stroke:#E0B04C,color:#12233F
+  classDef ctrl fill:#F4F7FA,stroke:#9FB3C8,color:#12233F
+
+  GW["Gateway"] --> CH["channel<br/>widget · API · SSE"]
+  CH --> AG["agent-runtime<br/>declarative LangGraph"]
+  AG --> RT["retrieval<br/>hybrid search · ACL · citations"]
+  AG --> TG["tool-gateway<br/>schemas · secrets · approvals"]
+  AG --> MG["model-gateway<br/>routing · budgets · redaction"]
+  AG --> CV["conversation<br/>sessions · provenance · handoff"]
+  RT --> MG
+  IN["ingestion<br/>connectors · parse · chunk · embed"] --> MG
+  IN --> PG[("Postgres + pgvector")]
+  RT --> PG
+  IN --> OS[("Object storage")]
+  TG --> CAPI["Customer APIs"]
+  MG --> LLM["LLM providers / vLLM"]
+  AG -. "decide()" .-> AZ["authz"]
+  TG -. "decide()" .-> AZ
+  CF["config snapshot"] -. "agent, graph, tools, profiles" .-> AG
+
+  class GW dark
+  class CAPI,LLM warm
+  class AZ,CF ctrl

@@ -1,0 +1,33 @@
+flowchart LR
+  classDef core fill:#12233F,stroke:#12233F,color:#FFFFFF
+  classDef port fill:#D8F0EC,stroke:#0E8A7E,color:#12233F
+  classDef later fill:#F4F7FA,stroke:#9FB3C8,color:#5B7A99,stroke-dasharray:4 3
+
+  CORE["Service core<br/>domain-agnostic logic"]
+
+  CORE --> P1["Vector store port"]
+  CORE --> P2["Object storage port"]
+  CORE --> P3["Event bus port"]
+  CORE --> P4["Secrets / KMS port"]
+  CORE --> P5["Model provider port"]
+  CORE --> P6["Identity provider port"]
+  CORE --> P7["Workflow port"]
+  CORE --> P8["Observability port"]
+
+  P1 --> A1["pgvector"]
+  P1 --> A1b["Qdrant / OpenSearch / Milvus"]
+  P2 --> A2["S3 · Spaces · GCS · SeaweedFS"]
+  P2 --> A2b["Azure Blob"]
+  P3 --> A3["NATS JetStream"]
+  P3 --> A3b["Kafka / Redpanda"]
+  P4 --> A4["OpenBao / Vault"]
+  P4 --> A4b["Cloud secret managers"]
+  P5 --> A5["OpenAI-compatible: OpenAI, vLLM, Ollama"]
+  P5 --> A5c["Anthropic · Gemini"]
+  P6 --> A6["Clerk · Keycloak · Auth0 · OIDC"]
+  P7 --> A7["Temporal"]
+  P8 --> A8["OpenTelemetry → any OTLP backend"]
+
+  class CORE core
+  class P1,P2,P3,P4,P5,P6,P7,P8 port
+  class A1b,A2b,A3b later

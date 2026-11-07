@@ -1,0 +1,41 @@
+sequenceDiagram
+  autonumber
+  participant U as End user (widget)
+  participant GW as Gateway
+  participant ID as identity
+  participant CH as channel
+  participant AG as agent-runtime
+  participant AZ as authz
+  participant RT as retrieval
+  participant TG as tool-gateway
+  participant MG as model-gateway
+  participant CV as conversation
+
+  U->>GW: message + widget token
+  GW->>ID: validate token, resolve membership
+  ID-->>GW: tenant-context token (tenant, actor, roles, groups)
+  GW->>CH: forward with context token
+  CH->>AG: run published agent version
+  AG->>AZ: decide(actor, agent.query, agent)
+  AZ-->>AG: allow
+  alt knowledge intent
+    AG->>RT: search(query)
+    RT->>RT: tenant + ACL filter BEFORE ranking
+    RT->>MG: embed / rerank
+    RT-->>AG: authorized chunks only
+  else account or action intent
+    AG->>AZ: decide(actor, tool.invoke, tool)
+    AG->>TG: invoke(tool, typed args)
+    TG->>TG: schema check, secrets, egress allowlist
+    TG-->>AG: minimized result
+  end
+  AG->>MG: generate grounded answer
+  MG-->>AG: answer + citations
+  AG->>AG: verify citations and evidence threshold
+  alt sufficient evidence
+    AG->>CV: persist with provenance + trace_id
+    AG-->>CH: stream answer + citations
+  else insufficient evidence
+    AG-->>CH: clarify or escalate to human
+  end
+  CH-->>U: SSE stream

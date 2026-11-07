@@ -1,0 +1,36 @@
+flowchart LR
+  classDef dark fill:#12233F,stroke:#12233F,color:#FFFFFF
+  classDef warm fill:#FDF1D6,stroke:#E0B04C,color:#12233F
+  classDef sum fill:#EDE7F6,stroke:#7E57C2,color:#12233F
+
+  subgraph TREE["Document tree in Postgres (ltree path + parent_id, RLS)"]
+    D["Document<br/>billing-guide v3"]
+    S1["Section<br/>Billing › Invoices"]
+    S2["Section<br/>Billing › Refunds"]
+    C1["chunk"]
+    C2["chunk"]
+    C3["chunk"]
+    C4["chunk"]
+    SD["Summary node<br/>document (P1)"]
+    SS["Summary node<br/>section (P1)"]
+    D --> S1
+    D --> S2
+    S1 --> C1
+    S1 --> C2
+    S2 --> C3
+    S2 --> C4
+    D -.-> SD
+    S2 -.-> SS
+  end
+
+  Q["User question"] --> F["Tenant + ACL filter<br/>before ranking"]
+  F --> H["Hybrid search<br/>HNSW vectors + FTS<br/>over chunks and summaries"]
+  H --> X["Small-to-big<br/>expand hit to parent section"]
+  X --> R["Rerank + dedupe"]
+  R --> A["Grounded answer<br/>citation: Billing › Refunds, p.4"]
+  H -. "matches" .-> C3
+  X -. "expands to" .-> S2
+
+  class Q,A dark
+  class SD,SS sum
+  class F warm

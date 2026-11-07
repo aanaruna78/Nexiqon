@@ -1,0 +1,18 @@
+flowchart TB
+  classDef floor fill:#FBE3E3,stroke:#C0392B,color:#12233F
+  classDef dark fill:#12233F,stroke:#12233F,color:#FFFFFF
+
+  L1["1 · Platform defaults"] --> L2["2 · Deployment"]
+  L2 --> L3["3 · Region"]
+  L3 --> L4["4 · Tenant"]
+  L4 --> L5["5 · Domain Pack"]
+  L5 --> L6["6 · Agent"]
+  L6 --> L7["7 · Channel"]
+  L7 --> L8["8 · Environment overrides"]
+  L8 --> R["Resolved configuration<br/>(most specific wins)"]
+
+  F["Security floors<br/>may tighten, never loosen<br/>e.g. write tools need approval,<br/>allowed model providers, PII redaction"]
+  F -. "enforced at every layer" .-> R
+
+  class F floor
+  class R dark
