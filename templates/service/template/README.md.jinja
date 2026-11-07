@@ -1,0 +1,14 @@
+# {{ service_name }}
+
+{{ description }}. Plane: **{{ plane }}**.
+
+Generated from `templates/service`; see `docs/plan/ARCHITECTURE.md` for this service's responsibilities.
+
+* App factory: `{{ package_name }}.main:create_app`
+* Served under `/{{ service_name }}` (grouped or split, see `deploy/groups.yaml`)
+* Tenant lifecycle hooks: `{{ package_name }}/lifecycle.py` (replace the stub once the service stores tenant data)
+
+```bash
+uv run pytest services/{{ service_name }}
+uv run nexiqon-run --services {{ service_name }}
+```

@@ -1,0 +1,5 @@
+# Changes here will be overwritten by Copier. Do not edit manually.
+_src_path: ../../templates/service
+description: Hybrid search, ACL filtering, small-to-big expansion and citation verification
+plane: data
+service_name: retrieval

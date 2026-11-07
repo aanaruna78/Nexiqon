@@ -1,0 +1,27 @@
+# Nexiqon service template. Usage: make new-service NAME=<kebab-name> PLANE=<control|data>
+_subdirectory: template
+_templates_suffix: .jinja
+_answers_file: .copier-answers.yml
+
+service_name:
+  type: str
+  help: Service name in kebab-case (e.g. tool-gateway)
+  validator: >-
+    {% if service_name != service_name | lower or ' ' in service_name or '_' in service_name %}
+    Use lowercase kebab-case, e.g. tool-gateway
+    {% endif %}
+
+plane:
+  type: str
+  help: Which plane does the service belong to?
+  choices: [control, data]
+
+description:
+  type: str
+  help: One-line description
+  default: "Nexiqon {{ service_name }} service"
+
+package_name:
+  type: str
+  default: "nexiqon_{{ service_name | replace('-', '_') }}"
+  when: false

@@ -1,0 +1,5 @@
+# Changes here will be overwritten by Copier. Do not edit manually.
+_src_path: ../../templates/service
+description: Tenants, users, memberships, IdP adapters and tenant-context tokens
+plane: control
+service_name: identity

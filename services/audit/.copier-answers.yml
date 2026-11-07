@@ -1,0 +1,5 @@
+# Changes here will be overwritten by Copier. Do not edit manually.
+_src_path: ../../templates/service
+description: Append-only, hash-chained audit log
+plane: control
+service_name: audit

@@ -1,0 +1,154 @@
+# Local development stack. NOT for production (dev credentials, single nodes, no TLS).
+#
+#   make dev-up                     core infra: postgres, valkey, nats, object storage
+#   make dev-up PROFILES=platform   + temporal, keycloak, openbao, opa
+#   make dev-up PROFILES=apps       + the 6 Nexiqon deployment groups
+# Other profiles: observability (Grafana LGTM), scan (ClamAV), models (Ollama). Combine with commas.
+name: nexiqon
+
+x-app: &app
+  image: nexiqon/platform:dev  # built once by control-core, reused by every group
+  pull_policy: never
+  profiles: [apps]
+  environment: &app-env
+    NEXIQON_ENVIRONMENT: dev
+    NEXIQON_DATABASE_URL: postgresql+asyncpg://nexiqon_app:nexiqon_app_dev@postgres:5432/nexiqon
+    NEXIQON_TELEMETRY__ENABLED: "false"
+  depends_on:
+    postgres: { condition: service_healthy }
+    nats: { condition: service_started }
+
+services:
+  # ---------- core infrastructure (always on) ----------
+  postgres:
+    image: pgvector/pgvector:0.8.0-pg16
+    environment:
+      POSTGRES_DB: nexiqon
+      POSTGRES_USER: nexiqon
+      POSTGRES_PASSWORD: nexiqon_dev
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres-init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexiqon -d nexiqon"]
+      interval: 5s
+      retries: 20
+
+  valkey:
+    image: valkey/valkey:8.0-alpine
+    ports: ["6379:6379"]
+
+  nats:
+    image: nats:2.15.1-alpine
+    command: ["-js", "-sd", "/data", "-m", "8222"]
+    ports: ["4222:4222", "8222:8222"]
+    volumes: [natsdata:/data]
+
+  objectstore:
+    # S3-compatible storage (SeaweedFS). Any S3 API works through the storage port.
+    image: chrislusf/seaweedfs:4.48
+    command: ["server", "-dir=/data", "-s3", "-s3.port=8333", "-s3.config=/etc/seaweedfs/s3.json"]
+    ports: ["8333:8333"]
+    volumes:
+      - s3data:/data
+      - ./seaweedfs-s3.json:/etc/seaweedfs/s3.json:ro
+
+  # ---------- platform services ----------
+  temporal:
+    image: temporalio/auto-setup:1.26.2
+    profiles: [platform]
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: nexiqon
+      POSTGRES_PWD: nexiqon_dev
+      POSTGRES_SEEDS: postgres
+    ports: ["7233:7233"]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  temporal-ui:
+    image: temporalio/ui:2.34.0
+    profiles: [platform]
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+    ports: ["8233:8080"]
+    depends_on: [temporal]
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    profiles: [platform]
+    command: ["start-dev"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin_dev
+    ports: ["8080:8080"]
+
+  openbao:
+    image: openbao/openbao:2.1.0
+    profiles: [platform]
+    environment:
+      BAO_DEV_ROOT_TOKEN_ID: nexiqon-dev-root
+      BAO_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    cap_add: [IPC_LOCK]
+    ports: ["8200:8200"]
+
+  opa:
+    image: openpolicyagent/opa:0.70.0
+    profiles: [platform]
+    command: ["run", "--server", "--addr=0.0.0.0:8181"]
+    ports: ["8181:8181"]
+
+  # ---------- optional ----------
+  lgtm:
+    image: grafana/otel-lgtm:0.8.1
+    profiles: [observability]
+    ports: ["3000:3000", "4317:4317", "4318:4318"]
+
+  clamav:
+    image: clamav/clamav:1.4
+    profiles: [scan]
+    ports: ["3310:3310"]
+
+  ollama:
+    image: ollama/ollama:0.5.7
+    profiles: [models]
+    ports: ["11434:11434"]
+    volumes: [ollama:/root/.ollama]
+
+  # ---------- Nexiqon deployment groups (deploy/groups.yaml) ----------
+  control-core:
+    <<: *app
+    pull_policy: build
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+    environment: { <<: *app-env, NEXIQON_GROUP: control-core }
+    ports: ["8101:8000"]
+  control-ops:
+    <<: *app
+    environment: { <<: *app-env, NEXIQON_GROUP: control-ops }
+    ports: ["8102:8000"]
+  knowledge:
+    <<: *app
+    environment: { <<: *app-env, NEXIQON_GROUP: knowledge }
+    ports: ["8103:8000"]
+  agent:
+    <<: *app
+    environment: { <<: *app-env, NEXIQON_GROUP: agent }
+    ports: ["8104:8000"]
+  tool-gateway:
+    <<: *app
+    environment: { <<: *app-env, NEXIQON_GROUP: tool-gateway }
+    ports: ["8105:8000"]
+  model-gateway:
+    <<: *app
+    environment: { <<: *app-env, NEXIQON_GROUP: model-gateway }
+    ports: ["8106:8000"]
+
+volumes:
+  pgdata:
+  natsdata:
+  s3data:
+  ollama:

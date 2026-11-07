@@ -1,0 +1,37 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+        exclude: \.svg$
+      - id: trailing-whitespace
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+        exclude: ^templates/
+      - id: check-added-large-files
+        args: [--maxkb=2048]
+      - id: detect-private-key
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.2
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+  - repo: local
+    hooks:
+      - id: architecture
+        name: architecture rules
+        entry: uv run python tools/lint/check_architecture.py
+        language: system
+        pass_filenames: false
+        files: ^(libs|services)/.*\.py$
+      - id: contracts
+        name: contracts up to date
+        entry: uv run python -m tools.contracts.export_openapi --check
+        language: system
+        pass_filenames: false
+        files: ^(libs|services)/.*\.py$

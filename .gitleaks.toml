@@ -1,0 +1,10 @@
+# Local-development credentials in deploy/compose are intentionally fake and dev-only.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "dev-only compose credentials and test fixtures"
+paths = [
+  '''deploy/compose/.*''',
+  '''libs/nexiqon-core/tests/.*''',
+]

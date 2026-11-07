@@ -1,0 +1,5 @@
+# Changes here will be overwritten by Copier. Do not edit manually.
+_src_path: ../../templates/service
+description: LLM, embedding and reranker providers with routing, budgets and redaction
+plane: data
+service_name: model-gateway

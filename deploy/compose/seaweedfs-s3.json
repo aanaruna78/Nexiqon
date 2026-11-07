@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "nexiqon-dev",
+      "credentials": [{ "accessKey": "nexiqon-dev", "secretKey": "nexiqon-dev-secret" }],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}

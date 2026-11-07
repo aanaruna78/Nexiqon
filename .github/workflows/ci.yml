@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python (lint, types, architecture, contracts, tests)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.13.0"
+          enable-cache: true
+      - run: uv sync --all-packages --frozen
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy libs/nexiqon-core/src services/*/src
+      - run: uv run python tools/lint/check_architecture.py
+      - run: uv run python -m tools.contracts.export_openapi --check
+      - run: uv run pytest --cov=libs --cov=services --cov-report=term-missing:skip-covered
+
+  contracts-breaking:
+    name: Contracts (breaking changes vs base)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Compare OpenAPI contracts with oasdiff
+        run: |
+          base="origin/${{ github.base_ref }}"
+          mkdir -p /tmp/base
+          status=0
+          for f in contracts/openapi/*.json; do
+            name=$(basename "$f")
+            git show "$base:contracts/openapi/$name" > "/tmp/base/$name" 2>/dev/null || continue
+            docker run --rm -v /tmp/base:/base -v "$PWD/contracts/openapi":/head tufin/oasdiff:v1.34.1 \
+              breaking "/base/$name" "/head/$name" --fail-on ERR || status=1
+          done
+          exit $status
+
+  frontend:
+    name: Frontend (lint, types, tests, build)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Generated API types are up to date
+        run: pnpm generate && git diff --exit-code -- packages/client
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  security:
+    name: Security (secrets, dependencies, filesystem)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.13.0"
+      - name: pip-audit
+        run: |
+          uv export --frozen --all-packages --no-dev --no-hashes --no-emit-workspace -o /tmp/requirements.txt
+          uvx pip-audit -r /tmp/requirements.txt --strict
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          severity: CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+
+  image:
+    name: Container image (build, smoke test, scan)
+    runs-on: ubuntu-24.04
+    needs: python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/Dockerfile
+          tags: nexiqon/platform:ci
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Smoke test a group
+        run: |
+          docker run -d --name grp -p 8000:8000 -e NEXIQON_GROUP=control-core nexiqon/platform:ci
+          for i in $(seq 1 30); do curl -fs localhost:8000/healthz && break; sleep 1; done
+          curl -fs localhost:8000/identity/meta
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: nexiqon/platform:ci
+          severity: CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true

@@ -1,0 +1,5 @@
+# Changes here will be overwritten by Copier. Do not edit manually.
+_src_path: ../../templates/service
+description: Sessions, messages, provenance, feedback and escalations
+plane: data
+service_name: conversation

@@ -1,0 +1,5 @@
+# Changes here will be overwritten by Copier. Do not edit manually.
+_src_path: ../../templates/service
+description: Retention, tenant deletion/export sagas and data-subject requests
+plane: control
+service_name: governance

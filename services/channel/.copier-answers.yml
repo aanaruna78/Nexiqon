@@ -1,0 +1,5 @@
+# Changes here will be overwritten by Copier. Do not edit manually.
+_src_path: ../../templates/service
+description: Channel adapters (web widget, API) and session bootstrap
+plane: data
+service_name: channel

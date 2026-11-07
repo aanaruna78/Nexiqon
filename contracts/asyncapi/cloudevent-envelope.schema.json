@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexiqon.dev/schemas/cloudevent-envelope.json",
+  "title": "Nexiqon CloudEvent envelope",
+  "description": "Every event on the bus. Produced by nexiqon_core.events.OutboxEvent.to_cloudevent().",
+  "type": "object",
+  "required": ["specversion", "id", "type", "source", "time", "nexiqontenantid", "nexiqonactorid", "data"],
+  "properties": {
+    "specversion": {"const": "1.0"},
+    "id": {"type": "string", "format": "uuid"},
+    "type": {"type": "string", "pattern": "^nexiqon\\.[a-z-]+\\.[a-z_]+\\.[a-z_]+$"},
+    "source": {"type": "string"},
+    "subject": {"type": "string"},
+    "time": {"type": "string", "format": "date-time"},
+    "datacontenttype": {"const": "application/json"},
+    "nexiqontenantid": {"type": "string", "format": "uuid"},
+    "nexiqonactorid": {"type": "string"},
+    "data": {"type": "object"}
+  },
+  "additionalProperties": false
+}

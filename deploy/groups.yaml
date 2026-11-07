@@ -1,0 +1,26 @@
+# Deployment topology: 15 Python services packaged into 6 groups (+ the edge gateway,
+# which is infrastructure: Envoy Gateway on Kubernetes). See docs/plan/REVIEW.md (F1).
+#
+# mode: grouped -> each group is one deployable; split -> every service is its own deployable.
+# Override at runtime with NEXIQON_TOPOLOGY_MODE. Moving a service between groups is config only.
+mode: grouped
+port: 8000
+groups:
+  control-core:
+    plane: control
+    services: [identity, authz, config, audit]
+  control-ops:
+    plane: control
+    services: [evaluation, metering, governance, notification]
+  knowledge:
+    plane: data
+    services: [ingestion, retrieval]
+  agent:
+    plane: data
+    services: [agent-runtime, conversation, channel]
+  tool-gateway:
+    plane: data
+    services: [tool-gateway]
+  model-gateway:
+    plane: data
+    services: [model-gateway]

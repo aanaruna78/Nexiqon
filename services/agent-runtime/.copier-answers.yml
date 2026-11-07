@@ -1,0 +1,5 @@
+# Changes here will be overwritten by Copier. Do not edit manually.
+_src_path: ../../templates/service
+description: Declarative LangGraph agent execution
+plane: data
+service_name: agent-runtime

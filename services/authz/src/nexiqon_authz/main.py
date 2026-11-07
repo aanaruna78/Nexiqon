@@ -1,0 +1,27 @@
+"""Policy decisions (OPA) for role, resource and action authorization."""
+
+from typing import Final
+
+from fastapi import FastAPI
+
+from nexiqon_authz import __version__
+from nexiqon_authz.api import public_router, tenant_router
+from nexiqon_authz.lifecycle import lifecycle
+from nexiqon_authz.settings import ServiceSettings
+from nexiqon_core.app import create_service_app
+
+SERVICE_NAME: Final = "authz"
+PLANE: Final = "control"
+
+
+def create_app(settings: ServiceSettings | None = None) -> FastAPI:
+    settings = settings or ServiceSettings()
+    return create_service_app(
+        name=SERVICE_NAME,
+        version=__version__,
+        plane=PLANE,
+        settings=settings,
+        routers=[public_router],
+        tenant_routers=[tenant_router],
+        lifecycle=lifecycle(SERVICE_NAME),
+    )
