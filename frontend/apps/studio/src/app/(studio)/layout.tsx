@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/shell/app-shell";
 import { currentSession, currentTenant } from "@/lib/server/auth/current";
+import { studioEnv } from "@/lib/server/env";
 import { loadMemberships } from "@/lib/server/studio";
 
 export default async function StudioLayout({ children }: LayoutProps<"/">) {
@@ -14,7 +15,7 @@ export default async function StudioLayout({ children }: LayoutProps<"/">) {
   const active = memberships.find((m) => m.tenant_slug === selected || m.tenant_id === selected);
   if (!active) redirect("/select-org");
   return (
-    <AppShell user={session.user} memberships={memberships} active={active}>
+    <AppShell user={session.user} memberships={memberships} active={active} environment={studioEnv().environment}>
       {children}
     </AppShell>
   );

@@ -21,6 +21,7 @@ import { useErrorToast } from "@/lib/hooks";
 
 import { type KindInfo, kindVisual, type ObjectSummary, useKinds } from "./configuration";
 import { StatusBadge } from "@/components/visual/status-badge";
+import { Hint } from "@/components/visual/hint";
 
 const ENVIRONMENTS = ["dev", "staging", "prod"] as const;
 
@@ -64,6 +65,7 @@ export function ConfigEditor({ kind, name }: { kind: string; name: string }) {
 function EditorBody({ kind, name, info, object, initialSpec }: { kind: string; name: string; info: KindInfo; object?: ObjectSummary; initialSpec: Record<string, unknown> }) {
   const t = useTranslations("config");
   const tc = useTranslations("common");
+  const th = useTranslations("hints");
   const router = useRouter();
   const queryClient = useQueryClient();
   const onError = useErrorToast();
@@ -170,9 +172,13 @@ function EditorBody({ kind, name, info, object, initialSpec }: { kind: string; n
             <p className="text-sm font-medium">{t("versions")}</p>
             <div className="flex flex-wrap gap-1">
               {object.versions.map((v) => (
-                <StatusBadge key={v.version} tone={v.status === "published" ? "navy" : "amber"}>
-                  v{v.version} · {t(`statuses.${v.status}`)}
-                </StatusBadge>
+                <Hint key={v.version} label={th(v.status === "published" ? "publishedVersion" : "draftVersion")}>
+                  <span className="inline-flex">
+                    <StatusBadge tone={v.status === "published" ? "navy" : "amber"}>
+                      v{v.version} · {t(`statuses.${v.status}`)}
+                    </StatusBadge>
+                  </span>
+                </Hint>
               ))}
             </div>
           </div>
@@ -180,7 +186,11 @@ function EditorBody({ kind, name, info, object, initialSpec }: { kind: string; n
             <p className="text-sm font-medium">{t("deployments")}</p>
             <div className="flex gap-1">
               {Object.keys(object.deployments).length ? Object.entries(object.deployments).map(([e, v]) => (
-                <StatusBadge key={e} tone="teal" live>{e} v{v}</StatusBadge>
+                <Hint key={e} label={th("liveIn")}>
+                  <span className="inline-flex">
+                    <StatusBadge tone="teal" live>{e} v{v}</StatusBadge>
+                  </span>
+                </Hint>
               )) : <span className="text-sm text-muted-foreground">{t("notDeployed")}</span>}
             </div>
           </div>

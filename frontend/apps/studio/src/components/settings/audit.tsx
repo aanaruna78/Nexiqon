@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api, ApiError } from "@/lib/api";
 import { Avatar } from "@/components/visual/avatar";
+import { Hint } from "@/components/visual/hint";
 import { toneClasses, type Tone } from "@/components/visual/icon-tile";
 import { cn } from "@/lib/utils";
 
@@ -52,6 +53,7 @@ interface Verification {
 
 export function AuditPage() {
   const t = useTranslations("audit");
+  const th = useTranslations("hints");
   const format = useFormatter();
   const [filter, setFilter] = useState("");
   const type = useDeferredValue(filter.trim());
@@ -96,10 +98,12 @@ export function AuditPage() {
         icon={ScrollText}
         tone="sky"
         actions={
-          <Button variant="outline" className="bg-card shadow-sm" onClick={() => verify.mutate()} disabled={verify.isPending} data-testid="verify-chain">
-            <ShieldCheck className="size-4" aria-hidden="true" />
-            {verify.isPending ? t("verifying") : t("verify")}
-          </Button>
+          <Hint label={th("verifyChain")} side="bottom">
+            <Button variant="outline" className="bg-card shadow-sm" onClick={() => verify.mutate()} disabled={verify.isPending} data-testid="verify-chain">
+              <ShieldCheck className="size-4" aria-hidden="true" />
+              {verify.isPending ? t("verifying") : t("verify")}
+            </Button>
+          </Hint>
         }
       />
       {verify.data ? (
@@ -143,7 +147,13 @@ export function AuditPage() {
                       <span className="truncate">{actorName(e.actor_id)}</span>
                     </span>
                   </TableCell>
-                  <TableCell className="hidden lg:table-cell"><code dir="ltr" className="text-xs text-muted-foreground">{e.trace_id ? e.trace_id.slice(0, 12) : "—"}</code></TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    {e.trace_id ? (
+                      <Hint label={<span className="grid gap-1"><span>{th("traceId")}</span><code className="break-all font-mono text-[11px]" dir="ltr">{e.trace_id}</code></span>}>
+                        <code dir="ltr" tabIndex={0} className="cursor-help rounded text-xs text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">{e.trace_id.slice(0, 12)}…</code>
+                      </Hint>
+                    ) : "—"}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

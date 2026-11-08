@@ -31,6 +31,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { api } from "@/lib/api";
 import { useErrorToast } from "@/lib/hooks";
 import { Avatar } from "@/components/visual/avatar";
+import { Hint } from "@/components/visual/hint";
 import { StatusBadge } from "@/components/visual/status-badge";
 import type { Tone } from "@/components/visual/icon-tile";
 
@@ -52,6 +53,7 @@ const ROLES = ["owner", "admin", "editor", "member"] as const;
 export function MembersPage() {
   const t = useTranslations("members");
   const tc = useTranslations("common");
+  const th = useTranslations("hints");
   const format = useFormatter();
   const params = useSearchParams();
   const { isAdmin, isOwner, user } = useStudio();
@@ -153,17 +155,27 @@ export function MembersPage() {
                     )}
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
-                    <StatusBadge tone={STATUS_TONE[m.status]} live={m.status === "invited"}>{t(`statuses.${m.status}`)}</StatusBadge>
+                    {m.status === "active" ? (
+                      <StatusBadge tone="teal">{t("statuses.active")}</StatusBadge>
+                    ) : (
+                      <Hint label={th(m.status === "invited" ? "invitedStatus" : "disabledStatus")}>
+                        <span className="inline-flex">
+                          <StatusBadge tone={STATUS_TONE[m.status]} live={m.status === "invited"}>{t(`statuses.${m.status}`)}</StatusBadge>
+                        </span>
+                      </Hint>
+                    )}
                   </TableCell>
                   <TableCell className="hidden text-muted-foreground md:table-cell">{format.dateTime(new Date(m.created_at), { dateStyle: "medium" })}</TableCell>
                   <TableCell>
                     {editable ? (
                       <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" aria-label={`${t("remove")}: ${label}`}>
-                            <Trash2 className="size-4" aria-hidden="true" />
-                          </Button>
-                        </AlertDialogTrigger>
+                        <Hint label={th("removeMember")}>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" aria-label={`${t("remove")}: ${label}`}>
+                              <Trash2 className="size-4" aria-hidden="true" />
+                            </Button>
+                          </AlertDialogTrigger>
+                        </Hint>
                         <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>{t("removeTitle", { name: label })}</AlertDialogTitle>

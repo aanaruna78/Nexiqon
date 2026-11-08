@@ -32,6 +32,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import { useErrorToast } from "@/lib/hooks";
 import { IconTile } from "@/components/visual/icon-tile";
+import { Hint } from "@/components/visual/hint";
 import { StatusBadge } from "@/components/visual/status-badge";
 
 interface ApiKey {
@@ -49,6 +50,7 @@ interface ApiKey {
 export function ApiKeysPage() {
   const t = useTranslations("apiKeys");
   const tc = useTranslations("common");
+  const th = useTranslations("hints");
   const format = useFormatter();
   // Explicit "now" (refreshed every minute) keeps "5 minutes ago" consistent and up to date.
   const now = useNow({ updateInterval: 60_000 });
@@ -131,9 +133,11 @@ export function ApiKeysPage() {
                     <StatusBadge tone="slate">{t("revokedLabel")}</StatusBadge>
                   ) : isAdmin ? (
                     <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" aria-label={`${t("revoke")}: ${k.name}`}>{t("revoke")}</Button>
-                      </AlertDialogTrigger>
+                      <Hint label={th("revokeKey")}>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="hover:text-destructive" aria-label={`${t("revoke")}: ${k.name}`}>{t("revoke")}</Button>
+                        </AlertDialogTrigger>
+                      </Hint>
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>{t("revokeTitle", { name: k.name })}</AlertDialogTitle>
@@ -239,6 +243,7 @@ function CreateKeyDialog({ open, onOpenChange, onCreated }: { open: boolean; onO
 function SecretDialog({ secret, onDone }: { secret: string | null; onDone: () => void }) {
   const t = useTranslations("apiKeys");
   const tc = useTranslations("common");
+  const th = useTranslations("hints");
   return (
     <Dialog open={secret !== null} onOpenChange={() => undefined}>
       <DialogContent onEscapeKeyDown={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()} showCloseButton={false}>
@@ -248,17 +253,19 @@ function SecretDialog({ secret, onDone }: { secret: string | null; onDone: () =>
         </DialogHeader>
         <div className="flex gap-2">
           <Input readOnly dir="ltr" value={secret ?? ""} aria-label={t("prefix")} className="font-mono text-xs" data-testid="key-secret" onFocus={(e) => e.target.select()} />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={async () => {
-              await navigator.clipboard.writeText(secret ?? "");
-              toast.success(tc("copied"));
-            }}
-          >
-            <Copy className="size-4" aria-hidden="true" />
-            {t("copySecret")}
-          </Button>
+          <Hint label={th("copyKey")}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={async () => {
+                await navigator.clipboard.writeText(secret ?? "");
+                toast.success(tc("copied"));
+              }}
+            >
+              <Copy className="size-4" aria-hidden="true" />
+              {t("copySecret")}
+            </Button>
+          </Hint>
         </div>
         <DialogFooter>
           <Button onClick={onDone}>{t("stored")}</Button>

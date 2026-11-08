@@ -138,6 +138,24 @@ test.describe.serial("Studio", () => {
     await a11y(page, "coming soon");
   });
 
+  test("sidebar explains each section in a tooltip and shows planned ones as Soon", async () => {
+    await page.goto("/");
+    const knowledge = page.getByRole("link", { name: /Knowledge/ }).first();
+    await expect(knowledge).toContainText("Soon");
+    await page.getByRole("link", { name: /API keys/ }).first().hover();
+    await expect(page.getByRole("tooltip")).toContainText("Keys for your backend and website widget");
+  });
+
+  test("help dialog lists keyboard shortcuts", async () => {
+    await page.goto("/");
+    await page.getByRole("button", { name: /Help & shortcuts/ }).click();
+    const dialog = page.getByRole("dialog", { name: "Keyboard shortcuts" });
+    await expect(dialog).toContainText("Open the command palette");
+    await a11y(page, "help dialog");
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+  });
+
   test("Arabic switches the whole UI to right-to-left", async () => {
     await page.goto("/");
     await openPalette(page);

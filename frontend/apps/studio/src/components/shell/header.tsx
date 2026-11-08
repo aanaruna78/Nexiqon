@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Hint } from "@/components/visual/hint";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 import { openCommandMenu } from "./command-menu";
@@ -35,7 +36,9 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/80 px-3 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:px-4">
-      <SidebarTrigger className="-ms-1" aria-label={t("shell.toggleSidebar")} />
+      <Hint label={t("shell.collapse")} side="bottom">
+        <SidebarTrigger className="-ms-1" aria-label={t("shell.toggleSidebar")} />
+      </Hint>
       <Separator orientation="vertical" className="me-2 h-4" />
       <Breadcrumb aria-label={t("shell.breadcrumb")} className="min-w-0 flex-1">
         <BreadcrumbList>
@@ -66,11 +69,13 @@ export function Header() {
           ) : null}
         </BreadcrumbList>
       </Breadcrumb>
+      <Hint label={`${t("shell.search")} (Ctrl+K)`} side="bottom">
       <Button variant="outline" size="sm" className="gap-2 rounded-full bg-card/60 text-muted-foreground shadow-sm" onClick={openCommandMenu} data-testid="command-button">
         <Search className="size-4" aria-hidden="true" />
         <span className="sr-only sm:not-sr-only">{t("shell.openCommand")}</span>
         <kbd aria-hidden="true" className="pointer-events-none hidden rounded border bg-muted px-1.5 font-mono text-[10px] sm:inline">⌘K</kbd>
       </Button>
+      </Hint>
     </header>
   );
 }

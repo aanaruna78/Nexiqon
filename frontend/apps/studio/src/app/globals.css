@@ -229,3 +229,10 @@
 /* Button press feedback (all buttons) */
 button:not(:disabled):active, a[data-slot="button"]:active { transform: scale(0.98); }
 button, a[data-slot="button"] { transition-property: color, background-color, border-color, box-shadow, transform; }
+
+/* Sidebar depth: subtle vertical gradient and a faint top glow over the navy surface. */
+[data-sidebar="sidebar"] {
+  background-image:
+    radial-gradient(120% 40% at 0% 0%, color-mix(in srgb, var(--sidebar-primary) 14%, transparent), transparent 60%),
+    linear-gradient(180deg, color-mix(in srgb, var(--sidebar) 100%, white 3%), var(--sidebar));
+}

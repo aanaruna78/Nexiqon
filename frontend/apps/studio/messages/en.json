@@ -70,7 +70,28 @@
     "account": "Account",
     "toggleSidebar": "Toggle sidebar",
     "breadcrumb": "Breadcrumb",
-    "orgSwitched": "Switched to {name}"
+    "orgSwitched": "Switched to {name}",
+    "soon": "Soon",
+    "soonHint": "Planned for {phase}",
+    "search": "Search",
+    "help": "Help & shortcuts",
+    "helpTitle": "Keyboard shortcuts",
+    "helpBody": "Work faster from the keyboard anywhere in Studio.",
+    "shortcutPalette": "Open the command palette",
+    "shortcutSidebar": "Collapse or expand the sidebar",
+    "shortcutClose": "Close a dialog or menu",
+    "shortcutSkip": "First Tab: skip to main content",
+    "version": "Version {version}",
+    "environment": "Environment",
+    "environments": {
+      "development": "Dev",
+      "staging": "Staging",
+      "production": "Prod"
+    },
+    "environmentHint": "You are working in the {name} environment",
+    "roleHint": "Your role in this organization",
+    "accountHint": "Theme, language and sign out",
+    "collapse": "Collapse sidebar (Ctrl+B)"
   },
   "home": {
     "title": "Welcome to Nexiqon Studio",
@@ -262,5 +283,34 @@
     "add": "Add",
     "removeItem": "Remove {item}",
     "itemPlaceholder": "Type and press Enter"
+  },
+  "navHints": {
+    "home": "Your setup progress and quick actions",
+    "assistants": "Create and publish assistants from Domain Packs",
+    "knowledge": "Websites and files your assistants answer from",
+    "playground": "Test answers and see why each one was given",
+    "domainPacks": "Vocabulary, intents, prompts and guardrails for your domain",
+    "conversations": "Review conversations and handle escalations",
+    "insights": "Quality, content gaps, usage and cost",
+    "evaluations": "Test sets and version comparisons before publishing",
+    "actions": "Your APIs as tools, with safe confirmations",
+    "members": "Invite people and set what they can do",
+    "apiKeys": "Keys for your backend and website widget",
+    "configuration": "Versioned settings: draft, publish, deploy",
+    "audit": "Tamper-evident record of every change",
+    "organization": "Name and defaults for this organization"
+  },
+  "hints": {
+    "removeMember": "Remove this member",
+    "revokeKey": "Revoke: anything using this key stops working",
+    "copyKey": "Copy the full key to your clipboard",
+    "invitedStatus": "Waiting for them to sign in with this email",
+    "disabledStatus": "Cannot sign in to this organization",
+    "traceId": "Trace ID (open in Grafana Tempo to follow the request)",
+    "verifyChain": "Recompute every hash to prove no event was edited or deleted",
+    "liveIn": "Version live in this environment",
+    "draftVersion": "Editable until published",
+    "publishedVersion": "Immutable; can be deployed",
+    "stepDone": "Completed"
   }
 }
