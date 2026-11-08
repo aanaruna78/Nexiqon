@@ -69,3 +69,18 @@ test_inference_callers_may_resolve_profiles_without_reading_the_registry if {
 	not authz.allow with input as {"actor": widget, "action": "config.model_profile.read", "resource": {"type": "model_profile"}}
 	not authz.allow with input as {"actor": actor(["end_user"]), "action": "config.model_profile.read", "resource": {"type": "model_profile"}}
 }
+
+test_ingestion_service_identity_is_narrow if {
+	svc := {"tenant_id": "t-a", "id": "service:ingestion", "type": "service", "roles": ["service:ingestion"], "groups": []}
+	authz.allow with input as {"actor": svc, "action": "retrieval.index.write", "resource": {"type": "document"}}
+	authz.allow with input as {"actor": svc, "action": "model.inference.run", "resource": {"type": "model_profile"}}
+	not authz.allow with input as {"actor": svc, "action": "identity.members.write", "resource": {"type": "member"}}
+	not authz.allow with input as {"actor": svc, "action": "config.agent.write", "resource": {"type": "agent"}}
+	not authz.allow with input as {"actor": svc, "action": "retrieval.index.write", "resource": {"type": "document", "tenant_id": "t-b"}}
+}
+
+test_index_writes_are_service_only if {
+	not authz.allow with input as {"actor": actor(["editor"]), "action": "retrieval.index.write", "resource": {"type": "document"}}
+	not authz.allow with input as {"actor": actor(["owner"]), "action": "retrieval.index.write", "resource": {"type": "document"}}
+	authz.allow with input as {"actor": actor(["editor"]), "action": "retrieval.index.read", "resource": {"type": "document"}}
+}

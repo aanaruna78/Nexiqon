@@ -1,0 +1,13 @@
+[project]
+name = "nexiqon-sdk"
+version = "0.1.0"
+description = "Nexiqon plugin SDK: manifests and ports for connectors, parsers and chunkers"
+requires-python = ">=3.12,<3.14"
+dependencies = ["pydantic>=2.10", "jsonschema>=4.23"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nexiqon_sdk"]

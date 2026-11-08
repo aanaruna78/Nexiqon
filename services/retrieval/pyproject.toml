@@ -3,7 +3,7 @@ name = "nexiqon-retrieval"
 version = "0.1.0"
 description = "Hybrid search, ACL filtering, small-to-big expansion and citation verification"
 requires-python = ">=3.12,<3.14"
-dependencies = ["nexiqon-core"]
+dependencies = ["nexiqon-core", "pgvector>=0.5.1"]
 
 [tool.uv.sources]
 nexiqon-core = { workspace = true }

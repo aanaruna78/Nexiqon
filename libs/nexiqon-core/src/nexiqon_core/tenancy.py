@@ -99,7 +99,8 @@ class ContextTokenVerifier:
             header = jwt.get_unverified_header(token)
         except jwt.PyJWTError as exc:
             raise Unauthorized("Malformed context token") from exc
-        key = self._settings.public_keys.get(str(header.get("kid", "")))
+        kid = str(header.get("kid", ""))
+        key = self._settings.public_keys.get(kid)
         if key is None:
             raise Unauthorized("Unknown context token key")
         try:
@@ -112,6 +113,11 @@ class ContextTokenVerifier:
                 leeway=self._settings.leeway_seconds,
                 options={"require": ["exp", "iat", "iss", "aud", "sub", "tid", "jti"]},
             )
+            service = self._settings.service_keys.get(kid)
+            if service is not None:
+                _check_service_claims(claims, service)
+            elif any(str(r).startswith("service:") for r in claims.get("rol", [])):
+                raise Unauthorized("Per-service roles need that service's key")
             return TenantContext(
                 tenant_id=uuid.UUID(claims["tid"]),
                 actor_id=str(claims["sub"]),
@@ -123,6 +129,18 @@ class ContextTokenVerifier:
             )
         except (jwt.PyJWTError, ValueError, KeyError) as exc:
             raise Unauthorized("Invalid context token") from exc
+
+
+def _check_service_claims(claims: dict[str, Any], service: str) -> None:
+    """A service-held key can only speak as that service, never as a user or another service."""
+    identity = f"service:{service}"
+    if (
+        claims.get("aty") != "service"
+        or claims.get("sub") != identity
+        or claims.get("rol") != [identity]
+        or claims.get("grp", [])
+    ):
+        raise Unauthorized("Service token claims exceed its key")
 
 
 def tenant_context_dependency(verifier: ContextTokenVerifier) -> Any:

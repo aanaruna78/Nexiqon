@@ -29,6 +29,8 @@ coverage/
 
 # Local dev secrets
 deploy/compose/config/dev-secrets.yaml
+deploy/compose/config/dev-secrets-*.yaml
+deploy/compose/config/dev-service-keys.yaml
 
 # Studio test and build artifacts
 frontend/apps/studio/test-results/

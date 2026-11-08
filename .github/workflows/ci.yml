@@ -27,7 +27,7 @@ jobs:
       - run: uv sync --all-packages --frozen
       - run: uv run ruff check .
       - run: uv run ruff format --check .
-      - run: uv run mypy libs/nexiqon-core/src services/*/src
+      - run: uv run mypy libs/*/src services/*/src
       - run: uv run python tools/lint/check_architecture.py
       - run: uv run python -m tools.contracts.export_openapi --check
       - run: uv run pytest --cov=libs --cov=services --cov-report=term-missing:skip-covered

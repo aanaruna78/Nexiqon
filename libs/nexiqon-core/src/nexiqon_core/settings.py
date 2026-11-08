@@ -70,6 +70,17 @@ class ContextTokenSettings(BaseModel):
     # PEM-encoded public keys by key id. Private keys live only in the identity service.
     public_keys: dict[str, str] = Field(default_factory=dict)
     leeway_seconds: int = 5
+    # Key id -> service name for keys held by a data-plane service (ADR 0017). Tokens signed with
+    # such a key are only accepted as that service: actor "service:<name>", role "service:<name>".
+    service_keys: dict[str, str] = Field(default_factory=dict)
+
+
+class ServiceIdentitySettings(BaseModel):
+    """This service's own signing key for tenant-scoped service tokens (ADR 0017)."""
+
+    key_id: str | None = None
+    private_key: SecretStr | None = None
+    ttl_seconds: int = 300
 
 
 class DatabaseSettings(BaseModel):
@@ -127,6 +138,7 @@ class CoreSettings(BaseSettings):
     log_json: bool = True
     groups_file: Path = Path("deploy/groups.yaml")
     context_token: ContextTokenSettings = Field(default_factory=ContextTokenSettings)
+    service_identity: ServiceIdentitySettings = Field(default_factory=ServiceIdentitySettings)
     telemetry: TelemetrySettings = Field(default_factory=TelemetrySettings)
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     events: EventSettings = Field(default_factory=EventSettings)

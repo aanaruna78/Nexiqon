@@ -13,7 +13,7 @@ x-app: &app
   profiles: [apps]
   environment: &app-env
     NEXIQON_ENVIRONMENT: dev
-    NEXIQON_CONFIG_FILES: /app/config/dev.yaml,/app/config/dev-secrets.yaml
+    NEXIQON_CONFIG_FILES: /app/config/dev.yaml,/app/config/dev-secrets.yaml,/app/config/dev-service-keys.yaml
     NEXIQON_DATABASE__URL: postgresql+asyncpg://nexiqon_app:nexiqon_app_dev@postgres:5432/nexiqon
     # Telemetry follows the observability profile: make dev-up PROFILES=...,observability
     NEXIQON_TELEMETRY__ENABLED: ${NEXIQON_TELEMETRY:-false}
@@ -176,7 +176,12 @@ services:
     ports: ["8102:8000"]
   knowledge:
     <<: *app
-    environment: { <<: *app-env, NEXIQON_GROUP: knowledge }
+    environment:
+      <<: *app-env
+      NEXIQON_GROUP: knowledge
+      NEXIQON_CONFIG_FILES: /app/config/dev.yaml,/app/config/dev-secrets.yaml,/app/config/dev-service-keys.yaml,/app/config/dev-secrets-ingestion.yaml,/app/config/knowledge.yaml
+      # ClamAV runs in the "scan" profile; without it, set NEXIQON_SCAN_BACKEND=none (dev only).
+      NEXIQON_SCAN__BACKEND: ${NEXIQON_SCAN_BACKEND:-none}
     ports: ["8103:8000"]
   agent:
     <<: *app

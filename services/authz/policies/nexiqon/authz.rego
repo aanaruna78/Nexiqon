@@ -36,6 +36,13 @@ role_permissions := {
 		"config.profiles.resolve",
 	],
 	"service": ["**"],
+	# Per-service identities (ADR 0017): tokens signed with a service's own key carry only this role.
+	"service:ingestion": [
+		"config.profiles.resolve",
+		"model.inference.run",
+		"retrieval.index.write",
+		"retrieval.index.read",
+	],
 }
 
 # Actions only an owner may perform, whatever other roles grant.
@@ -54,6 +61,9 @@ admin_only := {
 }
 
 admin_roles := {"owner", "admin", "service"}
+
+# Actions only service actors may perform (internal index writes), whatever a role says.
+service_only := {"retrieval.index.write"}
 
 # Actor types that may never hold administrative permissions, even if a role says so.
 restricted_actor_types := {"widget"}
@@ -92,7 +102,17 @@ admin_check_ok if {
 	role in admin_roles
 }
 
-actor_type_ok if not input.actor.type in restricted_actor_types
+actor_type_ok if {
+	not input.actor.type in restricted_actor_types
+	service_check_ok
+}
+
+service_check_ok if not input.action in service_only
+
+service_check_ok if {
+	input.action in service_only
+	input.actor.type == "service"
+}
 
 actor_type_ok if {
 	input.actor.type in restricted_actor_types

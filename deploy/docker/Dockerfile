@@ -13,7 +13,11 @@ RUN uv sync --frozen --no-dev --all-packages --no-editable \
     && rm -rf /root/.cache/uv
 
 FROM python:3.12.15-slim
-RUN useradd --system --uid 10001 --no-create-home nexiqon
+# git: the ingestion Git connector (HTTPS shallow clones, pinned to checked addresses).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --system --uid 10001 --no-create-home nexiqon
 WORKDIR /app
 COPY --from=build /app/.venv /app/.venv
 COPY deploy/groups.yaml /app/deploy/groups.yaml

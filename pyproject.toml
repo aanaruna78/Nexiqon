@@ -2,6 +2,10 @@
 [tool.uv.workspace]
 members = ["libs/*", "services/*"]
 
+[tool.uv]
+# Transitive pins: only versions released at least two weeks before they were adopted.
+constraint-dependencies = ["soupsieve<4"]
+
 [dependency-groups]
 dev = [
   "pytest>=8.3",

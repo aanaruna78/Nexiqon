@@ -1,0 +1,13 @@
+# Knowledge group (ingestion + retrieval) on the local stack. Credentials here are dev-only.
+workflows:
+  enabled: true
+  address: temporal:7233
+blobs:
+  backend: s3
+  endpoint: http://objectstore:8333
+  bucket: nexiqon
+  access_key: nexiqon-dev
+  secret_key: nexiqon-dev-secret
+scan:
+  clamd_host: clamav
+  clamd_port: 3310

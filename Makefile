@@ -26,7 +26,7 @@ format: ## Auto-format Python
 	uv run ruff check --fix .
 
 typecheck: ## mypy (strict) on libs and services
-	uv run mypy libs/nexiqon-core/src services/*/src
+	uv run mypy libs/*/src services/*/src
 
 arch: ## Architecture rules: vendor SDKs behind adapters, no domain words in core
 	uv run python tools/lint/check_architecture.py
