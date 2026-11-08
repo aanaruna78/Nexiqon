@@ -6,7 +6,8 @@ requires-python = ">=3.12,<3.14"
 dependencies = [
   "nexiqon-core",
   "nexiqon-sdk",
-  "pypdf==6.21.2",
+  # 6.21.4 is <2 weeks old: deliberate exception, it fixes 7 CVEs in parsing untrusted PDFs.
+  "pypdf==6.21.4",
   "python-docx>=1.2.0",
   "beautifulsoup4>=4.15.0",
   "markdown-it-py>=4.0",
