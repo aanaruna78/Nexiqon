@@ -36,7 +36,7 @@ def _raise_for(response: httpx.Response, code: str) -> None:
     if response.status_code < 400:
         return
     if response.status_code == 429 or response.status_code >= 500:
-        raise TransientError(f"{code}: HTTP {response.status_code}")
+        raise TransientError(f"{code}: HTTP {response.status_code}: {_problem(response)}")
     raise PermanentError(code, _problem(response))
 
 

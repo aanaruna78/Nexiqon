@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import delete, func, insert, select
 
-from nexiqon_core.authz import Resource, check_permission
+from nexiqon_core.authz import Resource, check_permission, require_permission
 from nexiqon_core.db import TenantSessionFactory
 from nexiqon_core.errors import Conflict, NotFound, ServiceUnavailable
 from nexiqon_core.tenancy import TenantContext, require_current_context
@@ -119,14 +119,16 @@ class IndexResult(BaseModel):
     replaced: int
 
 
-@tenant_router.put("/index/documents/{document_id}", response_model=IndexResult)
+# Service-only writes: authorization runs before the body is even validated.
+@tenant_router.put(
+    "/index/documents/{document_id}",
+    response_model=IndexResult,
+    dependencies=[require_permission("retrieval.index.write", "document")],
+)
 async def put_document(
     document_id: uuid.UUID, body: DocumentIn, request: Request, ctx: Ctx
 ) -> IndexResult:
     """Replace a document's whole tree atomically: old content is never retrievable afterwards."""
-    await check_permission(
-        request, "retrieval.index.write", Resource(type="document", id=str(document_id))
-    )
     heading = SEPARATOR.join
     async with _db(request).session(ctx) as s:
         current = await s.scalar(
@@ -178,21 +180,23 @@ class Deleted(BaseModel):
     deleted: int
 
 
-@tenant_router.delete("/index/documents/{document_id}", response_model=Deleted)
+@tenant_router.delete(
+    "/index/documents/{document_id}",
+    response_model=Deleted,
+    dependencies=[require_permission("retrieval.index.write", "document")],
+)
 async def delete_document(document_id: uuid.UUID, request: Request, ctx: Ctx) -> Deleted:
-    await check_permission(
-        request, "retrieval.index.write", Resource(type="document", id=str(document_id))
-    )
     async with _db(request).session(ctx) as s:
         result = await s.execute(delete(IndexNode).where(IndexNode.document_id == document_id))
     return Deleted(deleted=int(result.rowcount or 0))  # type: ignore[attr-defined]
 
 
-@tenant_router.delete("/index/collections/{collection_id}", response_model=Deleted)
+@tenant_router.delete(
+    "/index/collections/{collection_id}",
+    response_model=Deleted,
+    dependencies=[require_permission("retrieval.index.write", "collection")],
+)
 async def delete_collection(collection_id: uuid.UUID, request: Request, ctx: Ctx) -> Deleted:
-    await check_permission(
-        request, "retrieval.index.write", Resource(type="collection", id=str(collection_id))
-    )
     async with _db(request).session(ctx) as s:
         result = await s.execute(delete(IndexNode).where(IndexNode.collection_id == collection_id))
     return Deleted(deleted=int(result.rowcount or 0))  # type: ignore[attr-defined]

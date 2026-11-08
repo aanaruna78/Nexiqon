@@ -108,7 +108,7 @@ async def test_formats_malware_and_failures(stack: Stack) -> None:
             docx(),
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         ),
-        ("virus.txt", b"hello " + EICAR, "text/plain"),
+        ("virus.txt", EICAR, "text/plain"),  # ClamAV matches EICAR only at the file start
         ("archive.zip", b"PK\x03\x04", "application/zip"),
         ("blank.txt", b"   \n\n  ", "text/plain"),
     ]
