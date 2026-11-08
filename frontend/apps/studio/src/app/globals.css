@@ -8,6 +8,7 @@
   --color-warning: var(--warning);
   --color-warning-background: var(--warning-background);
   --color-success: var(--success);
+  --color-surface: var(--surface);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
@@ -81,7 +82,13 @@
   --chart-3: #e0b04c;
   --chart-4: #5b7a99;
   --chart-5: #7e57c2;
-  --radius: 0.625rem;
+  --radius: 0.75rem;
+  --surface: #f5f7fb;
+  --shadow-card: 0 1px 2px rgb(18 35 63 / 0.04), 0 4px 16px -4px rgb(18 35 63 / 0.08);
+  --shadow-lift: 0 2px 4px rgb(18 35 63 / 0.06), 0 12px 28px -8px rgb(18 35 63 / 0.18);
+  --mesh-1: rgb(14 138 126 / 0.16);
+  --mesh-2: rgb(91 122 153 / 0.14);
+  --mesh-3: rgb(224 176 76 / 0.14);
   --sidebar: #12233f;
   --sidebar-foreground: #e6edf5;
   --sidebar-primary: #2bb3a3;
@@ -119,6 +126,12 @@
   --chart-3: #f2c66d;
   --chart-4: #7aa2c8;
   --chart-5: #b39ddb;
+  --surface: #08121f;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px -4px rgb(0 0 0 / 0.4);
+  --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.35), 0 14px 32px -8px rgb(0 0 0 / 0.55);
+  --mesh-1: rgb(43 179 163 / 0.18);
+  --mesh-2: rgb(122 162 200 / 0.12);
+  --mesh-3: rgb(242 198 109 / 0.10);
   --sidebar: #08111e;
   --sidebar-foreground: #e6edf5;
   --sidebar-primary: #2bb3a3;
@@ -149,3 +162,70 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ------------------------------------------------------------------------------------------
+   Visual layer (CSS only: no JS, images or fonts). All motion is disabled by the
+   prefers-reduced-motion rule above.
+   ------------------------------------------------------------------------------------------ */
+@keyframes nx-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes nx-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes nx-shimmer { to { background-position: -200% 0; } }
+@keyframes nx-ring { from { stroke-dashoffset: var(--ring-length); } }
+@keyframes nx-pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 45%, transparent); }
+  50% { box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 0%, transparent); }
+}
+
+@layer components {
+  /* Page entrance */
+  .nx-page { animation: nx-rise 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  /* Staggered children: lists, grids, table rows */
+  .nx-stagger > * { animation: nx-rise 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .nx-stagger > *:nth-child(2) { animation-delay: 40ms; }
+  .nx-stagger > *:nth-child(3) { animation-delay: 80ms; }
+  .nx-stagger > *:nth-child(4) { animation-delay: 120ms; }
+  .nx-stagger > *:nth-child(5) { animation-delay: 160ms; }
+  .nx-stagger > *:nth-child(6) { animation-delay: 200ms; }
+  .nx-stagger > *:nth-child(n + 7) { animation-delay: 240ms; }
+
+  /* Raised card surface */
+  .nx-card {
+    border-radius: calc(var(--radius) + 4px);
+    border: 1px solid var(--border);
+    background: var(--card);
+    box-shadow: var(--shadow-card);
+  }
+  /* Hover lift for interactive cards */
+  .nx-lift { transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease; }
+  .nx-lift:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); }
+  .nx-lift:active { transform: translateY(0); }
+
+  /* Brand gradient mesh (decorative only; text on it keeps AA contrast) */
+  .nx-mesh {
+    background:
+      radial-gradient(60% 80% at 0% 0%, var(--mesh-1), transparent 70%),
+      radial-gradient(50% 70% at 100% 0%, var(--mesh-2), transparent 70%),
+      radial-gradient(60% 80% at 80% 100%, var(--mesh-3), transparent 70%),
+      var(--card);
+  }
+  .nx-grid-pattern {
+    background-image: radial-gradient(color-mix(in srgb, var(--foreground) 10%, transparent) 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
+
+  /* Shimmering skeletons */
+  .nx-shimmer {
+    background: linear-gradient(90deg, var(--muted) 0%, color-mix(in srgb, var(--muted) 60%, var(--card)) 50%, var(--muted) 100%);
+    background-size: 200% 100%;
+    animation: nx-shimmer 1.4s linear infinite;
+  }
+
+  .nx-live-dot { animation: nx-pulse-dot 2s ease-in-out infinite; }
+}
+
+/* Button press feedback (all buttons) */
+button:not(:disabled):active, a[data-slot="button"]:active { transform: scale(0.98); }
+button, a[data-slot="button"] { transition-property: color, background-color, border-color, box-shadow, transform; }

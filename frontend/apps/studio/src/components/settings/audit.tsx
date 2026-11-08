@@ -1,6 +1,6 @@
 "use client";
 
-import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 import { ScrollText, ShieldAlert, ShieldCheck } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useDeferredValue, useState } from "react";
@@ -14,6 +14,21 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api, ApiError } from "@/lib/api";
+import { Avatar } from "@/components/visual/avatar";
+import { toneClasses, type Tone } from "@/components/visual/icon-tile";
+import { cn } from "@/lib/utils";
+
+const SERVICE_TONE: Record<string, Tone> = { identity: "violet", config: "teal", audit: "sky", governance: "rose" };
+
+function EventChip({ type }: { type: string }) {
+  const [service, ...rest] = type.replace(/^nexiqon\./, "").split(".");
+  return (
+    <span className="inline-flex items-center gap-1.5 font-mono text-xs" dir="ltr">
+      <span className={cn("rounded px-1.5 py-0.5 font-sans font-medium", toneClasses(SERVICE_TONE[service] ?? "slate"))}>{service}</span>
+      {rest.join(".")}
+    </span>
+  );
+}
 
 interface AuditEvent {
   seq: number;
@@ -53,12 +68,21 @@ export function AuditPage() {
     retry: (count, err) => !(err instanceof ApiError && err.status === 403) && count < 1,
   });
   const verify = useMutation({ mutationFn: () => api<Verification>("audit/v1/verify") });
+  // Show people, not ids: map actor ids to member names (keys and services get a label).
+  const members = useQuery({
+    queryKey: ["members"],
+    queryFn: () => api<{ user_id: string | null; display_name: string | null; email: string | null }[]>("identity/v1/members"),
+    staleTime: 60_000,
+  });
+  const people = new Map((members.data ?? []).filter((m) => m.user_id).map((m) => [m.user_id as string, m.display_name ?? m.email ?? ""]));
+  const actorName = (id: string): string =>
+    people.get(id) ?? (id.startsWith("key:") ? t("actorKey") : id.startsWith("service:") || id.startsWith("workflow:") || id === "clerk-webhook" ? t("actorSystem") : id);
 
   if (events.error instanceof ApiError && events.error.status === 403) {
     return (
       <div className="space-y-8">
-        <PageHeader title={t("title")} description={t("subtitle")} />
-        <EmptyState icon={ShieldAlert} title={t("forbidden")} />
+        <PageHeader title={t("title")} description={t("subtitle")} icon={ScrollText} tone="sky" />
+        <EmptyState icon={ShieldAlert} tone="rose" title={t("forbidden")} />
       </div>
     );
   }
@@ -69,8 +93,10 @@ export function AuditPage() {
       <PageHeader
         title={t("title")}
         description={t("subtitle")}
+        icon={ScrollText}
+        tone="sky"
         actions={
-          <Button variant="outline" onClick={() => verify.mutate()} disabled={verify.isPending} data-testid="verify-chain">
+          <Button variant="outline" className="bg-card shadow-sm" onClick={() => verify.mutate()} disabled={verify.isPending} data-testid="verify-chain">
             <ShieldCheck className="size-4" aria-hidden="true" />
             {verify.isPending ? t("verifying") : t("verify")}
           </Button>
@@ -91,31 +117,38 @@ export function AuditPage() {
       {events.isLoading ? (
         <Skeleton className="h-40 w-full" />
       ) : rows.length === 0 ? (
-        <EmptyState icon={ScrollText} title={t("empty")} />
+        <EmptyState icon={ScrollText} tone="sky" title={t("empty")} />
       ) : (
         <>
+          <div className="nx-card overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-16">#</TableHead>
                 <TableHead>{t("time")}</TableHead>
                 <TableHead>{t("event")}</TableHead>
-                <TableHead>{t("actor")}</TableHead>
-                <TableHead>{t("trace")}</TableHead>
+                <TableHead className="hidden md:table-cell">{t("actor")}</TableHead>
+                <TableHead className="hidden lg:table-cell">{t("trace")}</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className="nx-stagger">
               {rows.map((e) => (
                 <TableRow key={e.seq}>
                   <TableCell className="text-muted-foreground">{e.seq}</TableCell>
                   <TableCell className="whitespace-nowrap">{format.dateTime(new Date(e.occurred_at), { dateStyle: "medium", timeStyle: "short" })}</TableCell>
-                  <TableCell><code dir="ltr" className="text-xs">{e.type.replace(/^nexiqon\./, "")}</code></TableCell>
-                  <TableCell className="max-w-48 truncate" title={e.actor_id}>{e.actor_id}</TableCell>
-                  <TableCell><code dir="ltr" className="text-xs text-muted-foreground">{e.trace_id ? e.trace_id.slice(0, 12) : "—"}</code></TableCell>
+                  <TableCell><EventChip type={e.type} /></TableCell>
+                  <TableCell className="hidden md:table-cell" title={e.actor_id}>
+                    <span className="flex max-w-56 items-center gap-2">
+                      <Avatar name={actorName(e.actor_id)} className="size-6 text-[10px] ring-0" />
+                      <span className="truncate">{actorName(e.actor_id)}</span>
+                    </span>
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell"><code dir="ltr" className="text-xs text-muted-foreground">{e.trace_id ? e.trace_id.slice(0, 12) : "—"}</code></TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
+          </div>
           {events.hasNextPage ? (
             <Button variant="outline" onClick={() => events.fetchNextPage()} disabled={events.isFetchingNextPage}>
               {t("loadMore")}

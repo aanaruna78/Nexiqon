@@ -86,7 +86,17 @@
     },
     "done": "Done",
     "todo": "To do",
-    "open": "Open"
+    "open": "Open",
+    "greeting": "Good to see you, {name}",
+    "quickActions": "Quick actions",
+    "stepsHint": "Follow these steps to put your first assistant in front of users.",
+    "tiles": {
+      "invite": "Bring your team in and set their roles",
+      "key": "Connect your backend or website widget",
+      "configure": "Models, retention and safety settings",
+      "audit": "See every change, verify nothing was altered"
+    },
+    "allDone": "All set. Your assistant foundation is ready."
   },
   "comingSoon": {
     "title": "{section} is coming",
@@ -196,7 +206,9 @@
     "trace": "Trace",
     "loadMore": "Load more",
     "empty": "No events yet",
-    "forbidden": "Only owners and admins can view the audit log."
+    "forbidden": "Only owners and admins can view the audit log.",
+    "actorKey": "API key",
+    "actorSystem": "System"
   },
   "config": {
     "title": "Configuration",

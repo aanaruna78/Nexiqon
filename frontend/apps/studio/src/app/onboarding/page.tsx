@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState, type FormEvent } from "react";
 
+import { AuthFrame } from "@/components/auth-frame";
+import { IconTile } from "@/components/visual/icon-tile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,12 +41,10 @@ export default function Onboarding() {
   }
 
   return (
-    <main id="main" className="flex min-h-dvh items-center justify-center p-6">
-      <form onSubmit={submit} className="w-full max-w-md space-y-6" noValidate>
+    <AuthFrame>
+      <form onSubmit={submit} className="space-y-6" noValidate>
         <div className="space-y-2">
-          <span className="flex size-12 items-center justify-center rounded-lg bg-accent text-accent-foreground" aria-hidden="true">
-            <Building2 className="size-6" />
-          </span>
+          <IconTile icon={Building2} tone="teal" size="lg" />
           <h1 className="text-2xl font-semibold">{t("onboarding.title")}</h1>
           <p className="text-muted-foreground">{t("onboarding.subtitle")}</p>
         </div>
@@ -87,6 +87,6 @@ export default function Onboarding() {
           {busy ? t("onboarding.creating") : t("onboarding.create")}
         </Button>
       </form>
-    </main>
+    </AuthFrame>
   );
 }

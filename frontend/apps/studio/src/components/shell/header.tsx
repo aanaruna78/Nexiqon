@@ -34,7 +34,7 @@ export function Header() {
       : null;
 
   return (
-    <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/80 px-3 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:px-4">
       <SidebarTrigger className="-ms-1" aria-label={t("shell.toggleSidebar")} />
       <Separator orientation="vertical" className="me-2 h-4" />
       <Breadcrumb aria-label={t("shell.breadcrumb")} className="min-w-0 flex-1">
@@ -66,10 +66,10 @@ export function Header() {
           ) : null}
         </BreadcrumbList>
       </Breadcrumb>
-      <Button variant="outline" size="sm" className="gap-2 text-muted-foreground" onClick={openCommandMenu} data-testid="command-button">
+      <Button variant="outline" size="sm" className="gap-2 rounded-full bg-card/60 text-muted-foreground shadow-sm" onClick={openCommandMenu} data-testid="command-button">
         <Search className="size-4" aria-hidden="true" />
-        <span className="hidden sm:inline">{t("shell.openCommand")}</span>
-        <kbd className="pointer-events-none hidden rounded border bg-muted px-1.5 font-mono text-[10px] sm:inline">⌘K</kbd>
+        <span className="sr-only sm:not-sr-only">{t("shell.openCommand")}</span>
+        <kbd aria-hidden="true" className="pointer-events-none hidden rounded border bg-muted px-1.5 font-mono text-[10px] sm:inline">⌘K</kbd>
       </Button>
     </header>
   );

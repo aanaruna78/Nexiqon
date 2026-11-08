@@ -21,7 +21,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -31,6 +30,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api } from "@/lib/api";
 import { useErrorToast } from "@/lib/hooks";
+import { Avatar } from "@/components/visual/avatar";
+import { StatusBadge } from "@/components/visual/status-badge";
+import type { Tone } from "@/components/visual/icon-tile";
+
+const STATUS_TONE: Record<Member["status"], Tone> = { active: "teal", invited: "amber", disabled: "slate" };
+const ROLE_TONE: Record<Member["role"], Tone> = { owner: "amber", admin: "violet", editor: "teal", member: "navy" };
 
 export interface Member {
   id: string;
@@ -80,9 +85,11 @@ export function MembersPage() {
       <PageHeader
         title={t("title")}
         description={t("subtitle")}
+        icon={Users}
+        tone="violet"
         actions={
           isAdmin ? (
-            <Button onClick={() => setInviteOpen(true)} data-testid="invite-member">
+            <Button onClick={() => setInviteOpen(true)} data-testid="invite-member" className="shadow-sm">
               <UserPlus className="size-4" aria-hidden="true" />
               {t("invite")}
             </Button>
@@ -95,19 +102,20 @@ export function MembersPage() {
           {[0, 1, 2].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
         </div>
       ) : !members.data?.length ? (
-        <EmptyState icon={Users} title={t("empty")} />
+        <EmptyState icon={Users} tone="violet" title={t("empty")} />
       ) : (
+        <div className="nx-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>{tc("name")}</TableHead>
               <TableHead>{tc("role")}</TableHead>
-              <TableHead>{tc("status")}</TableHead>
-              <TableHead>{tc("created")}</TableHead>
+              <TableHead className="hidden sm:table-cell">{tc("status")}</TableHead>
+              <TableHead className="hidden md:table-cell">{tc("created")}</TableHead>
               <TableHead className="w-12"><span className="sr-only">{tc("actions")}</span></TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="nx-stagger">
             {members.data.map((m) => {
               const label = m.display_name ?? m.email ?? m.id;
               const isMe = !!m.email && m.email === user.email;
@@ -115,15 +123,23 @@ export function MembersPage() {
               return (
                 <TableRow key={m.id} data-testid={`member-${m.email}`}>
                   <TableCell>
-                    <div className="font-medium">
-                      {label} {isMe ? <span className="text-muted-foreground">({t("you")})</span> : null}
+                    <div className="flex items-center gap-3">
+                      <Avatar name={label} />
+                      <div className="min-w-0">
+                        <div className="truncate font-medium">
+                          {label} {isMe ? <span className="text-muted-foreground">({t("you")})</span> : null}
+                        </div>
+                        {m.display_name && m.email ? <div className="truncate text-sm text-muted-foreground">{m.email}</div> : null}
+                        <div className="mt-1 sm:hidden">
+                          <StatusBadge tone={STATUS_TONE[m.status]}>{t(`statuses.${m.status}`)}</StatusBadge>
+                        </div>
+                      </div>
                     </div>
-                    {m.display_name && m.email ? <div className="text-sm text-muted-foreground">{m.email}</div> : null}
                   </TableCell>
                   <TableCell>
                     {editable ? (
                       <Select value={m.role} onValueChange={(role) => changeRole.mutate({ id: m.id, role })}>
-                        <SelectTrigger className="w-36" aria-label={`${t("changeRole")}: ${label}`}>
+                        <SelectTrigger className="w-28 sm:w-36" aria-label={`${t("changeRole")}: ${label}`}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -133,13 +149,13 @@ export function MembersPage() {
                         </SelectContent>
                       </Select>
                     ) : (
-                      t(`roles.${m.role}`)
+                      <StatusBadge tone={ROLE_TONE[m.role]}>{t(`roles.${m.role}`)}</StatusBadge>
                     )}
                   </TableCell>
-                  <TableCell>
-                    <Badge variant={m.status === "active" ? "secondary" : "outline"}>{t(`statuses.${m.status}`)}</Badge>
+                  <TableCell className="hidden sm:table-cell">
+                    <StatusBadge tone={STATUS_TONE[m.status]} live={m.status === "invited"}>{t(`statuses.${m.status}`)}</StatusBadge>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{format.dateTime(new Date(m.created_at), { dateStyle: "medium" })}</TableCell>
+                  <TableCell className="hidden text-muted-foreground md:table-cell">{format.dateTime(new Date(m.created_at), { dateStyle: "medium" })}</TableCell>
                   <TableCell>
                     {editable ? (
                       <AlertDialog>
@@ -166,6 +182,7 @@ export function MembersPage() {
             })}
           </TableBody>
         </Table>
+        </div>
       )}
     </div>
   );

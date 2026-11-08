@@ -14,9 +14,10 @@ export async function ComingSoon({ section }: { section: string }) {
   const name = t(`nav.${section}`);
   return (
     <div className="space-y-8">
-      <PageHeader title={name} />
+      <PageHeader title={name} icon={item?.icon} tone={item?.tone} />
       <EmptyState
         icon={item?.icon ?? Construction}
+        tone={item?.tone}
         title={t("comingSoon.title", { section: name })}
         body={`${t("comingSoon.body", { what: t(`sections.${section}`) })} ${t("comingSoon.whatYouCanDo")}`}
         action={

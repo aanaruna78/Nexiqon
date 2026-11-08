@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, KeyRound, Plus } from "lucide-react";
+import { Copy, Globe, KeyRound, Plus, Server } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useState, type FormEvent } from "react";
@@ -21,7 +21,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -32,6 +31,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import { useErrorToast } from "@/lib/hooks";
+import { IconTile } from "@/components/visual/icon-tile";
+import { StatusBadge } from "@/components/visual/status-badge";
 
 interface ApiKey {
   id: string;
@@ -72,8 +73,10 @@ export function ApiKeysPage() {
       <PageHeader
         title={t("title")}
         description={t("subtitle")}
+        icon={KeyRound}
+        tone="amber"
         actions={isAdmin ? (
-          <Button onClick={() => setCreateOpen(true)} data-testid="create-key">
+          <Button onClick={() => setCreateOpen(true)} data-testid="create-key" className="shadow-sm">
             <Plus className="size-4" aria-hidden="true" />
             {t("create")}
           </Button>
@@ -91,32 +94,41 @@ export function ApiKeysPage() {
       {keys.isLoading ? (
         <Skeleton className="h-24 w-full" />
       ) : !keys.data?.length ? (
-        <EmptyState icon={KeyRound} title={t("empty")} />
+        <EmptyState icon={KeyRound} tone="amber" title={t("empty")} />
       ) : (
+        <div className="nx-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>{tc("name")}</TableHead>
-              <TableHead>{t("kind")}</TableHead>
-              <TableHead>{t("prefix")}</TableHead>
-              <TableHead>{t("roles")}</TableHead>
-              <TableHead>{t("lastUsed")}</TableHead>
+              <TableHead className="hidden sm:table-cell">{t("kind")}</TableHead>
+              <TableHead className="hidden lg:table-cell">{t("prefix")}</TableHead>
+              <TableHead className="hidden md:table-cell">{t("roles")}</TableHead>
+              <TableHead className="hidden md:table-cell">{t("lastUsed")}</TableHead>
               <TableHead className="w-24"><span className="sr-only">{tc("actions")}</span></TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="nx-stagger">
             {keys.data.map((k) => (
               <TableRow key={k.id} data-testid={`key-${k.name}`}>
-                <TableCell className="font-medium">{k.name}</TableCell>
-                <TableCell>{t(`kinds.${k.kind}`)}</TableCell>
-                <TableCell><code dir="ltr" className="text-xs">nxq_{k.kind[0]}_{k.prefix}_…</code></TableCell>
-                <TableCell>{k.roles.join(", ")}</TableCell>
-                <TableCell className="text-muted-foreground">
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <IconTile icon={k.kind === "widget" ? Globe : Server} tone={k.kind === "widget" ? "sky" : "navy"} size="sm" />
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">{k.name}</div>
+                      <div className="text-xs text-muted-foreground sm:hidden">{t(`kinds.${k.kind}`)}</div>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell className="hidden sm:table-cell">{t(`kinds.${k.kind}`)}</TableCell>
+                <TableCell className="hidden lg:table-cell"><code dir="ltr" className="rounded bg-muted px-1.5 py-0.5 text-xs">nxq_{k.kind[0]}_{k.prefix}_…</code></TableCell>
+                <TableCell className="hidden md:table-cell">{k.roles.join(", ")}</TableCell>
+                <TableCell className="hidden text-muted-foreground md:table-cell">
                   {k.last_used_at ? format.relativeTime(new Date(k.last_used_at), now) : tc("never")}
                 </TableCell>
                 <TableCell>
                   {k.revoked_at ? (
-                    <Badge variant="outline">{t("revokedLabel")}</Badge>
+                    <StatusBadge tone="slate">{t("revokedLabel")}</StatusBadge>
                   ) : isAdmin ? (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -139,6 +151,7 @@ export function ApiKeysPage() {
             ))}
           </TableBody>
         </Table>
+        </div>
       )}
     </div>
   );

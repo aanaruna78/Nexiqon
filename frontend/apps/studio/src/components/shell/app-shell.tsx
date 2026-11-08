@@ -27,9 +27,9 @@ export function AppShell({ user, memberships, active, accent, children }: ShellP
     <SidebarProvider style={accentVars(accent)}>
       <SkipLink />
       <AppSidebar user={user} memberships={memberships} active={active} />
-      <SidebarInset>
+      <SidebarInset className="bg-surface">
         <Header />
-        <main id="main" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 outline-none sm:px-6 lg:px-8">
+        <main id="main" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 outline-none sm:px-6 sm:py-8 lg:px-8">
           {children}
         </main>
       </SidebarInset>

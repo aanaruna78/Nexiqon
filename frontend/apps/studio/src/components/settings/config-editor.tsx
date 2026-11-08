@@ -11,7 +11,6 @@ import { PageHeader } from "@/components/page-header";
 import { problemErrors, validate, type FieldErrors } from "@/components/schema-form/schema";
 import { SchemaForm } from "@/components/schema-form/schema-form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +19,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { api, ApiError } from "@/lib/api";
 import { useErrorToast } from "@/lib/hooks";
 
-import { type KindInfo, type ObjectSummary, useKinds } from "./configuration";
+import { type KindInfo, kindVisual, type ObjectSummary, useKinds } from "./configuration";
+import { StatusBadge } from "@/components/visual/status-badge";
 
 const ENVIRONMENTS = ["dev", "staging", "prod"] as const;
 
@@ -141,6 +141,8 @@ function EditorBody({ kind, name, info, object, initialSpec }: { kind: string; n
       <PageHeader
         title={isNew ? t("newObject", { kind: info.title }) : t("editing", { name })}
         description={info.description}
+        icon={kindVisual(kind).icon}
+        tone={kindVisual(kind).tone}
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => clientCheck() && save.mutate()} disabled={save.isPending || (isNew && !/^[a-z0-9][a-z0-9-]{1,62}$/.test(newName))} data-testid="save-draft">
@@ -163,14 +165,14 @@ function EditorBody({ kind, name, info, object, initialSpec }: { kind: string; n
         </Alert>
       ) : null}
       {!isNew && object ? (
-        <section aria-label={t("versions")} className="flex flex-wrap items-end gap-4 rounded-lg border p-4">
+        <section aria-label={t("versions")} className="nx-card flex flex-wrap items-end gap-4 p-4">
           <div className="space-y-1">
             <p className="text-sm font-medium">{t("versions")}</p>
             <div className="flex flex-wrap gap-1">
               {object.versions.map((v) => (
-                <Badge key={v.version} variant={v.status === "published" ? "secondary" : "outline"}>
+                <StatusBadge key={v.version} tone={v.status === "published" ? "navy" : "amber"}>
                   v{v.version} · {t(`statuses.${v.status}`)}
-                </Badge>
+                </StatusBadge>
               ))}
             </div>
           </div>
@@ -178,7 +180,7 @@ function EditorBody({ kind, name, info, object, initialSpec }: { kind: string; n
             <p className="text-sm font-medium">{t("deployments")}</p>
             <div className="flex gap-1">
               {Object.keys(object.deployments).length ? Object.entries(object.deployments).map(([e, v]) => (
-                <Badge key={e}>{e} v{v}</Badge>
+                <StatusBadge key={e} tone="teal" live>{e} v{v}</StatusBadge>
               )) : <span className="text-sm text-muted-foreground">{t("notDeployed")}</span>}
             </div>
           </div>
@@ -206,7 +208,9 @@ function EditorBody({ kind, name, info, object, initialSpec }: { kind: string; n
           <p id="object-name-help" className="text-sm text-muted-foreground">{t("nameHelp")}</p>
         </div>
       ) : null}
-      <SchemaForm schema={info.schema} value={spec} onChange={setSpec} errors={errors} />
+      <div className="nx-card nx-page p-4 sm:p-6">
+        <SchemaForm schema={info.schema} value={spec} onChange={setSpec} errors={errors} />
+      </div>
     </div>
   );
 }

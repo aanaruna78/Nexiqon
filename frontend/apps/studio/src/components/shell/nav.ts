@@ -1,3 +1,4 @@
+import type { Tone } from "@/components/visual/icon-tile";
 import {
   Blocks,
   BookOpenText,
@@ -20,6 +21,7 @@ export interface NavItem {
   key: string; // messages: nav.<key>
   href: string;
   icon: LucideIcon;
+  tone: Tone;
   phase?: string; // shown on "coming soon" pages
 }
 
@@ -33,30 +35,30 @@ export const NAV: NavGroup[] = [
   {
     key: "build",
     items: [
-      { key: "home", href: "/", icon: House },
-      { key: "assistants", href: "/assistants", icon: Bot, phase: "Phase 3" },
-      { key: "knowledge", href: "/knowledge", icon: BookOpenText, phase: "Phase 2" },
-      { key: "playground", href: "/playground", icon: FlaskConical, phase: "Phase 2–3" },
-      { key: "domainPacks", href: "/domain-packs", icon: Package, phase: "Phase 3" },
+      { key: "home", href: "/", icon: House, tone: "teal" },
+      { key: "assistants", href: "/assistants", icon: Bot, tone: "violet", phase: "Phase 3" },
+      { key: "knowledge", href: "/knowledge", icon: BookOpenText, tone: "sky", phase: "Phase 2" },
+      { key: "playground", href: "/playground", icon: FlaskConical, tone: "amber", phase: "Phase 2–3" },
+      { key: "domainPacks", href: "/domain-packs", icon: Package, tone: "teal", phase: "Phase 3" },
     ],
   },
   {
     key: "operate",
     items: [
-      { key: "conversations", href: "/conversations", icon: MessagesSquare, phase: "Phase 4" },
-      { key: "insights", href: "/insights", icon: ChartLine, phase: "Phase 4" },
-      { key: "evaluations", href: "/evaluations", icon: ClipboardCheck, phase: "Phase 4" },
-      { key: "actions", href: "/actions", icon: Blocks, phase: "Phase 3" },
+      { key: "conversations", href: "/conversations", icon: MessagesSquare, tone: "sky", phase: "Phase 4" },
+      { key: "insights", href: "/insights", icon: ChartLine, tone: "violet", phase: "Phase 4" },
+      { key: "evaluations", href: "/evaluations", icon: ClipboardCheck, tone: "amber", phase: "Phase 4" },
+      { key: "actions", href: "/actions", icon: Blocks, tone: "rose", phase: "Phase 3" },
     ],
   },
   {
     key: "admin",
     items: [
-      { key: "members", href: "/settings/members", icon: Users },
-      { key: "apiKeys", href: "/settings/api-keys", icon: KeyRound },
-      { key: "configuration", href: "/settings/configuration", icon: Settings2 },
-      { key: "audit", href: "/settings/audit", icon: ScrollText },
-      { key: "organization", href: "/settings/organization", icon: ShieldCheck },
+      { key: "members", href: "/settings/members", icon: Users, tone: "violet" },
+      { key: "apiKeys", href: "/settings/api-keys", icon: KeyRound, tone: "amber" },
+      { key: "configuration", href: "/settings/configuration", icon: Settings2, tone: "teal" },
+      { key: "audit", href: "/settings/audit", icon: ScrollText, tone: "sky" },
+      { key: "organization", href: "/settings/organization", icon: ShieldCheck, tone: "navy" },
     ],
   },
 ];

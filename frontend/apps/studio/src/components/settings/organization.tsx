@@ -6,6 +6,8 @@ import { useTranslations } from "next-intl";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
+import { ShieldCheck } from "lucide-react";
+
 import { PageHeader } from "@/components/page-header";
 import { useStudio } from "@/components/shell/studio-context";
 import { Button } from "@/components/ui/button";
@@ -28,7 +30,7 @@ export function OrganizationPage() {
   const tenant = useQuery({ queryKey: ["tenant"], queryFn: () => api<Tenant>("identity/v1/tenant") });
   return (
     <div className="space-y-8">
-      <PageHeader title={t("title")} description={t("subtitle")} />
+      <PageHeader title={t("title")} description={t("subtitle")} icon={ShieldCheck} tone="navy" />
       {tenant.data ? <OrganizationForm key={tenant.dataUpdatedAt} tenant={tenant.data} /> : null}
     </div>
   );
@@ -56,7 +58,7 @@ function OrganizationForm({ tenant }: { tenant: Tenant }) {
     save.mutate();
   };
   return (
-    <form onSubmit={submit} className="max-w-md space-y-5">
+    <form onSubmit={submit} className="nx-card nx-page max-w-xl space-y-5 p-6">
       <div className="space-y-2">
         <Label htmlFor="org-name">{t("name")}</Label>
         <Input id="org-name" value={name} disabled={!isAdmin} required minLength={2} onChange={(e) => setName(e.target.value)} />

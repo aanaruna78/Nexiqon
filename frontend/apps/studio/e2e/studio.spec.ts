@@ -116,8 +116,9 @@ test.describe.serial("Studio", () => {
 
   test("audit: events recorded and chain verifies", async () => {
     await page.goto("/settings/audit");
-    await expect(page.getByText("identity.tenant.created")).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText("config.deployment.changed")).toBeVisible();
+    await expect(page.getByRole("row").filter({ hasText: "tenant.created" }).filter({ hasText: "identity" })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("row").filter({ hasText: "deployment.changed" }).filter({ hasText: "config" })).toBeVisible();
+    await expect(page.getByRole("row").filter({ hasText: "tenant.created" })).toContainText("Dev User");
     await page.getByTestId("verify-chain").click();
     await expect(page.getByTestId("chain-status")).toContainText("no tampering found");
     await a11y(page, "audit");
