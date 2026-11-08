@@ -1,7 +1,7 @@
 """HTTP API for retrieval. Contract: contracts/openapi/retrieval.json.
 
 Index write endpoints are service-only (``retrieval.index.write``: ingestion's service identity).
-Search arrives in Phase 2 slice 3.
+Search and citation verification run as the caller: their groups and actor type filter results.
 """
 
 from __future__ import annotations
@@ -17,8 +17,12 @@ from sqlalchemy import delete, func, insert, select
 from nexiqon_core.authz import Resource, check_permission, require_permission
 from nexiqon_core.db import TenantSessionFactory
 from nexiqon_core.errors import Conflict, NotFound, ServiceUnavailable
+from nexiqon_core.profiles import ProfileResolver
 from nexiqon_core.tenancy import TenantContext, require_current_context
+from nexiqon_retrieval.citations import Citation, verify
 from nexiqon_retrieval.models import DIMENSIONS, IndexNode
+from nexiqon_retrieval.search import Searcher, SearchRequest
+from nexiqon_retrieval.store import CLASSIFICATIONS, Filters
 
 public_router = APIRouter(tags=["retrieval"])
 tenant_router = APIRouter(prefix="/v1", tags=["retrieval"])
@@ -290,4 +294,162 @@ async def stats(collection_id: uuid.UUID, request: Request, ctx: Ctx) -> Collect
         sections=row[1],
         chunks=row[2],
         tokens=int(row[3]),
+    )
+
+
+# ===================================================================== search (RT-02, RT-07)
+
+
+def _filters(request: Request, ctx: TenantContext, collection_ids: list[uuid.UUID]) -> Filters:
+    settings = request.app.state.settings
+    groups = None if ctx.has_role(*settings.acl_bypass_roles) else sorted(ctx.groups)
+    ceiling = settings.max_classification.get(ctx.actor_type)
+    allowed = (
+        list(CLASSIFICATIONS[: CLASSIFICATIONS.index(ceiling) + 1])
+        if ceiling in CLASSIFICATIONS
+        else list(CLASSIFICATIONS)
+    )
+    return Filters(collection_ids=collection_ids, classifications=allowed, groups=groups)
+
+
+def _token(request: Request) -> str:
+    token = getattr(request.state, "context_token", None)
+    if token is None:
+        raise ServiceUnavailable("Missing caller token")
+    return str(token)
+
+
+class SearchIn(BaseModel):
+    query: str = Field(min_length=1, max_length=4000)
+    collection_ids: list[uuid.UUID] = Field(min_length=1, max_length=20)
+    retrieval_profile: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9-]{1,62}$")
+    model_profile: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9-]{1,62}$")
+    classification: Literal["public", "internal", "confidential", "restricted"] = "internal"
+    top_k: int | None = Field(default=None, ge=1, le=50)
+    # Overrides for evaluation and the Playground; agents use their profile.
+    small_to_big: bool | None = None
+    rerank: bool | None = None
+
+
+class PassageOut(BaseModel):
+    id: uuid.UUID
+    kind: str
+    document_id: uuid.UUID
+    collection_id: uuid.UUID
+    title: str | None
+    heading_path: list[str]
+    citation: str
+    page_start: int | None
+    page_end: int | None
+    source_uri: str | None
+    text: str
+    token_count: int
+    score: float
+    chunk_ids: list[uuid.UUID]
+
+
+class SearchOut(BaseModel):
+    passages: list[PassageOut]
+    abstain: bool
+    evidence_score: float
+    embedding_model: str | None
+    reranked: bool
+    timings_ms: dict[str, float]
+
+
+@tenant_router.post("/search", response_model=SearchOut)
+async def search(body: SearchIn, request: Request, ctx: Ctx) -> SearchOut:
+    """Hybrid search over the caller's visible content, expanded to cited sections."""
+    await check_permission(request, "retrieval.search.run", Resource(type="collection"))
+    settings = request.app.state.settings
+    token = _token(request)
+    profiles: ProfileResolver = request.app.state.profiles
+    profile = await profiles.get(
+        str(ctx.tenant_id), token, body.retrieval_profile or settings.default_retrieval_profile
+    )
+    searcher: Searcher = request.app.state.searcher
+    result = await searcher.search(
+        ctx.tenant_id,
+        token,
+        SearchRequest(
+            query=body.query,
+            filters=_filters(request, ctx, body.collection_ids),
+            profile=profile,
+            model_profile=body.model_profile or settings.default_model_profile,
+            classification=body.classification,
+            top_k=body.top_k,
+            small_to_big=body.small_to_big,
+            rerank=body.rerank,
+        ),
+    )
+    return SearchOut(
+        passages=[
+            PassageOut(**{k: v for k, v in p.__dict__.items() if k != "matched_chunk_ids"})
+            for p in result.passages
+        ],
+        abstain=result.abstain,
+        evidence_score=result.evidence_score,
+        embedding_model=result.embedding_model,
+        reranked=result.reranked,
+        timings_ms=result.timings_ms,
+    )
+
+
+# ===================================================================== answer contract (RT-03)
+
+
+class CitationIn(BaseModel):
+    marker: str = Field(pattern=r"^\w{1,8}$")
+    passage_id: uuid.UUID
+    quote: str | None = Field(default=None, max_length=2000)
+
+
+class AnswerIn(BaseModel):
+    """The answer contract every grounded answer follows: text with [marker] citations."""
+
+    answer: str = Field(max_length=20_000)
+    citations: list[CitationIn] = Field(default_factory=list, max_length=50)
+    collection_ids: list[uuid.UUID] = Field(min_length=1, max_length=20)
+    min_support: float = Field(default=0.5, ge=0, le=1)
+
+
+class RemovedOut(BaseModel):
+    marker: str
+    reason: str
+
+
+class VerificationOut(BaseModel):
+    answer: str
+    citations: list[CitationIn]
+    removed: list[RemovedOut]
+    supported_sentences: int
+    cited_sentences: int
+    abstain: bool
+
+
+@tenant_router.post("/citations/verify", response_model=VerificationOut)
+async def verify_citations(body: AnswerIn, request: Request, ctx: Ctx) -> VerificationOut:
+    """Strip fabricated or unsupported citations; abstain when none remain."""
+    await check_permission(request, "retrieval.search.verify", Resource(type="collection"))
+    searcher: Searcher = request.app.state.searcher
+    ids = list({c.passage_id for c in body.citations})
+    texts = await searcher.passage_text(
+        ctx.tenant_id, ids, _filters(request, ctx, body.collection_ids)
+    )
+    result = verify(
+        body.answer,
+        [Citation(c.marker, c.passage_id, c.quote) for c in body.citations],
+        texts,
+        body.min_support,
+    )
+    return VerificationOut(
+        answer=result.answer,
+        citations=[
+            CitationIn(marker=c.marker, passage_id=c.passage_id, quote=c.quote)
+            for c in result.citations
+        ],
+        removed=[RemovedOut(marker=r.marker, reason=r.reason) for r in result.removed],
+        supported_sentences=result.supported_sentences,
+        cited_sentences=result.cited_sentences,
+        abstain=result.abstain,
     )

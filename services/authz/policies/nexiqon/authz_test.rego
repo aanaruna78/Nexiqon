@@ -84,3 +84,12 @@ test_index_writes_are_service_only if {
 	not authz.allow with input as {"actor": actor(["owner"]), "action": "retrieval.index.write", "resource": {"type": "document"}}
 	authz.allow with input as {"actor": actor(["editor"]), "action": "retrieval.index.read", "resource": {"type": "document"}}
 }
+
+test_search_is_open_to_inference_callers if {
+	widget := {"tenant_id": "t-a", "id": "k-1", "type": "widget", "roles": ["end_user"], "groups": []}
+	authz.allow with input as {"actor": widget, "action": "retrieval.search.run", "resource": {"type": "collection"}}
+	authz.allow with input as {"actor": widget, "action": "retrieval.search.verify", "resource": {"type": "collection"}}
+	authz.allow with input as {"actor": actor(["member"]), "action": "retrieval.search.run", "resource": {"type": "collection"}}
+	not authz.allow with input as {"actor": widget, "action": "retrieval.index.read", "resource": {"type": "document"}}
+	not authz.allow with input as {"actor": actor(["member"]), "action": "retrieval.search.run", "resource": {"type": "collection", "tenant_id": "t-b"}}
+}

@@ -6,7 +6,7 @@ PNPM := npx --yes pnpm@12.15.0 --dir frontend
 comma := ,
 PROFILE_FLAGS := $(foreach p,$(subst $(comma), ,$(PROFILES)),--profile $(p))
 
-.PHONY: studio dev-secrets help setup lint format typecheck test test-unit arch contracts contracts-check \
+.PHONY: studio dev-secrets help setup lint format typecheck test test-unit arch contracts contracts-check eval-retrieval \
         fe-install fe-lint fe-test fe-build check new-service dev-up dev-down dev-logs run-group image
 
 help: ## Show targets
@@ -64,6 +64,9 @@ new-service: ## Generate a service: make new-service NAME=foo PLANE=data
 	uv run copier copy --defaults --data service_name=$(NAME) --data plane=$(PLANE) templates/service services/$(NAME)
 	uv sync --all-packages
 	@echo "Now add '$(NAME)' to a group in deploy/groups.yaml and run 'make contracts'."
+
+eval-retrieval: ## Retrieval gold-set gate (Recall@5, evidence, P95) with offline embeddings
+	NEXIQON_EVAL_REPORT=retrieval-eval.json uv run pytest services/retrieval/tests/test_eval.py -s -q
 
 dev-secrets: ## Generate local signing keys (deploy/compose/config/dev-secrets.yaml, git-ignored)
 	uv run python tools/dev/gen_dev_secrets.py

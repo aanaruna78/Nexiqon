@@ -1,6 +1,79 @@
 {
   "components": {
     "schemas": {
+      "AnswerIn": {
+        "description": "The answer contract every grounded answer follows: text with [marker] citations.",
+        "properties": {
+          "answer": {
+            "maxLength": 20000,
+            "title": "Answer",
+            "type": "string"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/CitationIn"
+            },
+            "maxItems": 50,
+            "title": "Citations",
+            "type": "array"
+          },
+          "collection_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Collection Ids",
+            "type": "array"
+          },
+          "min_support": {
+            "default": 0.5,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Min Support",
+            "type": "number"
+          }
+        },
+        "required": [
+          "answer",
+          "collection_ids"
+        ],
+        "title": "AnswerIn",
+        "type": "object"
+      },
+      "CitationIn": {
+        "properties": {
+          "marker": {
+            "pattern": "^\\w{1,8}$",
+            "title": "Marker",
+            "type": "string"
+          },
+          "passage_id": {
+            "format": "uuid",
+            "title": "Passage Id",
+            "type": "string"
+          },
+          "quote": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quote"
+          }
+        },
+        "required": [
+          "marker",
+          "passage_id"
+        ],
+        "title": "CitationIn",
+        "type": "object"
+      },
       "CollectionStats": {
         "properties": {
           "chunks": {
@@ -437,6 +510,287 @@
         "title": "OutlineNode",
         "type": "object"
       },
+      "PassageOut": {
+        "properties": {
+          "chunk_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Chunk Ids",
+            "type": "array"
+          },
+          "citation": {
+            "title": "Citation",
+            "type": "string"
+          },
+          "collection_id": {
+            "format": "uuid",
+            "title": "Collection Id",
+            "type": "string"
+          },
+          "document_id": {
+            "format": "uuid",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "heading_path": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Heading Path",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "page_end": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page End"
+          },
+          "page_start": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Start"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "source_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Uri"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "token_count": {
+            "title": "Token Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "document_id",
+          "collection_id",
+          "title",
+          "heading_path",
+          "citation",
+          "page_start",
+          "page_end",
+          "source_uri",
+          "text",
+          "token_count",
+          "score",
+          "chunk_ids"
+        ],
+        "title": "PassageOut",
+        "type": "object"
+      },
+      "RemovedOut": {
+        "properties": {
+          "marker": {
+            "title": "Marker",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "marker",
+          "reason"
+        ],
+        "title": "RemovedOut",
+        "type": "object"
+      },
+      "SearchIn": {
+        "properties": {
+          "classification": {
+            "default": "internal",
+            "enum": [
+              "public",
+              "internal",
+              "confidential",
+              "restricted"
+            ],
+            "title": "Classification",
+            "type": "string"
+          },
+          "collection_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Collection Ids",
+            "type": "array"
+          },
+          "model_profile": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Profile"
+          },
+          "query": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Query",
+            "type": "string"
+          },
+          "rerank": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rerank"
+          },
+          "retrieval_profile": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retrieval Profile"
+          },
+          "small_to_big": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Small To Big"
+          },
+          "top_k": {
+            "anyOf": [
+              {
+                "maximum": 50.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top K"
+          }
+        },
+        "required": [
+          "query",
+          "collection_ids"
+        ],
+        "title": "SearchIn",
+        "type": "object"
+      },
+      "SearchOut": {
+        "properties": {
+          "abstain": {
+            "title": "Abstain",
+            "type": "boolean"
+          },
+          "embedding_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding Model"
+          },
+          "evidence_score": {
+            "title": "Evidence Score",
+            "type": "number"
+          },
+          "passages": {
+            "items": {
+              "$ref": "#/components/schemas/PassageOut"
+            },
+            "title": "Passages",
+            "type": "array"
+          },
+          "reranked": {
+            "title": "Reranked",
+            "type": "boolean"
+          },
+          "timings_ms": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Timings Ms",
+            "type": "object"
+          }
+        },
+        "required": [
+          "passages",
+          "abstain",
+          "evidence_score",
+          "embedding_model",
+          "reranked",
+          "timings_ms"
+        ],
+        "title": "SearchOut",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -476,6 +830,50 @@
         ],
         "title": "ValidationError",
         "type": "object"
+      },
+      "VerificationOut": {
+        "properties": {
+          "abstain": {
+            "title": "Abstain",
+            "type": "boolean"
+          },
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/CitationIn"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "cited_sentences": {
+            "title": "Cited Sentences",
+            "type": "integer"
+          },
+          "removed": {
+            "items": {
+              "$ref": "#/components/schemas/RemovedOut"
+            },
+            "title": "Removed",
+            "type": "array"
+          },
+          "supported_sentences": {
+            "title": "Supported Sentences",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "answer",
+          "citations",
+          "removed",
+          "supported_sentences",
+          "cited_sentences",
+          "abstain"
+        ],
+        "title": "VerificationOut",
+        "type": "object"
       }
     }
   },
@@ -507,6 +905,48 @@
         "summary": "Meta",
         "tags": [
           "ops"
+        ]
+      }
+    },
+    "/v1/citations/verify": {
+      "post": {
+        "description": "Strip fabricated or unsupported citations; abstain when none remain.",
+        "operationId": "verify_citations_v1_citations_verify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnswerIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Verify Citations",
+        "tags": [
+          "retrieval"
         ]
       }
     },
@@ -752,6 +1192,48 @@
           }
         },
         "summary": "Outline",
+        "tags": [
+          "retrieval"
+        ]
+      }
+    },
+    "/v1/search": {
+      "post": {
+        "description": "Hybrid search over the caller's visible content, expanded to cited sections.",
+        "operationId": "search_v1_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search",
         "tags": [
           "retrieval"
         ]

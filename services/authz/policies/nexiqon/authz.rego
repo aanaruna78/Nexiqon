@@ -27,13 +27,21 @@ role_permissions := {
 		"tool.definitions.read",
 		"model.inference.run",
 	],
-	"member": ["**.read", "conversation.**", "agent.query.run", "model.inference.run", "config.profiles.resolve"],
+	"member": [
+		"**.read",
+		"conversation.**",
+		"agent.query.run",
+		"model.inference.run",
+		"config.profiles.resolve",
+		"retrieval.search.*",
+	],
 	"end_user": [
 		"agent.query.run",
 		"conversation.messages.create",
 		"conversation.own.read",
 		"model.inference.run",
 		"config.profiles.resolve",
+		"retrieval.search.*",
 	],
 	"service": ["**"],
 	# Per-service identities (ADR 0017): tokens signed with a service's own key carry only this role.
@@ -75,6 +83,8 @@ widget_actions := {
 	"conversation.own.read",
 	"model.inference.run",
 	"config.profiles.resolve",
+	"retrieval.search.run",
+	"retrieval.search.verify",
 }
 
 resource_tenant := object.get(input.resource, "tenant_id", input.actor.tenant_id)

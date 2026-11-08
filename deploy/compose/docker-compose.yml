@@ -129,6 +129,7 @@ services:
     volumes:
       - ../observability/dashboards.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/nexiqon.yaml:ro
       - ../observability/dashboards:/otel-lgtm/nexiqon-dashboards:ro
+      - ../observability/alerts.yaml:/otel-lgtm/grafana/conf/provisioning/alerting/nexiqon.yaml:ro
 
   clamav:
     image: clamav/clamav:1.4

@@ -40,14 +40,34 @@ def _pieces(block: Block, max_tokens: int) -> list[str]:
             out.append(current)
         if estimate_tokens(sentence) <= max_tokens:
             current = sentence
-        else:  # a single huge sentence/line: hard split by characters
-            size = max_tokens * 4
-            windows = [sentence[i : i + size] for i in range(0, len(sentence), size)]
-            out.extend(windows[:-1])
-            current = windows[-1]
+        else:  # a single huge sentence/line: split at word boundaries
+            words, current = _words(sentence, max_tokens)
+            out.extend(words)
     if current:
         out.append(current)
     return out
+
+
+def _words(text: str, max_tokens: int) -> tuple[list[str], str]:
+    """Windows of whole words within the limit; a single overlong word is cut by characters.
+    Returns (full windows, the last partial window)."""
+    size = max_tokens * 4
+    windows: list[str] = []
+    current = ""
+    for word in text.split():
+        while len(word) > size:  # e.g. a long URL or base64 blob
+            if current:
+                windows.append(current)
+                current = ""
+            windows.append(word[:size])
+            word = word[size:]
+        candidate = f"{current} {word}".strip()
+        if estimate_tokens(candidate) <= max_tokens:
+            current = candidate
+        else:
+            windows.append(current)
+            current = word
+    return windows, current
 
 
 def _tail(text: str, tokens: int) -> str:

@@ -1,0 +1,34 @@
+# Retrieval gold set for the SaaS Knowledge Assistant pack (RT-05).
+# Each case: the question, the document (file name) and section heading that answer it, and a phrase
+# that must appear in the retrieved text (citation support). `lang` drives the multilingual report.
+version: 1
+cases:
+  - {q: "Who becomes the owner of a new workspace?", doc: getting-started.md, section: Create your workspace, evidence: "becomes the workspace owner", lang: en}
+  - {q: "Can I change the data region after creating the workspace?", doc: getting-started.md, section: Create your workspace, evidence: "cannot be changed later", lang: en}
+  - {q: "How long are invitations valid?", doc: getting-started.md, section: Invite your team, evidence: "expire after 7 days", lang: en}
+  - {q: "What can a viewer do?", doc: getting-started.md, section: Roles, evidence: "cannot edit them", lang: en}
+  - {q: "Which operating systems does the desktop app support?", doc: getting-started.md, section: Install the desktop app, evidence: "macOS 13 or later", lang: en}
+  - {q: "How much does the Team plan cost per member?", doc: billing.md, section: Plans, evidence: "12 dollars per member per month", lang: en}
+  - {q: "When are invoices issued?", doc: billing.md, section: Invoices and payment methods, evidence: "first day of each billing month", lang: en}
+  - {q: "Can I get a refund on an annual plan?", doc: billing.md, section: Refunds, evidence: "refunded within 30 days", lang: en}
+  - {q: "What happens to my data after I cancel?", doc: billing.md, section: Cancel your subscription, evidence: "kept for 60 days", lang: en}
+  - {q: "Which identity providers work with single sign-on?", doc: security.md, section: Single sign-on (SSO), evidence: "Okta, Microsoft Entra ID or Google Workspace", lang: en}
+  - {q: "How do I force members to use SSO?", doc: security.md, section: Enforce SSO, evidence: "turn on Enforce SSO", lang: en}
+  - {q: "Can admins require two-factor authentication?", doc: security.md, section: Two-factor authentication, evidence: "require two-factor authentication for everyone", lang: en}
+  - {q: "How is data encrypted at rest?", doc: security.md, section: Data encryption, evidence: "AES-256", lang: en}
+  - {q: "How do I authenticate API requests?", doc: api.md, section: Authentication, evidence: "Bearer token", lang: en}
+  - {q: "What is the API rate limit per minute?", doc: api.md, section: Rate limits, evidence: "600 requests per minute", lang: en}
+  - {q: "How are webhook deliveries signed?", doc: api.md, section: Webhooks, evidence: "HMAC SHA-256", lang: en}
+  - {q: "How many items does a list endpoint return per page?", doc: api.md, section: Pagination, evidence: "50 items per page", lang: en}
+  - {q: "How do I export all workspace data?", doc: data.md, section: Export your data, evidence: "ZIP archive", lang: en}
+  - {q: "How long do deleted projects stay in the trash?", doc: data.md, section: Retention, evidence: "trash for 30 days", lang: en}
+  - {q: "In which regions can a workspace be hosted?", doc: data.md, section: Data residency, evidence: "the EU, the US or India", lang: en}
+  - {q: "The desktop app sync is paused, what should I check?", doc: troubleshooting.md, section: Sync is stuck, evidence: "free disk space", lang: en}
+  - {q: "My account is locked after failed sign-in attempts", doc: troubleshooting.md, section: Cannot sign in, evidence: "locked for 15 minutes", lang: en}
+  - {q: "When are digest emails sent?", doc: troubleshooting.md, section: Email notifications are missing, evidence: "once a day", lang: en}
+  - {q: "¿Cómo configuro el inicio de sesión único?", doc: es-seguridad.md, section: Inicio de sesión único (SSO), evidence: "metadatos de su proveedor de identidad", lang: es}
+  - {q: "¿Pueden los administradores exigir la autenticación en dos pasos?", doc: es-seguridad.md, section: Autenticación en dos pasos, evidence: "exigir la autenticación en dos pasos", lang: es}
+  - {q: "¿Cuándo se emiten las facturas?", doc: es-seguridad.md, section: Facturación, evidence: "primer día de cada mes", lang: es}
+  - {q: "من يصبح مالك مساحة العمل؟", doc: ar-guide.md, section: إنشاء مساحة العمل, evidence: "يصبح مالك مساحة العمل", lang: ar}
+  - {q: "متى تنتهي صلاحية الدعوات؟", doc: ar-guide.md, section: دعوة الفريق, evidence: "تنتهي صلاحية الدعوات", lang: ar}
+  - {q: "كيف يمكن تصدير بيانات مساحة العمل؟", doc: ar-guide.md, section: تصدير البيانات, evidence: "تصدير جميع بيانات", lang: ar}

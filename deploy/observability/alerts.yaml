@@ -1,0 +1,35 @@
+# Grafana alert rules (provisioned into the LGTM container by docker-compose).
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: retrieval
+    folder: Nexiqon
+    interval: 1m
+    rules:
+      - uid: nexiqon-retrieval-p95
+        title: Retrieval search P95 above 100 ms
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: Error
+        labels: { severity: warning, service: retrieval }
+        annotations:
+          summary: Retrieval search P95 latency (excluding reranking) is above the 100 ms budget (RT-08).
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: histogram_quantile(0.95, sum by (le) (rate(nexiqon_retrieval_search_duration_milliseconds_bucket[5m])))
+          - refId: B
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, expression: A, reducer: last }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions: [{ evaluator: { type: gt, params: [100] } }]

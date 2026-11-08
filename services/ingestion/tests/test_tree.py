@@ -84,3 +84,14 @@ def test_packing_respects_limits_and_overlap() -> None:
     huge = pack([Block("code", "x" * 5000)], max_tokens=100, overlap_tokens=0)
     assert all(c.token_count <= 100 for c in huge)
     assert "".join(c.text for c in huge) == "x" * 5000
+
+
+def test_long_sentences_split_between_words() -> None:
+    sentence = (
+        "Single sign-on works with Okta, Microsoft Entra ID or Google Workspace for every member "
+        * 3
+    )
+    chunks = pack([Block("paragraph", sentence.strip())], max_tokens=20, overlap_tokens=0)
+    words = set(sentence.split())
+    assert len(chunks) > 1
+    assert all(set(c.text.split()) <= words for c in chunks)  # no word was cut in half
