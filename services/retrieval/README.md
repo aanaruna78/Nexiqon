@@ -20,7 +20,7 @@ copied onto every node. RLS confines every query to the tenant. Ingestion writes
 4. Weighted reciprocal-rank fusion and de-duplication, then optional reranking through the model
    profile's reranker.
 5. **Small-to-big**: hits are grouped by parent section and expanded to the whole section within the
-   context budget; sibling hits merge. Citations read `Doc \u203a Section, p.4`.
+   context budget; sibling hits merge. Citations read `Doc › Section, p.4`.
 6. The answer **abstains** when the best evidence (cosine similarity, or rerank score) is below
    `min_evidence_score`. Timings are returned. `nexiqon.retrieval.search.duration` (ms, excluding
    reranking) feeds the Grafana panel and the P95 > 100 ms alert.
