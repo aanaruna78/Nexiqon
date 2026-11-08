@@ -105,7 +105,7 @@ jobs:
           uv export --frozen --all-packages --no-dev --no-hashes --no-emit-workspace -o /tmp/requirements.txt
           uvx pip-audit -r /tmp/requirements.txt --strict
       - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@v0.28.0
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0 (pinned by SHA)
         with:
           scan-type: fs
           severity: CRITICAL
@@ -133,7 +133,7 @@ jobs:
           for i in $(seq 1 30); do curl -fs localhost:8000/healthz && break; sleep 1; done
           curl -fs localhost:8000/identity/meta
       - name: Trivy image scan
-        uses: aquasecurity/trivy-action@v0.28.0
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0 (pinned by SHA)
         with:
           image-ref: nexiqon/platform:ci
           severity: CRITICAL
