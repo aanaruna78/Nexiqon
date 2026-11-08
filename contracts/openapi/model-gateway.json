@@ -1,6 +1,151 @@
 {
   "components": {
     "schemas": {
+      "ChatIn": {
+        "properties": {
+          "classification": {
+            "default": "internal",
+            "enum": [
+              "public",
+              "internal",
+              "confidential",
+              "restricted"
+            ],
+            "title": "Classification",
+            "type": "string"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "maximum": 64000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Messages",
+            "type": "array"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile"
+          },
+          "response_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Schema"
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "maximum": 2.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature"
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/ToolSpec"
+            },
+            "maxItems": 128,
+            "title": "Tools",
+            "type": "array"
+          }
+        },
+        "required": [
+          "messages"
+        ],
+        "title": "ChatIn",
+        "type": "object"
+      },
+      "ChatOut": {
+        "properties": {
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "cost_usd": {
+            "title": "Cost Usd",
+            "type": "string"
+          },
+          "finish_reason": {
+            "title": "Finish Reason",
+            "type": "string"
+          },
+          "route": {
+            "$ref": "#/components/schemas/Route"
+          },
+          "tool_calls": {
+            "items": {
+              "$ref": "#/components/schemas/ToolCall"
+            },
+            "title": "Tool Calls",
+            "type": "array"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/Usage"
+          }
+        },
+        "required": [
+          "content",
+          "tool_calls",
+          "finish_reason",
+          "route",
+          "usage",
+          "cost_usd"
+        ],
+        "title": "ChatOut",
+        "type": "object"
+      },
       "ContextEcho": {
         "properties": {
           "actor_id": {
@@ -22,6 +167,475 @@
           "actor_type"
         ],
         "title": "ContextEcho",
+        "type": "object"
+      },
+      "EmbedIn": {
+        "properties": {
+          "classification": {
+            "default": "internal",
+            "enum": [
+              "public",
+              "internal",
+              "confidential",
+              "restricted"
+            ],
+            "title": "Classification",
+            "type": "string"
+          },
+          "input_type": {
+            "default": "document",
+            "enum": [
+              "document",
+              "query"
+            ],
+            "title": "Input Type",
+            "type": "string"
+          },
+          "inputs": {
+            "items": {
+              "maxLength": 32000,
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Inputs",
+            "type": "array"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile"
+          }
+        },
+        "required": [
+          "inputs"
+        ],
+        "title": "EmbedIn",
+        "type": "object"
+      },
+      "EmbedOut": {
+        "properties": {
+          "cost_usd": {
+            "title": "Cost Usd",
+            "type": "string"
+          },
+          "dimensions": {
+            "title": "Dimensions",
+            "type": "integer"
+          },
+          "route": {
+            "$ref": "#/components/schemas/Route"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/Usage"
+          },
+          "vectors": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "title": "Vectors",
+            "type": "array"
+          }
+        },
+        "required": [
+          "vectors",
+          "dimensions",
+          "route",
+          "usage",
+          "cost_usd"
+        ],
+        "title": "EmbedOut",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "Message": {
+        "properties": {
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "role": {
+            "enum": [
+              "system",
+              "user",
+              "assistant",
+              "tool"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "tool_call_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Call Id"
+          },
+          "tool_calls": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ToolCall"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Calls"
+          }
+        },
+        "required": [
+          "role"
+        ],
+        "title": "Message",
+        "type": "object"
+      },
+      "Ranked": {
+        "properties": {
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          }
+        },
+        "required": [
+          "index",
+          "score"
+        ],
+        "title": "Ranked",
+        "type": "object"
+      },
+      "RerankIn": {
+        "properties": {
+          "classification": {
+            "default": "internal",
+            "enum": [
+              "public",
+              "internal",
+              "confidential",
+              "restricted"
+            ],
+            "title": "Classification",
+            "type": "string"
+          },
+          "documents": {
+            "items": {
+              "maxLength": 32000,
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Documents",
+            "type": "array"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile"
+          },
+          "query": {
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Query",
+            "type": "string"
+          },
+          "top_n": {
+            "default": 8,
+            "maximum": 200.0,
+            "minimum": 1.0,
+            "title": "Top N",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "query",
+          "documents"
+        ],
+        "title": "RerankIn",
+        "type": "object"
+      },
+      "RerankOut": {
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/Ranked"
+            },
+            "title": "Results",
+            "type": "array"
+          },
+          "route": {
+            "$ref": "#/components/schemas/Route"
+          }
+        },
+        "required": [
+          "results",
+          "route"
+        ],
+        "title": "RerankOut",
+        "type": "object"
+      },
+      "Route": {
+        "description": "Which profile served the call and why (shown in Playground and traces).",
+        "properties": {
+          "fallback_used": {
+            "title": "Fallback Used",
+            "type": "boolean"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "profile": {
+            "title": "Profile",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "redacted": {
+            "title": "Redacted",
+            "type": "boolean"
+          },
+          "requested_profile": {
+            "title": "Requested Profile",
+            "type": "string"
+          },
+          "routed": {
+            "title": "Routed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "requested_profile",
+          "profile",
+          "routed",
+          "fallback_used",
+          "provider",
+          "model",
+          "redacted"
+        ],
+        "title": "Route",
+        "type": "object"
+      },
+      "ToolCall": {
+        "properties": {
+          "arguments": {
+            "additionalProperties": true,
+            "title": "Arguments",
+            "type": "object"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ToolCall",
+        "type": "object"
+      },
+      "ToolSpec": {
+        "properties": {
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "name": {
+            "pattern": "^[a-zA-Z0-9_-]{1,64}$",
+            "title": "Name",
+            "type": "string"
+          },
+          "parameters": {
+            "additionalProperties": true,
+            "title": "Parameters",
+            "type": "object"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ToolSpec",
+        "type": "object"
+      },
+      "Usage": {
+        "properties": {
+          "input_tokens": {
+            "default": 0,
+            "title": "Input Tokens",
+            "type": "integer"
+          },
+          "output_tokens": {
+            "default": 0,
+            "title": "Output Tokens",
+            "type": "integer"
+          }
+        },
+        "title": "Usage",
+        "type": "object"
+      },
+      "UsageReport": {
+        "properties": {
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/UsageRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "total_cost_usd": {
+            "title": "Total Cost Usd",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "rows",
+          "total_cost_usd"
+        ],
+        "title": "UsageReport",
+        "type": "object"
+      },
+      "UsageRow": {
+        "properties": {
+          "calls": {
+            "title": "Calls",
+            "type": "integer"
+          },
+          "cost_usd": {
+            "title": "Cost Usd",
+            "type": "string"
+          },
+          "input_tokens": {
+            "title": "Input Tokens",
+            "type": "integer"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "operation": {
+            "title": "Operation",
+            "type": "string"
+          },
+          "output_tokens": {
+            "title": "Output Tokens",
+            "type": "integer"
+          },
+          "profile": {
+            "title": "Profile",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          }
+        },
+        "required": [
+          "profile",
+          "provider",
+          "model",
+          "operation",
+          "calls",
+          "input_tokens",
+          "output_tokens",
+          "cost_usd"
+        ],
+        "title": "UsageRow",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
         "type": "object"
       }
     }
@@ -57,9 +671,51 @@
         ]
       }
     },
+    "/v1/chat": {
+      "post": {
+        "description": "Chat completion through the tenant's model profile (routing, floors, budgets, redaction).",
+        "operationId": "chat_v1_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Chat",
+        "tags": [
+          "model-gateway"
+        ]
+      }
+    },
     "/v1/context": {
       "get": {
-        "description": "Echo the verified tenant context (skeleton endpoint used by isolation smoke tests).",
+        "description": "Echo the verified tenant context (used by isolation smoke tests).",
         "operationId": "context_v1_context_get",
         "responses": {
           "200": {
@@ -74,6 +730,141 @@
           }
         },
         "summary": "Context",
+        "tags": [
+          "model-gateway"
+        ]
+      }
+    },
+    "/v1/embeddings": {
+      "post": {
+        "description": "Embeddings (1024 dimensions). Never routed or failed over, to keep one vector space.",
+        "operationId": "embeddings_v1_embeddings_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmbedIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmbedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Embeddings",
+        "tags": [
+          "model-gateway"
+        ]
+      }
+    },
+    "/v1/rerank": {
+      "post": {
+        "description": "Rerank candidate passages for a query (best first).",
+        "operationId": "rerank_v1_rerank_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RerankIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RerankOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Rerank",
+        "tags": [
+          "model-gateway"
+        ]
+      }
+    },
+    "/v1/usage": {
+      "get": {
+        "description": "Token usage and estimated cost for a calendar month (UTC), by profile and model.",
+        "operationId": "usage_v1_usage_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "month",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Usage",
         "tags": [
           "model-gateway"
         ]

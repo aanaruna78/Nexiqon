@@ -31,6 +31,7 @@ ROLES = {
         "config.deployments.*",
         "config.flags.*",
         "config.vocabulary.*",
+        "config.profiles.resolve",
     ]
     + [
         f"config.{k}.*"
@@ -46,7 +47,7 @@ ROLES = {
         )
     ]
     + ["config.security_floors.read"],
-    "member": ["**.read"],
+    "member": ["**.read", "config.profiles.resolve"],
 }
 
 

@@ -87,6 +87,10 @@
         },
         "model": {
           "type": "string"
+        },
+        "base_url": {
+          "type": "string",
+          "format": "uri"
         }
       }
     },
@@ -161,6 +165,26 @@
           }
         }
       }
+    },
+    "fallback_profile": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+      "description": "Profile to use when this profile's provider fails or times out (also checked against security floors)",
+      "x-ui": {
+        "advanced": true
+      }
+    },
+    "timeout_seconds": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 300,
+      "x-ui": {
+        "advanced": true
+      }
+    },
+    "redact_pii": {
+      "type": "boolean",
+      "description": "Replace emails, phone and card numbers with placeholders before calling the provider (default: on for cloud)"
     }
   }
 }

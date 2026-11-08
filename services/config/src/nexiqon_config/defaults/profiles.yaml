@@ -7,16 +7,28 @@ model_profile:
     reranker: { enabled: false }
     capabilities: { tool_calling: true, json_schema_output: true, context_tokens: 128000 }
     data_policy: { location: cloud, allow_training: false }
+    routing:
+      - { classification: confidential, use_profile: on-prem-standard }
+      - { classification: restricted, use_profile: on-prem-standard }
+    fallback_profile: cloud-frontier-backup
+    timeout_seconds: 60
+  cloud-frontier-backup:
+    chat: { provider: anthropic, model: claude-sonnet-5-5, temperature: 0.2, max_output_tokens: 1200 }
+    embedding: { provider: openai, model: text-embedding-3-small, dimensions: 1024 }
+    reranker: { enabled: false }
+    capabilities: { tool_calling: true, json_schema_output: true, context_tokens: 200000 }
+    data_policy: { location: cloud, allow_training: false }
+    timeout_seconds: 60
   on-prem-standard:
     chat: { provider: openai_compatible, model: qwen3.6-35b-a3b, base_url: "http://vllm:8000/v1", temperature: 0.2 }
     embedding: { provider: openai_compatible, model: qwen3-embedding-0.6b, base_url: "http://vllm-embed:8000/v1", dimensions: 1024 }
-    reranker: { enabled: true, provider: openai_compatible, model: qwen3-reranker-0.6b }
+    reranker: { enabled: true, provider: openai_compatible, model: qwen3-reranker-0.6b, base_url: "http://vllm-rerank:8000/v1" }
     capabilities: { tool_calling: true, json_schema_output: true, context_tokens: 32768 }
     data_policy: { location: on_prem, allow_training: false }
   on-prem-small:
     chat: { provider: openai_compatible, model: qwen3-8b, base_url: "http://vllm:8000/v1", temperature: 0.2 }
     embedding: { provider: openai_compatible, model: qwen3-embedding-0.6b, base_url: "http://vllm-embed:8000/v1", dimensions: 1024 }
-    reranker: { enabled: true, provider: openai_compatible, model: qwen3-reranker-0.6b }
+    reranker: { enabled: true, provider: openai_compatible, model: qwen3-reranker-0.6b, base_url: "http://vllm-rerank:8000/v1" }
     capabilities: { tool_calling: true, json_schema_output: false, context_tokens: 32768 }
     data_policy: { location: on_prem, allow_training: false }
 retrieval_profile:

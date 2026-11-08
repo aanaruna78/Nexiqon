@@ -397,3 +397,38 @@ def test_vocabulary_from_deployed_packs(make_client: ClientFactory) -> None:
     vocab = ok(c.get("/v1/vocabulary?environment=dev", headers=t.a.headers))
     assert vocab["knowledge_source"] == {"en": "Product documentation"}
     assert ok(c.get("/v1/vocabulary?environment=prod", headers=t.a.headers)) == {}
+
+
+def test_resolve_profile_builtin_tenant_and_floors(make_client: ClientFactory) -> None:
+    owner = TwoTenants.create(roles=frozenset({"owner"}))
+    c = make_client(owner)
+    h = owner.a.headers
+    builtin = ok(
+        c.get("/v1/resolve/profiles/model_profile/cloud-frontier?environment=dev", headers=h)
+    )
+    assert builtin["source"] == "builtin:model_profile:cloud-frontier"
+    assert builtin["profile"]["data_policy"]["location"] == "cloud"
+    assert c.get("/v1/resolve/profiles/model_profile/nope", headers=h).status_code == 404
+    assert (
+        c.get("/v1/resolve/profiles/agent/x", headers=h).status_code == 400
+    )  # agent is not a profile kind
+    # A tenant floor "models must be on-prem" blocks the cloud profile but allows the on-prem one.
+    floors = {"rules": [{"path": "model.data_policy.location", "op": "equals", "value": "on_prem"}]}
+    ok(
+        c.post(
+            "/v1/objects",
+            json={"kind": "security_floors", "name": "default", "spec": floors},
+            headers=h,
+        ),
+        201,
+    )
+    ok(c.post("/v1/objects/security_floors/default/versions/1/publish", headers=h))
+    ok(c.put("/v1/objects/security_floors/default/deployments/dev", json={"version": 1}, headers=h))
+    blocked = c.get("/v1/resolve/profiles/model_profile/cloud-frontier?environment=dev", headers=h)
+    assert blocked.status_code == 409
+    assert (
+        ok(c.get("/v1/resolve/profiles/model_profile/on-prem-small?environment=dev", headers=h))[
+            "profile"
+        ]["data_policy"]["location"]
+        == "on_prem"
+    )

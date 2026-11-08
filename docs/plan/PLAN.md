@@ -19,6 +19,7 @@ Related: [ARCHITECTURE.md](ARCHITECTURE.md) · [BACKLOG.md](BACKLOG.md) · [UX.m
 | P1 · slice 2 | `phase-1/config` | CF-01..05, SaaS Knowledge Assistant pack v1 |
 | P1 · slice 3 | `phase-1/events-audit` | EV-01, EV-02, AU-01, OB-01, CF-06 |
 | P1 · slice 4 | `phase-1/studio-shell` | UX-04..06, ST-01..03; UX-07 script ready (sessions to run) |
+| P2 · slice 1 | `phase-2/model-gateway` | M-01, M-03, M-04, M-05; M-02 without streaming (adapters tested against recorded wire shapes, not yet live); M-06, M-07 open |
 
 ## 1. Decisions
 

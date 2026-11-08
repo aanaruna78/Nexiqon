@@ -469,6 +469,32 @@ class Store:
             "graph": graph,
         }
 
+    async def resolve_profile(self, kind: str, name: str, environment: str) -> dict[str, Any]:
+        """Effective profile: the tenant's deployed object, else the built-in. Model profiles are
+        checked against the security floors that constrain ``model.*`` (fail closed)."""
+        if kind not in PROFILE_KINDS:
+            raise BadRequest(f"{kind} is not a profile kind")
+        v = await self._deployed_version(kind, name, environment)
+        builtin = _defaults("profiles").get(kind, {})
+        if v is not None:
+            spec, source = v.spec, f"{kind}:{name}@{v.version}"
+        elif name in builtin:
+            spec, source = builtin[name], f"builtin:{kind}:{name}"
+        else:
+            raise NotFound(f"{kind} {name!r} is not deployed in {environment} and is not built in")
+        key = PROFILE_KINDS[kind]
+        rules = [r for r in await self.floors(environment) if r.path.startswith(f"{key}.")]
+        violations = check_floors({key: spec}, rules)
+        if violations:
+            raise FloorViolation([x.message for x in violations])
+        return {
+            "kind": kind,
+            "name": name,
+            "environment": environment,
+            "source": source,
+            "profile": spec,
+        }
+
     # ------------------------------------------------------------------ snapshots
     async def snapshot(self, environment: str) -> dict[str, Any]:
         rows = (

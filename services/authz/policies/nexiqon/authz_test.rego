@@ -54,3 +54,18 @@ test_audit_log_is_admin_only if {
 	d := authz.decision with input as {"actor": actor(["member"]), "action": "audit.events.read", "resource": {"type": "audit_event"}}
 	"admin-only action" in d.reasons
 }
+
+test_any_tenant_role_may_run_inference_but_not_manage if {
+	authz.allow with input as {"actor": actor(["member"]), "action": "model.inference.run", "resource": {"type": "model_profile"}}
+	widget := {"tenant_id": "t-a", "id": "k-1", "type": "widget", "roles": ["end_user"], "groups": []}
+	authz.allow with input as {"actor": widget, "action": "model.inference.run", "resource": {"type": "model_profile"}}
+	not authz.allow with input as {"actor": widget, "action": "config.model_profile.write", "resource": {"type": "model_profile"}}
+}
+
+test_inference_callers_may_resolve_profiles_without_reading_the_registry if {
+	widget := {"tenant_id": "t-a", "id": "k-1", "type": "widget", "roles": ["end_user"], "groups": []}
+	authz.allow with input as {"actor": widget, "action": "config.profiles.resolve", "resource": {"type": "model_profile"}}
+	authz.allow with input as {"actor": actor(["end_user"]), "action": "config.profiles.resolve", "resource": {"type": "model_profile"}}
+	not authz.allow with input as {"actor": widget, "action": "config.model_profile.read", "resource": {"type": "model_profile"}}
+	not authz.allow with input as {"actor": actor(["end_user"]), "action": "config.model_profile.read", "resource": {"type": "model_profile"}}
+}

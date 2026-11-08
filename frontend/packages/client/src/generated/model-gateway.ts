@@ -21,6 +21,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Chat
+         * @description Chat completion through the tenant's model profile (routing, floors, budgets, redaction).
+         */
+        post: operations["chat_v1_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/context": {
         parameters: {
             query?: never;
@@ -30,9 +50,69 @@ export interface paths {
         };
         /**
          * Context
-         * @description Echo the verified tenant context (skeleton endpoint used by isolation smoke tests).
+         * @description Echo the verified tenant context (used by isolation smoke tests).
          */
         get: operations["context_v1_context_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/embeddings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Embeddings
+         * @description Embeddings (1024 dimensions). Never routed or failed over, to keep one vector space.
+         */
+        post: operations["embeddings_v1_embeddings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rerank": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rerank
+         * @description Rerank candidate passages for a query (best first).
+         */
+        post: operations["rerank_v1_rerank_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Usage
+         * @description Token usage and estimated cost for a calendar month (UTC), by profile and model.
+         */
+        get: operations["usage_v1_usage_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -45,6 +125,44 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ChatIn */
+        ChatIn: {
+            /**
+             * Classification
+             * @default internal
+             * @enum {string}
+             */
+            classification: "public" | "internal" | "confidential" | "restricted";
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** Max Tokens */
+            max_tokens?: number | null;
+            /** Messages */
+            messages: components["schemas"]["Message"][];
+            /** Profile */
+            profile?: string | null;
+            /** Response Schema */
+            response_schema?: {
+                [key: string]: unknown;
+            } | null;
+            /** Temperature */
+            temperature?: number | null;
+            /** Tools */
+            tools?: components["schemas"]["ToolSpec"][];
+        };
+        /** ChatOut */
+        ChatOut: {
+            /** Content */
+            content: string | null;
+            /** Cost Usd */
+            cost_usd: string;
+            /** Finish Reason */
+            finish_reason: string;
+            route: components["schemas"]["Route"];
+            /** Tool Calls */
+            tool_calls: components["schemas"]["ToolCall"][];
+            usage: components["schemas"]["Usage"];
+        };
         /** ContextEcho */
         ContextEcho: {
             /** Actor Id */
@@ -53,6 +171,187 @@ export interface components {
             actor_type: string;
             /** Tenant Id */
             tenant_id: string;
+        };
+        /** EmbedIn */
+        EmbedIn: {
+            /**
+             * Classification
+             * @default internal
+             * @enum {string}
+             */
+            classification: "public" | "internal" | "confidential" | "restricted";
+            /**
+             * Input Type
+             * @default document
+             * @enum {string}
+             */
+            input_type: "document" | "query";
+            /** Inputs */
+            inputs: string[];
+            /** Profile */
+            profile?: string | null;
+        };
+        /** EmbedOut */
+        EmbedOut: {
+            /** Cost Usd */
+            cost_usd: string;
+            /** Dimensions */
+            dimensions: number;
+            route: components["schemas"]["Route"];
+            usage: components["schemas"]["Usage"];
+            /** Vectors */
+            vectors: number[][];
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
+        };
+        /** Message */
+        Message: {
+            /** Content */
+            content?: string | null;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "system" | "user" | "assistant" | "tool";
+            /** Tool Call Id */
+            tool_call_id?: string | null;
+            /** Tool Calls */
+            tool_calls?: components["schemas"]["ToolCall"][] | null;
+        };
+        /** Ranked */
+        Ranked: {
+            /** Index */
+            index: number;
+            /** Score */
+            score: number;
+        };
+        /** RerankIn */
+        RerankIn: {
+            /**
+             * Classification
+             * @default internal
+             * @enum {string}
+             */
+            classification: "public" | "internal" | "confidential" | "restricted";
+            /** Documents */
+            documents: string[];
+            /** Profile */
+            profile?: string | null;
+            /** Query */
+            query: string;
+            /**
+             * Top N
+             * @default 8
+             */
+            top_n: number;
+        };
+        /** RerankOut */
+        RerankOut: {
+            /** Results */
+            results: components["schemas"]["Ranked"][];
+            route: components["schemas"]["Route"];
+        };
+        /**
+         * Route
+         * @description Which profile served the call and why (shown in Playground and traces).
+         */
+        Route: {
+            /** Fallback Used */
+            fallback_used: boolean;
+            /** Model */
+            model: string;
+            /** Profile */
+            profile: string;
+            /** Provider */
+            provider: string;
+            /** Redacted */
+            redacted: boolean;
+            /** Requested Profile */
+            requested_profile: string;
+            /** Routed */
+            routed: boolean;
+        };
+        /** ToolCall */
+        ToolCall: {
+            /** Arguments */
+            arguments?: {
+                [key: string]: unknown;
+            };
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** ToolSpec */
+        ToolSpec: {
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Name */
+            name: string;
+            /** Parameters */
+            parameters?: {
+                [key: string]: unknown;
+            };
+        };
+        /** Usage */
+        Usage: {
+            /**
+             * Input Tokens
+             * @default 0
+             */
+            input_tokens: number;
+            /**
+             * Output Tokens
+             * @default 0
+             */
+            output_tokens: number;
+        };
+        /** UsageReport */
+        UsageReport: {
+            /** Month */
+            month: string;
+            /** Rows */
+            rows: components["schemas"]["UsageRow"][];
+            /** Total Cost Usd */
+            total_cost_usd: string;
+        };
+        /** UsageRow */
+        UsageRow: {
+            /** Calls */
+            calls: number;
+            /** Cost Usd */
+            cost_usd: string;
+            /** Input Tokens */
+            input_tokens: number;
+            /** Model */
+            model: string;
+            /** Operation */
+            operation: string;
+            /** Output Tokens */
+            output_tokens: number;
+            /** Profile */
+            profile: string;
+            /** Provider */
+            provider: string;
+        };
+        /** ValidationError */
+        ValidationError: {
+            /** Context */
+            ctx?: Record<string, never>;
+            /** Input */
+            input?: unknown;
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
         };
     };
     responses: never;
@@ -85,6 +384,39 @@ export interface operations {
             };
         };
     };
+    chat_v1_chat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     context_v1_context_get: {
         parameters: {
             query?: never;
@@ -101,6 +433,103 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContextEcho"];
+                };
+            };
+        };
+    };
+    embeddings_v1_embeddings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmbedIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmbedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rerank_v1_rerank_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RerankIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RerankOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    usage_v1_usage_get: {
+        parameters: {
+            query?: {
+                month?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsageReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

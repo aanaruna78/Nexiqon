@@ -1279,6 +1279,70 @@
         ]
       }
     },
+    "/v1/resolve/profiles/{kind}/{name}": {
+      "get": {
+        "description": "Effective model/retrieval/retention profile for the data plane, with floors applied.\n\nUses the narrow ``config.profiles.resolve`` permission so callers that may run inference\n(members, end users, widgets via the model gateway) never need read access to the registry.",
+        "operationId": "resolve_profile_v1_resolve_profiles__kind___name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "environment",
+            "required": false,
+            "schema": {
+              "default": "dev",
+              "title": "Environment",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Resolve Profile V1 Resolve Profiles  Kind   Name  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resolve Profile",
+        "tags": [
+          "config"
+        ]
+      }
+    },
     "/v1/snapshots/{environment}": {
       "get": {
         "description": "Signed bundle of everything deployed in an environment, pulled by data planes (CF-05).",

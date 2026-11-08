@@ -264,6 +264,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/resolve/profiles/{kind}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Resolve Profile
+         * @description Effective model/retrieval/retention profile for the data plane, with floors applied.
+         *
+         *     Uses the narrow ``config.profiles.resolve`` permission so callers that may run inference
+         *     (members, end users, widgets via the model gateway) never need read access to the registry.
+         */
+        get: operations["resolve_profile_v1_resolve_profiles__kind___name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/snapshots/{environment}": {
         parameters: {
             query?: never;
@@ -978,6 +1001,42 @@ export interface operations {
             };
             header?: never;
             path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_profile_v1_resolve_profiles__kind___name__get: {
+        parameters: {
+            query?: {
+                environment?: string;
+            };
+            header?: never;
+            path: {
+                kind: string;
                 name: string;
             };
             cookie?: never;

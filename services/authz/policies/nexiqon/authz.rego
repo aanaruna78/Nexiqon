@@ -25,9 +25,16 @@ role_permissions := {
 		"conversation.**",
 		"evaluation.**",
 		"tool.definitions.read",
+		"model.inference.run",
 	],
-	"member": ["**.read", "conversation.**", "agent.query.run"],
-	"end_user": ["agent.query.run", "conversation.messages.create", "conversation.own.read"],
+	"member": ["**.read", "conversation.**", "agent.query.run", "model.inference.run", "config.profiles.resolve"],
+	"end_user": [
+		"agent.query.run",
+		"conversation.messages.create",
+		"conversation.own.read",
+		"model.inference.run",
+		"config.profiles.resolve",
+	],
 	"service": ["**"],
 }
 
@@ -50,6 +57,15 @@ admin_roles := {"owner", "admin", "service"}
 
 # Actor types that may never hold administrative permissions, even if a role says so.
 restricted_actor_types := {"widget"}
+
+# The only actions a widget may perform.
+widget_actions := {
+	"agent.query.run",
+	"conversation.messages.create",
+	"conversation.own.read",
+	"model.inference.run",
+	"config.profiles.resolve",
+}
 
 resource_tenant := object.get(input.resource, "tenant_id", input.actor.tenant_id)
 
@@ -80,7 +96,7 @@ actor_type_ok if not input.actor.type in restricted_actor_types
 
 actor_type_ok if {
 	input.actor.type in restricted_actor_types
-	input.action in {"agent.query.run", "conversation.messages.create", "conversation.own.read"}
+	input.action in widget_actions
 }
 
 default allow := false

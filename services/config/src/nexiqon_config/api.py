@@ -352,6 +352,24 @@ async def resolve_agent(
         return await store.resolve_agent(name, environment, channel=channel, agent_version=preview)
 
 
+@tenant_router.get("/resolve/profiles/{kind}/{name}")
+async def resolve_profile(
+    kind: str, name: str, request: Request, ctx: Ctx, environment: str = "dev"
+) -> dict[str, Any]:
+    """Effective model/retrieval/retention profile for the data plane, with floors applied.
+
+    Uses the narrow ``config.profiles.resolve`` permission so callers that may run inference
+    (members, end users, widgets via the model gateway) never need read access to the registry.
+    """
+    await _allow(request, "config.profiles.resolve", _kind(kind), name)
+    if environment not in ENVIRONMENTS:
+        raise BadRequest(f"environment must be one of {ENVIRONMENTS}")
+    async with _db(request).session(ctx) as s:
+        return await Store(s, ctx, request.app.state.settings).resolve_profile(
+            kind, name, environment
+        )
+
+
 @tenant_router.get("/snapshots/{environment}")
 async def snapshot(
     environment: str,

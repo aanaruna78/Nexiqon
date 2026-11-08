@@ -188,7 +188,13 @@ services:
     ports: ["8105:8000"]
   model-gateway:
     <<: *app
-    environment: { <<: *app-env, NEXIQON_GROUP: model-gateway }
+    environment:
+      <<: *app-env
+      NEXIQON_GROUP: model-gateway
+      # Provider keys come from your shell (never committed); unset providers simply fail closed.
+      NEXIQON_PROVIDERS__OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      NEXIQON_PROVIDERS__ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      NEXIQON_PROVIDERS__GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     ports: ["8106:8000"]
 
 volumes:
