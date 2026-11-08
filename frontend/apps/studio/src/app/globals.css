@@ -1,26 +1,151 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-warning: var(--warning);
+  --color-warning-background: var(--warning-background);
+  --color-success: var(--success);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  /* Nexiqon design tokens (UX-04). Brand: navy ink #12233F, teal #0E8A7E, amber #E0B04C.
+     Text/background pairs meet WCAG 2.2 AA (4.5:1). The brand teal is ~4.2:1 on white, so
+     primary actions use a darker teal; tenant accents are clamped the same way (lib/theme.ts). */
+  --background: #ffffff;
+  --foreground: #12233f;
+  --card: #ffffff;
+  --card-foreground: #12233f;
+  --popover: #ffffff;
+  --popover-foreground: #12233f;
+  --primary: #0b6f66;
+  --primary-foreground: #ffffff;
+  --secondary: #eef3f7;
+  --secondary-foreground: #12233f;
+  --muted: #f4f7fa;
+  --muted-foreground: #4a5f78;
+  --accent: #d8f0ec;
+  --accent-foreground: #0b4f49;
+  --destructive: #b42318;
+  --warning: #8a5a00;
+  --warning-background: #fdf1d6;
+  --success: #0b6f66;
+  --border: #d9e2ec;
+  --input: #c7d3df;
+  --ring: #0e8a7e;
+  --chart-1: #0e8a7e;
+  --chart-2: #12233f;
+  --chart-3: #e0b04c;
+  --chart-4: #5b7a99;
+  --chart-5: #7e57c2;
+  --radius: 0.625rem;
+  --sidebar: #12233f;
+  --sidebar-foreground: #e6edf5;
+  --sidebar-primary: #2bb3a3;
+  --sidebar-primary-foreground: #0b1626;
+  --sidebar-accent: #1c3355;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #22395c;
+  --sidebar-ring: #2bb3a3;
+}
+
+.dark {
+  --background: #0b1626;
+  --foreground: #e6edf5;
+  --card: #10203a;
+  --card-foreground: #e6edf5;
+  --popover: #10203a;
+  --popover-foreground: #e6edf5;
+  --primary: #2bb3a3;
+  --primary-foreground: #0b1626;
+  --secondary: #1a2d49;
+  --secondary-foreground: #e6edf5;
+  --muted: #142740;
+  --muted-foreground: #a9b8ca;
+  --accent: #123b3f;
+  --accent-foreground: #bfede6;
+  --destructive: #f97066;
+  --warning: #f2c66d;
+  --warning-background: #3a2e12;
+  --success: #2bb3a3;
+  --border: #22395c;
+  --input: #2a4268;
+  --ring: #2bb3a3;
+  --chart-1: #2bb3a3;
+  --chart-2: #a9b8ca;
+  --chart-3: #f2c66d;
+  --chart-4: #7aa2c8;
+  --chart-5: #b39ddb;
+  --sidebar: #08111e;
+  --sidebar-foreground: #e6edf5;
+  --sidebar-primary: #2bb3a3;
+  --sidebar-primary-foreground: #0b1626;
+  --sidebar-accent: #15263f;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #1c3355;
+  --sidebar-ring: #2bb3a3;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
   }
 }
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Respect reduced-motion preferences everywhere (WCAG 2.3.3). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

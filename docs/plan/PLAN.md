@@ -18,7 +18,7 @@ Related: [ARCHITECTURE.md](ARCHITECTURE.md) · [BACKLOG.md](BACKLOG.md) · [UX.m
 | P1 · slice 1 | `phase-1/identity-authz` | ID-01..04, AZ-01..02, PL-01, PL-03 |
 | P1 · slice 2 | `phase-1/config` | CF-01..05, SaaS Knowledge Assistant pack v1 |
 | P1 · slice 3 | `phase-1/events-audit` | EV-01, EV-02, AU-01, OB-01, CF-06 |
-| P1 · slice 4 | — | UX-04..07, ST-01..03 (design system, Studio shell) |
+| P1 · slice 4 | `phase-1/studio-shell` | UX-04..06, ST-01..03; UX-07 script ready (sessions to run) |
 
 ## 1. Decisions
 

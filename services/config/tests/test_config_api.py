@@ -387,3 +387,13 @@ def test_flags_evaluate_with_safe_defaults(make_client: ClientFactory) -> None:
         "studio-domain-pack-editor": False,
         "widget-streaming": True,
     }
+
+
+def test_vocabulary_from_deployed_packs(make_client: ClientFactory) -> None:
+    t = TwoTenants.create()
+    c = make_client(t)
+    assert ok(c.get("/v1/vocabulary", headers=t.a.headers)) == {}
+    bootstrap(c, t.a)
+    vocab = ok(c.get("/v1/vocabulary?environment=dev", headers=t.a.headers))
+    assert vocab["knowledge_source"] == {"en": "Product documentation"}
+    assert ok(c.get("/v1/vocabulary?environment=prod", headers=t.a.headers)) == {}

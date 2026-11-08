@@ -412,3 +412,22 @@ async def flags(request: Request, ctx: Ctx) -> list[FlagOut]:
         )
         for f in _defaults("flags").get("flags", [])
     ]
+
+
+@tenant_router.get("/vocabulary")
+async def vocabulary(
+    request: Request, ctx: Ctx, environment: str = "dev"
+) -> dict[str, dict[str, str]]:
+    """Domain terms per locale from the packs deployed in an environment (Studio and widget labels)."""
+    await _allow(request, "config.vocabulary.read", "domain_pack")
+    if environment not in ENVIRONMENTS:
+        raise BadRequest(f"environment must be one of {ENVIRONMENTS}")
+    async with _db(request).session(ctx) as s:
+        snapshot = await Store(s, ctx, request.app.state.settings).deployed_specs(
+            "domain_pack", environment
+        )
+    merged: dict[str, dict[str, str]] = {}
+    for spec in snapshot:
+        for term, labels in (spec.get("vocabulary") or {}).items():
+            merged.setdefault(term, {}).update(labels)
+    return merged

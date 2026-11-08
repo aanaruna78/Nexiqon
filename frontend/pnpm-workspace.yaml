@@ -2,6 +2,10 @@ packages:
   - apps/*
   - packages/*
 
+# Dependencies allowed to run install scripts (everything else is blocked).
 allowBuilds:
+  esbuild: true          # bundler used by Vite / Storybook
+  "@swc/core": true      # Storybook's Next.js integration
+  "@parcel/watcher": true
   sharp: false
   unrs-resolver: false

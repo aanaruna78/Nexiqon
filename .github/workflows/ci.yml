@@ -82,6 +82,8 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      - name: Storybook builds (design-system catalog, a11y addon)
+        run: pnpm --filter @nexiqon/studio build-storybook
 
   security:
     name: Security (secrets, dependencies, filesystem)

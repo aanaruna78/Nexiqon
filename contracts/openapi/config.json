@@ -1335,6 +1335,57 @@
           "config"
         ]
       }
+    },
+    "/v1/vocabulary": {
+      "get": {
+        "description": "Domain terms per locale from the packs deployed in an environment (Studio and widget labels).",
+        "operationId": "vocabulary_v1_vocabulary_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "environment",
+            "required": false,
+            "schema": {
+              "default": "dev",
+              "title": "Environment",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "title": "Response Vocabulary V1 Vocabulary Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Vocabulary",
+        "tags": [
+          "config"
+        ]
+      }
     }
   },
   "servers": [

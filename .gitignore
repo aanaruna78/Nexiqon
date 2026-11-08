@@ -29,3 +29,8 @@ coverage/
 
 # Local dev secrets
 deploy/compose/config/dev-secrets.yaml
+
+# Studio test and build artifacts
+frontend/apps/studio/test-results/
+frontend/apps/studio/playwright-report/
+frontend/apps/studio/storybook-static/

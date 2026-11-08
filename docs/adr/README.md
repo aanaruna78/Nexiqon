@@ -17,3 +17,4 @@
 | [0013](0013-frontend-stack.md) | Frontend stack | Accepted |
 | [0014](0014-cloud-agnostic-deployment-digitalocean-first.md) | Cloud-agnostic deployment, DigitalOcean first | Accepted |
 | [0015](0015-python-tooling-and-quality-gates.md) | Python tooling and quality gates | Accepted |
+| [0016](0016-studio-bff-auth-and-i18n.md) | Studio as a backend-for-frontend, OIDC sessions and i18n | Accepted |

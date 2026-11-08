@@ -37,6 +37,15 @@ With `observability` in `PROFILES`, Grafana (`localhost:3000`, admin/admin) show
 and the **Nexiqon services** dashboard; every request is traced from the gateway through services and
 events. Feature flags are served by flagd from `deploy/compose/flags/flags.json`.
 
+**Studio** (admin UI) runs on `localhost:3100`:
+
+```bash
+cd frontend/apps/studio && pnpm dev          # sign in with the dev Keycloak user
+pnpm test                                    # unit + accessibility tests
+pnpm storybook                               # design-system catalog
+pnpm e2e                                     # end-to-end against the running stack (see e2e/README.md)
+```
+
 The gateway listens on `localhost:8000` and routes `/<service>/...` to the right group. Requests carry
 `Authorization: Bearer <IdP token or nxq_ API key>` and, for users in several tenants,
 `X-Nexiqon-Tenant: <slug or id>`. The dev Keycloak realm (`localhost:8080`, realm `nexiqon`) has a user

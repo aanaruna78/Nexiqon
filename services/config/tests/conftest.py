@@ -30,6 +30,7 @@ ROLES = {
         "config.snapshots.*",
         "config.deployments.*",
         "config.flags.*",
+        "config.vocabulary.*",
     ]
     + [
         f"config.{k}.*"

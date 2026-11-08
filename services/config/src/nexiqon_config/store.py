@@ -349,6 +349,16 @@ class Store:
         )
         return list(rows.all())
 
+    async def deployed_specs(self, kind: str, environment: str) -> list[dict[str, Any]]:
+        rows = await self.s.scalars(
+            select(ConfigVersion.spec)
+            .join(ConfigDeployment, ConfigDeployment.version_id == ConfigVersion.id)
+            .join(ConfigObject, ConfigObject.id == ConfigDeployment.object_id)
+            .where(ConfigObject.kind == kind, ConfigDeployment.environment == environment)
+            .order_by(ConfigObject.name)
+        )
+        return list(rows.all())
+
     async def floors(self, environment: str) -> list[FloorRule]:
         tenant = await self._deployed_spec("security_floors", TENANT_SETTINGS, environment)
         deployment = {"rules": self.settings.deployment_floors}
