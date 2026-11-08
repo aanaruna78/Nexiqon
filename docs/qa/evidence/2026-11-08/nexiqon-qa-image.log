@@ -1,0 +1,33 @@
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon  1.278MB
+Step 1/19 : FROM ghcr.io/astral-sh/uv:0.13.0 AS uv
+0.13.0: Pulling from astral-sh/uv
+Digest: sha256:cdc6093146eb3ff6a40107b38f008b789e050e77ad87865e381d9917da55a168
+Status: Downloaded newer image for ghcr.io/astral-sh/uv:0.13.0
+ ---> cdc6093146eb
+Step 2/19 : FROM python:3.12.15-slim AS build
+3.12.15-slim: Pulling from library/python
+Digest: sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704
+Status: Downloaded newer image for python:3.12.15-slim
+ ---> a0f57064cbdc
+Step 3/19 : COPY --from=uv /uv /uvx /bin/
+ ---> 095bc078a1d2
+Step 4/19 : ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
+ ---> Running in a756b623b126
+ ---> Removed intermediate container a756b623b126
+ ---> 56d3e3a1d1e1
+Step 5/19 : WORKDIR /app
+ ---> Running in 722ad05425cc
+ ---> Removed intermediate container 722ad05425cc
+ ---> bd56f4ef7a62
+Step 6/19 : COPY pyproject.toml uv.lock .python-version ./
+ ---> 4a997adbaeb7
+Step 7/19 : COPY libs libs
+ ---> 1549de5031b7
+Step 8/19 : COPY services services
+ ---> 0f775782f3e5
+Step 9/19 : RUN --mount=type=cache,target=/root/.cache/uv     uv sync --frozen --no-dev --all-packages --no-editable
+the --mount option requires BuildKit. Refer to https://docs.docker.com/go/buildkit/ to learn how to build images with BuildKit enabled

@@ -1,0 +1,1827 @@
+$ storybook build
+
+┌  Building storybook v10.6.3
+│
+◇  Cleaning outputDir: storybook-static
+│
+◇  Loading presets
+│
+◇  Building manager..
+│
+●  Building open services..
+│
+●  Building preview..
+│
+●  Copying static files: public at storybook-static
+│  Vite vite v8.3.5 building client environment for production...
+transforming...
+✓ 2320 modules transformed.
+│
+▲  Vite [lightningcss minify] Unknown at rule: @theme
+│  1  |  @layer theme, base, components, utilities;
+│  2  |  @layer theme {
+│  3  |    @theme default {
+│  |          ^
+│  4  |      --font-sans:
+│  5  |        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+│  "Helvetica Neue",
+│
+▲  Vite [lightningcss minify] Unknown at rule: @theme
+│  522 |
+│  523 |    /* Deprecated */
+│  524 |    @theme default inline reference {
+│  |          ^
+│  525 |      --blur: 8px;
+│  526 |      --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px
+│  rgb(0 0 0 / 0.1);
+│
+▲  Vite [lightningcss minify] Unknown at rule: @tailwind
+│  946 |
+│  947 |  @layer utilities {
+│  948 |    @tailwind utilities;
+│  |             ^
+│  949 |  }
+│  950 |
+│
+▲  Vite [lightningcss minify] Unknown at rule: @theme
+│  949 |  }
+│  950 |
+│  951 |  ...translate-y{syntax:"*";inherits:false;initial-value:0}@theme
+│  inline{--animation-delay-0: 0s; --animation-delay-75:...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...0%,70%,100% { opacity: 1; }20%,50% { opacity: 0; }}}@utility
+│  animation-duration-*{--tw-animation-duration: calc(--...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...e(--animation-duration-*,[duration],"initial",[*]);}@utility
+│  delay-*{animation-delay: calc(--value(number)*1ms); a...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...alue(--animation-delay-*,[duration],"initial",[*]);}@utility
+│  repeat-*{animation-iteration-count: --value(--animati...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...--value(--animation-repeat-*,number,"initial",[*]);}@utility
+│  direction-*{animation-direction: --value(--animation-...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...on: --value(--animation-direction-*,"initial",[*]);}@utility
+│  fill-mode-*{animation-fill-mode: --value(--animation-...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...de: --value(--animation-fill-mode-*,"initial",[*]);}@utility
+│  running{animation-play-state: running;}@utility pause...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...]);}@utility running{animation-play-state: running;}@utility
+│  paused{animation-play-state: paused;}@utility play-st...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...ning;}@utility paused{animation-play-state: paused;}@utility
+│  play-state-*{animation-play-state: --value("initial",...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...ate-*{animation-play-state: --value("initial",[*]);}@utility
+│  blur-in{--tw-enter-blur: 20px;}@utility blur-in-*{--t...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...tial",[*]);}@utility blur-in{--tw-enter-blur: 20px;}@utility
+│  blur-in-*{--tw-enter-blur: calc(--value(number)*1px);...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...mber)*1px); --tw-enter-blur: --value(--blur-*,[*]);}@utility
+│  blur-out{--tw-exit-blur: 20px;}@utility blur-out-*{--...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...lur-*,[*]);}@utility blur-out{--tw-exit-blur: 20px;}@utility
+│  blur-out-*{--tw-exit-blur: calc(--value(number)*1px);...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...umber)*1px); --tw-exit-blur: --value(--blur-*,[*]);}@utility
+│  fade-in{--tw-enter-opacity: 0;}@utility fade-in-*{--t...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...lur-*,[*]);}@utility fade-in{--tw-enter-opacity: 0;}@utility
+│  fade-in-*{--tw-enter-opacity: calc(--value(number)/10...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...); --tw-enter-opacity: --value(--percentage-*,[*]);}@utility
+│  fade-out{--tw-exit-opacity: 0;}@utility fade-out-*{--...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...age-*,[*]);}@utility fade-out{--tw-exit-opacity: 0;}@utility
+│  fade-out-*{--tw-exit-opacity: calc(--value(number)/10...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...0); --tw-exit-opacity: --value(--percentage-*,[*]);}@utility
+│  zoom-in{--tw-enter-scale: 0;}@utility zoom-in-*{--tw-...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...ntage-*,[*]);}@utility zoom-in{--tw-enter-scale: 0;}@utility
+│  zoom-in-*{--tw-enter-scale: calc(--value(number)*1%);...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...o)); --tw-enter-scale: --value(--percentage-*,[*]);}@utility
+│  -zoom-in-*{--tw-enter-scale: calc(--value(number)*-1%...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...-1); --tw-enter-scale: --value(--percentage-*,[*]);}@utility
+│  zoom-out{--tw-exit-scale: 0;}@utility zoom-out-*{--tw...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...ntage-*,[*]);}@utility zoom-out{--tw-exit-scale: 0;}@utility
+│  zoom-out-*{--tw-exit-scale: calc(--value(number)*1%);...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...io)); --tw-exit-scale: --value(--percentage-*,[*]);}@utility
+│  -zoom-out-*{--tw-exit-scale: calc(--value(number)*-1%...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...*-1); --tw-exit-scale: --value(--percentage-*,[*]);}@utility
+│  spin-in{--tw-enter-rotate: 30deg;}@utility spin-in-*{...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...-*,[*]);}@utility spin-in{--tw-enter-rotate: 30deg;}@utility
+│  spin-in-*{--tw-enter-rotate: calc(--value(number)*1de...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...60deg); --tw-enter-rotate: --value(--rotate-*,[*]);}@utility
+│  -spin-in{--tw-enter-rotate: -30deg;}@utility -spin-in...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...,[*]);}@utility -spin-in{--tw-enter-rotate: -30deg;}@utility
+│  -spin-in-*{--tw-enter-rotate: calc(--value(number)*-1...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...60deg); --tw-enter-rotate: --value(--rotate-*,[*]);}@utility
+│  spin-out{--tw-exit-rotate: 30deg;}@utility spin-out-*...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...-*,[*]);}@utility spin-out{--tw-exit-rotate: 30deg;}@utility
+│  spin-out-*{--tw-exit-rotate: calc(--value(number)*1de...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...360deg); --tw-exit-rotate: --value(--rotate-*,[*]);}@utility
+│  -spin-out{--tw-exit-rotate: -30deg;}@utility -spin-ou...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...,[*]);}@utility -spin-out{--tw-exit-rotate: -30deg;}@utility
+│  -spin-out-*{--tw-exit-rotate: calc(--value(number)*-1...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...360deg); --tw-exit-rotate: --value(--rotate-*,[*]);}@utility
+│  slide-in-from-top{--tw-enter-translate-y: -100%;}@uti...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...ty slide-in-from-top{--tw-enter-translate-y: -100%;}@utility
+│  slide-in-from-top-*{--tw-enter-translate-y: calc(--va...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...c(--value(--translate-*,[percentage],[length])*-1);}@utility
+│  slide-in-from-bottom{--tw-enter-translate-y: 100%;}@u...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ... slide-in-from-bottom{--tw-enter-translate-y: 100%;}@utility
+│  slide-in-from-bottom-*{--tw-enter-translate-y: calc(-...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...te-y: --value(--translate-*,[percentage],[length]);}@utility
+│  slide-in-from-left{--tw-enter-translate-x: -100%;}@ut...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...y slide-in-from-left{--tw-enter-translate-x: -100%;}@utility
+│  slide-in-from-left-*{--tw-enter-translate-x: calc(--v...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...c(--value(--translate-*,[percentage],[length])*-1);}@utility
+│  slide-in-from-right{--tw-enter-translate-x: 100%;}@ut...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...y slide-in-from-right{--tw-enter-translate-x: 100%;}@utility
+│  slide-in-from-right-*{--tw-enter-translate-x: calc(--...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...te-x: --value(--translate-*,[percentage],[length]);}@utility
+│  slide-in-from-start{&:dir(ltr){ --tw-enter-translate-...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...-100%; }&:dir(rtl){ --tw-enter-translate-x: 100%; }}@utility
+│  slide-in-from-start-*{&:where(:dir(ltr),[dir="ltr"],[...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...-x: --value(--translate-*,[percentage],[length]); }}@utility
+│  slide-in-from-end{&:dir(ltr){ --tw-enter-translate-x:...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...100%; }&:dir(rtl){ --tw-enter-translate-x: -100%; }}@utility
+│  slide-in-from-end-*{&:where(:dir(ltr),[dir="ltr"],[di...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...--value(--translate-*,[percentage],[length])*-1); }}@utility
+│  slide-out-to-top{--tw-exit-translate-y: -100%;}@utili...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...lity slide-out-to-top{--tw-exit-translate-y: -100%;}@utility
+│  slide-out-to-top-*{--tw-exit-translate-y: calc(--valu...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...c(--value(--translate-*,[percentage],[length])*-1);}@utility
+│  slide-out-to-bottom{--tw-exit-translate-y: 100%;}@uti...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...ty slide-out-to-bottom{--tw-exit-translate-y: 100%;}@utility
+│  slide-out-to-bottom-*{--tw-exit-translate-y: calc(--v...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...te-y: --value(--translate-*,[percentage],[length]);}@utility
+│  slide-out-to-left{--tw-exit-translate-x: -100%;}@util...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...ity slide-out-to-left{--tw-exit-translate-x: -100%;}@utility
+│  slide-out-to-left-*{--tw-exit-translate-x: calc(--val...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...c(--value(--translate-*,[percentage],[length])*-1);}@utility
+│  slide-out-to-right{--tw-exit-translate-x: 100%;}@util...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...ity slide-out-to-right{--tw-exit-translate-x: 100%;}@utility
+│  slide-out-to-right-*{--tw-exit-translate-x: calc(--va...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...te-x: --value(--translate-*,[percentage],[length]);}@utility
+│  slide-out-to-start{&:dir(ltr){ --tw-exit-translate-x:...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ... -100%; }&:dir(rtl){ --tw-exit-translate-x: 100%; }}@utility
+│  slide-out-to-start-*{&:where(:dir(ltr),[dir="ltr"],[d...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ...-x: --value(--translate-*,[percentage],[length]); }}@utility
+│  slide-out-to-end{&:dir(ltr){ --tw-exit-translate-x: 1...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  949 |  }
+│  950 |
+│  951 |  ... 100%; }&:dir(rtl){ --tw-exit-translate-x: -100%; }}@utility
+│  slide-out-to-end-*{&:where(:dir(ltr),[dir="ltr"],[dir...
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @theme
+│  949 |  }
+│  950 |
+│  951 |  ...c(--value(--translate-*,[percentage],[length])*-1); }}@theme
+│  inline {
+│  |                                                                 ^
+│  952 |    @keyframes accordion-down {
+│  953 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @custom-variant
+│  976 |
+│  977 |  /* Custom variants */
+│  978 |  @custom-variant data-open {
+│  |                 ^
+│  979 |    &:where([data-state="open"]),
+│  980 |    &:where([data-open]:not([data-open="false"])) {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @custom-variant
+│  983 |  }
+│  984 |
+│  985 |  @custom-variant data-closed {
+│  |                 ^
+│  986 |    &:where([data-state="closed"]),
+│  987 |    &:where([data-closed]:not([data-closed="false"])) {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @custom-variant
+│  990 |  }
+│  991 |
+│  992 |  @custom-variant data-checked {
+│  |                 ^
+│  993 |    &:where([data-state="checked"]),
+│  994 |    &:where([data-checked]:not([data-checked="false"])) {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @custom-variant
+│  997 |  }
+│  998 |
+│  999 |  @custom-variant data-unchecked {
+│  |                 ^
+│  1000|    &:where([data-state="unchecked"]),
+│  1001|    &:where([data-unchecked]:not([data-unchecked="false"])) {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @custom-variant
+│  1004 |  }
+│  1005 |
+│  1006 |  @custom-variant data-selected {
+│  |                 ^
+│  1007 |    &:where([data-selected="true"]) {
+│  1008 |      @slot;
+│
+▲  Vite [lightningcss minify] Unknown at rule: @custom-variant
+│  1010 |  }
+│  1011 |
+│  1012 |  @custom-variant data-disabled {
+│  |                 ^
+│  1013 |    &:where([data-disabled="true"]),
+│  1014 |    &:where([data-disabled]:not([data-disabled="false"])) {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @custom-variant
+│  1017 |  }
+│  1018 |
+│  1019 |  @custom-variant data-active {
+│  |                 ^
+│  1020 |    &:where([data-state="active"]),
+│  1021 |    &:where([data-active]:not([data-active="false"])) {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @custom-variant
+│  1024 |  }
+│  1025 |
+│  1026 |  @custom-variant data-horizontal {
+│  |                 ^
+│  1027 |    &:where([data-orientation="horizontal"]) {
+│  1028 |      @slot;
+│
+▲  Vite [lightningcss minify] Unknown at rule: @custom-variant
+│  1030 |  }
+│  1031 |
+│  1032 |  @custom-variant data-vertical {
+│  |                 ^
+│  1033 |    &:where([data-orientation="vertical"]) {
+│  1034 |      @slot;
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1036 |  }
+│  1037 |
+│  1038 |  @utility no-scrollbar {
+│  |          ^
+│  1039 |    -ms-overflow-style: none;
+│  1040 |    scrollbar-width: none;
+│
+▲  Vite [lightningcss minify] Unknown at rule: @theme
+│  1071 |  }
+│  1072 |
+│  1073 |  @theme inline {
+│  |        ^
+│  1074 |    @keyframes scroll-fade-reveal-t {
+│  1075 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1106 |  }
+│  1107 |
+│  1108 |  @utility scroll-fade {
+│  |          ^
+│  1109 |    --_scroll-fade-size-t: var(
+│  1110 |      --scroll-fade-t-size,
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1146 |  }
+│  1147 |
+│  1148 |  @utility scroll-fade-y {
+│  |          ^
+│  1149 |    --_scroll-fade-size-t: var(
+│  1150 |      --scroll-fade-t-size,
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1186 |  }
+│  1187 |
+│  1188 |  @utility scroll-fade-x {
+│  |          ^
+│  1189 |    --_scroll-fade-size-s: var(
+│  1190 |      --scroll-fade-s-size,
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1235 |  }
+│  1236 |
+│  1237 |  @utility scroll-fade-t {
+│  |          ^
+│  1238 |    --_scroll-fade-size-t: var(
+│  1239 |      --scroll-fade-t-size,
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1265 |  }
+│  1266 |
+│  1267 |  @utility scroll-fade-b {
+│  |          ^
+│  1268 |    --_scroll-fade-size-b: var(
+│  1269 |      --scroll-fade-b-size,
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1298 |  }
+│  1299 |
+│  1300 |  @utility scroll-fade-l {
+│  |          ^
+│  1301 |    --_scroll-fade-size-s: var(
+│  1302 |      --scroll-fade-s-size,
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1328 |  }
+│  1329 |
+│  1330 |  @utility scroll-fade-r {
+│  |          ^
+│  1331 |    --_scroll-fade-size-e: var(
+│  1332 |      --scroll-fade-e-size,
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1361 |  }
+│  1362 |
+│  1363 |  @utility scroll-fade-s {
+│  |          ^
+│  1364 |    --_scroll-fade-size-s: var(
+│  1365 |      --scroll-fade-s-size,
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1399 |  }
+│  1400 |
+│  1401 |  @utility scroll-fade-e {
+│  |          ^
+│  1402 |    --_scroll-fade-size-e: var(
+│  1403 |      --scroll-fade-e-size,
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1440 |  }
+│  1441 |
+│  1442 |  @utility scroll-fade-* {
+│  |          ^
+│  1443 |    --scroll-fade-size: calc(var(--spacing) * --value(integer));
+│  1444 |    --scroll-fade-size: --value([length], [percentage]);
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1445 |  }
+│  1446 |
+│  1447 |  @utility scroll-fade-t-* {
+│  |          ^
+│  1448 |    --scroll-fade-t-size: calc(var(--spacing) *
+│  --value(integer));
+│  1449 |    --scroll-fade-t-size: --value([length], [percentage]);
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1450 |  }
+│  1451 |
+│  1452 |  @utility scroll-fade-b-* {
+│  |          ^
+│  1453 |    --scroll-fade-b-size: calc(var(--spacing) *
+│  --value(integer));
+│  1454 |    --scroll-fade-b-size: --value([length], [percentage]);
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1455 |  }
+│  1456 |
+│  1457 |  @utility scroll-fade-s-* {
+│  |          ^
+│  1458 |    --scroll-fade-s-size: calc(var(--spacing) *
+│  --value(integer));
+│  1459 |    --scroll-fade-s-size: --value([length], [percentage]);
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1460 |  }
+│  1461 |
+│  1462 |  @utility scroll-fade-e-* {
+│  |          ^
+│  1463 |    --scroll-fade-e-size: calc(var(--spacing) *
+│  --value(integer));
+│  1464 |    --scroll-fade-e-size: --value([length], [percentage]);
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1465 |  }
+│  1466 |
+│  1467 |  @utility scroll-fade-none {
+│  |          ^
+│  1468 |    --scroll-fade-mask: none;
+│  1469 |  }
+│
+▲  Vite [lightningcss minify] Unknown at rule: @theme
+│  1484 |  }
+│  1485 |
+│  1486 |  @theme inline {
+│  |        ^
+│  1487 |    @keyframes tw-shimmer {
+│  1488 |      from {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1495 |  }
+│  1496 |
+│  1497 |  @utility shimmer {
+│  |          ^
+│  1498 |    --_spread: var(--shimmer-spread, calc(3ch + 40px));
+│  1499 |    --_base: currentColor;
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1542 |  }
+│  1543 |
+│  1544 |  @utility shimmer-once {
+│  |          ^
+│  1545 |    animation-iteration-count: 1;
+│  1546 |  }
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1546 |  }
+│  1547 |
+│  1548 |  @utility shimmer-reverse {
+│  |          ^
+│  1549 |    animation-direction: reverse;
+│  1550 |  }
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1550 |  }
+│  1551 |
+│  1552 |  @utility shimmer-none {
+│  |          ^
+│  1553 |    --shimmer-image: none;
+│  1554 |    --shimmer-text-fill: currentColor;
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1555 |  }
+│  1556 |
+│  1557 |  @utility shimmer-color-* {
+│  |          ^
+│  1558 |    --shimmer-color: --value(--color, [color]);
+│  1559 |    --shimmer-color: color-mix(
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1564 |  }
+│  1565 |
+│  1566 |  @utility shimmer-duration-* {
+│  |          ^
+│  1567 |    --shimmer-duration: calc(--value(integer) * 1ms);
+│  1568 |  }
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1568 |  }
+│  1569 |
+│  1570 |  @utility shimmer-spread-* {
+│  |          ^
+│  1571 |    --shimmer-spread: calc(var(--spacing) * --value(integer));
+│  1572 |    --shimmer-spread: --value([length], [percentage]);
+│
+▲  Vite [lightningcss minify] Unknown at rule: @utility
+│  1573 |  }
+│  1574 |
+│  1575 |  @utility shimmer-angle-* {
+│  |          ^
+│  1576 |    --shimmer-angle: calc(--value(integer) * 1deg);
+│  1577 |  }
+│
+▲  Vite [lightningcss minify] Unknown at rule: @custom-variant
+│  1586 |    }
+│  1587 |  }
+│  1588 |  @custom-variant dark (&:is(.dark *));
+│  |                 ^
+│  1589 |
+│  1590 |  @theme inline {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @theme
+│  1588 |  @custom-variant dark (&:is(.dark *));
+│  1589 |
+│  1590 |  @theme inline {
+│  |        ^
+│  1591 |    --color-warning: var(--warning);
+│  1592 |    --color-warning-background: var(--warning-background);
+│
+▲  Vite [lightningcss minify] Unknown at rule: @apply
+│  1728 |  @layer base {
+│  1729 |    * {
+│  1730 |      @apply border-border outline-ring/50;
+│  |            ^
+│  1731 |    }
+│  1732 |    body {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @apply
+│  1731 |    }
+│  1732 |    body {
+│  1733 |      @apply bg-background text-foreground;
+│  |            ^
+│  1734 |    }
+│  1735 |    html {
+│
+▲  Vite [lightningcss minify] Unknown at rule: @apply
+│  1734 |    }
+│  1735 |    html {
+│  1736 |      @apply font-sans;
+│  |            ^
+│  1737 |    }
+│  1738 |  }
+rendering chunks...
+computing gzip size...
+│  Vite storybook-static/iframe.html                                18.75
+│  kB │ gzip:   5.30 kB
+│  storybook-static/assets/iframe-Db7Ffljj.css                 56.97 kB │
+│  gzip:  10.95 kB
+│  storybook-static/assets/iframe-DkYIABS6.js                   0.04 kB │
+│  gzip:   0.06 kB
+│  storybook-static/assets/rolldown-runtime-Bjp52BOI.js         1.35 kB │
+│  gzip:   0.72 kB
+│  storybook-static/assets/preload-helper-DmI1C3xB.js           1.64 kB │
+│  gzip:   0.87 kB
+│  storybook-static/assets/foundations.stories-DXKFeXUV.js      6.74 kB │
+│  gzip:   2.30 kB
+│  storybook-static/assets/react-DZrhAQ_7.js                    7.90 kB │
+│  gzip:   3.03 kB
+│  storybook-static/assets/button-DJf9LWqM.js                   9.16 kB │
+│  gzip:   3.28 kB
+│  storybook-static/vite-inject-mocker-entry.js                27.75 kB │
+│  gzip:   9.66 kB
+│  storybook-static/assets/matchers-JIUQ3HVY-C4jpW7kb.js       28.75 kB │
+│  gzip:   9.66 kB
+│  storybook-static/assets/react-18-CuKePnal.js               207.95 kB │
+│  gzip:  65.24 kB
+│  storybook-static/assets/schema-form.stories-D_2UfPfr.js    222.06 kB │
+│  gzip:  65.35 kB
+│  storybook-static/assets/axe-DDyTvWDj.js                    659.29 kB │
+│  gzip: 187.87 kB
+│  storybook-static/assets/iframe-DZ_4OXUj.js               1,441.50 kB │
+│  gzip: 412.95 kB
+
+│
+▲  Vite [plugin builtin:vite-reporter]
+│  (!) Some chunks are larger than 500 kB after minification. Consider:
+│  - Using dynamic import() to code-split the application
+│  - Use build.rolldownOptions.output.codeSplitting to improve chunking:
+│  ]8;;https://rolldown.rs/reference/OutputOptions.codeSplittinghttps://rolldown.rs/reference/OutputOptions.codeSplitting]8;;
+│  - Adjust chunk size limit for this warning via
+│  build.chunkSizeWarningLimit.
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/next@16.4.3_@babel+core@7.29.13_supports-color@10.2.2__@playwright+test@1.64.1_@types+n_e2d2622612ac5b2fc06d61005838893c/node_modules/next/dist/shared/lib/app-router-context.shared-runtime.js"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/next@16.4.3_@babel+core@7.29.13_supports-color@10.2.2__@playwright+test@1.64.1_@types+n_e2d2622612ac5b2fc06d61005838893c/node_modules/next/dist/shared/lib/app-router-context.shared-runtime.js:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m 'use client';
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/next@16.4.3_@babel+core@7.29.13_supports-color@10.2.2__@playwright+test@1.64.1_@types+n_e2d2622612ac5b2fc06d61005838893c/node_modules/next/dist/shared/lib/hooks-client-context.shared-runtime.js"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/next@16.4.3_@babel+core@7.29.13_supports-color@10.2.2__@playwright+test@1.64.1_@types+n_e2d2622612ac5b2fc06d61005838893c/node_modules/next/dist/shared/lib/hooks-client-context.shared-runtime.js:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m 'use client';
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in "src/components/schema-form/schema-form.tsx"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m src/components/schema-form/schema-form.tsx:1:1 [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/next@16.4.3_@babel+core@7.29.13_supports-color@10.2.2__@playwright+test@1.64.1_@types+n_e2d2622612ac5b2fc06d61005838893c/node_modules/next/dist/client/components/redirect-boundary.js"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/next@16.4.3_@babel+core@7.29.13_supports-color@10.2.2__@playwright+test@1.64.1_@types+n_e2d2622612ac5b2fc06d61005838893c/node_modules/next/dist/client/components/redirect-boundary.js:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m 'use client';
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in "src/components/ui/tooltip.tsx" may not be
+│  preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m src/components/ui/tooltip.tsx:1:1 [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-aspect-ratio@1.2.0_@types+react-dom@19.3.0_@types+react@19.3.0__@types+_c2765d5dd5064305f6b4d2b458571f64/node_modules/@radix-ui/react-aspect-ratio/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-aspect-ratio@1.2.0_@types+react-dom@19.3.0_@types+react@19.3.0__@types+_c2765d5dd5064305f6b4d2b458571f64/node_modules/@radix-ui/react-aspect-ratio/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-visually-hidden@1.2.13_@types+react-dom@19.3.0_@types+react@19.3.0__@ty_3e70f9ceb6ce834e3d5b3a4bc36ce3d4/node_modules/@radix-ui/react-visually-hidden/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-visually-hidden@1.2.13_@types+react-dom@19.3.0_@types+react@19.3.0__@ty_3e70f9ceb6ce834e3d5b3a4bc36ce3d4/node_modules/@radix-ui/react-visually-hidden/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-label@2.1.17_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_099847eca268dc359e5086947d5ece66/node_modules/@radix-ui/react-label/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-label@2.1.17_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_099847eca268dc359e5086947d5ece66/node_modules/@radix-ui/react-label/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-alert-dialog@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+_8084eebff7dc7a4ca98e25e7846e6396/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-alert-dialog@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+_8084eebff7dc7a4ca98e25e7846e6396/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-password-toggle-field@0.2.1_@types+react-dom@19.3.0_@types+react@19.3.0_0ca9a5f57495efe2e00bc57d62e5a7a8/node_modules/@radix-ui/react-password-toggle-field/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-password-toggle-field@0.2.1_@types+react-dom@19.3.0_@types+react@19.3.0_0ca9a5f57495efe2e00bc57d62e5a7a8/node_modules/@radix-ui/react-password-toggle-field/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-progress@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+reac_e20fdab5ee4840d1ea060e704b579f13/node_modules/@radix-ui/react-progress/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-progress@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+reac_e20fdab5ee4840d1ea060e704b579f13/node_modules/@radix-ui/react-progress/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-collapsible@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+r_5b0e492b6a82e324caa0f52e878bb214/node_modules/@radix-ui/react-collapsible/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-collapsible@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+r_5b0e492b6a82e324caa0f52e878bb214/node_modules/@radix-ui/react-collapsible/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-hover-card@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+re_3222637d86fb085a7eb2140ea9a43938/node_modules/@radix-ui/react-hover-card/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-hover-card@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+re_3222637d86fb085a7eb2140ea9a43938/node_modules/@radix-ui/react-hover-card/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-dropdown-menu@2.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types_1d1a84d73e3c31b1d3153d77d81ceee0/node_modules/@radix-ui/react-dropdown-menu/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-dropdown-menu@2.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types_1d1a84d73e3c31b1d3153d77d81ceee0/node_modules/@radix-ui/react-dropdown-menu/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-direction@1.2.0_@types+react@19.3.0_react@19.3.0/node_modules/@radix-ui/react-direction/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-direction@1.2.0_@types+react@19.3.0_react@19.3.0/node_modules/@radix-ui/react-direction/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-separator@1.2.0_@types+react-dom@19.3.0_@types+react@19.3.0__@types+rea_306b4ab0cadf91550bf5d7fc926e933d/node_modules/@radix-ui/react-separator/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-separator@1.2.0_@types+react-dom@19.3.0_@types+react@19.3.0__@types+rea_306b4ab0cadf91550bf5d7fc926e933d/node_modules/@radix-ui/react-separator/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-form@0.3.0_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@19_41aa79a52710e913427e7f71111e8e16/node_modules/@radix-ui/react-form/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-form@0.3.0_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@19_41aa79a52710e913427e7f71111e8e16/node_modules/@radix-ui/react-form/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-avatar@1.3.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_bc1966ea56114b1071e5400851d8fee8/node_modules/@radix-ui/react-avatar/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-avatar@1.3.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_bc1966ea56114b1071e5400851d8fee8/node_modules/@radix-ui/react-avatar/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-toggle@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_0e58fe07f563b3cead9895209c8dbf5a/node_modules/@radix-ui/react-toggle/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-toggle@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_0e58fe07f563b3cead9895209c8dbf5a/node_modules/@radix-ui/react-toggle/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-checkbox@1.4.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+reac_0356460c33fa279aecb48bb13556ca7f/node_modules/@radix-ui/react-checkbox/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-checkbox@1.4.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+reac_0356460c33fa279aecb48bb13556ca7f/node_modules/@radix-ui/react-checkbox/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-accessible-icon@1.2.0_@types+react-dom@19.3.0_@types+react@19.3.0__@typ_87c87783feccdc5f6012ea86cd187053/node_modules/@radix-ui/react-accessible-icon/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-accessible-icon@1.2.0_@types+react-dom@19.3.0_@types+react@19.3.0__@typ_87c87783feccdc5f6012ea86cd187053/node_modules/@radix-ui/react-accessible-icon/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-tabs@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@19_6d065e221b7af2120aa9f3ff73729ae0/node_modules/@radix-ui/react-tabs/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-tabs@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@19_6d065e221b7af2120aa9f3ff73729ae0/node_modules/@radix-ui/react-tabs/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-portal@1.2.0_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_8edac65ad48366ac38478b64ccb751ca/node_modules/@radix-ui/react-portal/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-portal@1.2.0_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_8edac65ad48366ac38478b64ccb751ca/node_modules/@radix-ui/react-portal/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-menubar@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react_867f82c5636032aa095db6eb42188e9d/node_modules/@radix-ui/react-menubar/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-menubar@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react_867f82c5636032aa095db6eb42188e9d/node_modules/@radix-ui/react-menubar/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-switch@1.4.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_20cc35fdfc04b0cbf7c7089521100790/node_modules/@radix-ui/react-switch/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-switch@1.4.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_20cc35fdfc04b0cbf7c7089521100790/node_modules/@radix-ui/react-switch/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-scroll-area@1.4.0_@types+react-dom@19.3.0_@types+react@19.3.0__@types+r_28e8f6fccf2963b6b1e6279fee63a832/node_modules/@radix-ui/react-scroll-area/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-scroll-area@1.4.0_@types+react-dom@19.3.0_@types+react@19.3.0__@types+r_28e8f6fccf2963b6b1e6279fee63a832/node_modules/@radix-ui/react-scroll-area/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-context-menu@2.4.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+_75bcaf36eb94df16c667306787ca1997/node_modules/@radix-ui/react-context-menu/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-context-menu@2.4.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+_75bcaf36eb94df16c667306787ca1997/node_modules/@radix-ui/react-context-menu/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-dialog@1.3.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_a3b87985ed5587cda38fa4297542256b/node_modules/@radix-ui/react-dialog/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-dialog@1.3.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_a3b87985ed5587cda38fa4297542256b/node_modules/@radix-ui/react-dialog/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-radio-group@1.5.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+r_e566fe567d1a723d07d8a5541995ec81/node_modules/@radix-ui/react-radio-group/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-radio-group@1.5.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+r_e566fe567d1a723d07d8a5541995ec81/node_modules/@radix-ui/react-radio-group/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-popover@1.3.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react_e30c1a3361e595871e7a1c2e1a74b81d/node_modules/@radix-ui/react-popover/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-popover@1.3.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react_e30c1a3361e595871e7a1c2e1a74b81d/node_modules/@radix-ui/react-popover/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-slider@1.6.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_69c106384ff698f86be6d41a9138c8e2/node_modules/@radix-ui/react-slider/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-slider@1.6.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_69c106384ff698f86be6d41a9138c8e2/node_modules/@radix-ui/react-slider/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-toggle-group@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+_b9d8412748aa981c9914c568f0dd567f/node_modules/@radix-ui/react-toggle-group/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-toggle-group@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+_b9d8412748aa981c9914c568f0dd567f/node_modules/@radix-ui/react-toggle-group/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-accordion@1.3.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+rea_abc4d855e45dd0aac37149041714f617/node_modules/@radix-ui/react-accordion/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-accordion@1.3.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+rea_abc4d855e45dd0aac37149041714f617/node_modules/@radix-ui/react-accordion/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-tooltip@1.4.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react_6b024258fc950250eb2fe8f7b373fd06/node_modules/@radix-ui/react-tooltip/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-tooltip@1.4.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react_6b024258fc950250eb2fe8f7b373fd06/node_modules/@radix-ui/react-tooltip/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-one-time-password-field@0.2.1_@types+react-dom@19.3.0_@types+react@19.3_eb15c2abcac51612da889bea1ed27c36/node_modules/@radix-ui/react-one-time-password-field/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-one-time-password-field@0.2.1_@types+react-dom@19.3.0_@types+react@19.3_eb15c2abcac51612da889bea1ed27c36/node_modules/@radix-ui/react-one-time-password-field/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-navigation-menu@1.4.1_@types+react-dom@19.3.0_@types+react@19.3.0__@typ_5045728451ff7eb4d8fae3501b20e6e5/node_modules/@radix-ui/react-navigation-menu/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-navigation-menu@1.4.1_@types+react-dom@19.3.0_@types+react@19.3.0__@typ_5045728451ff7eb4d8fae3501b20e6e5/node_modules/@radix-ui/react-navigation-menu/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-toast@1.3.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@1_9e7c08a11157ed276bff36e462c11a8f/node_modules/@radix-ui/react-toast/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-toast@1.3.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@1_9e7c08a11157ed276bff36e462c11a8f/node_modules/@radix-ui/react-toast/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-toolbar@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react_5b645fd218e579f7f8dfe246a3c61a0b/node_modules/@radix-ui/react-toolbar/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-toolbar@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react_5b645fd218e579f7f8dfe246a3c61a0b/node_modules/@radix-ui/react-toolbar/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-select@2.4.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_41875abfe3e9c9a7ec650dda663f0eb9/node_modules/@radix-ui/react-select/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-select@2.4.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_41875abfe3e9c9a7ec650dda663f0eb9/node_modules/@radix-ui/react-select/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in "src/components/ui/switch.tsx" may not be
+│  preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m src/components/ui/switch.tsx:1:1 [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/next-intl@4.14.9_@swc+helpers@0.5.23_@types+react@19.3.0_next@16.4.3_@babel+core@7.29.1_cc610c3a9e974a7bf85441f320c38751/node_modules/next-intl/dist/esm/production/shared/NextIntlClientProvider.js"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/next-intl@4.14.9_@swc+helpers@0.5.23_@types+react@19.3.0_next@16.4.3_@babel+core@7.29.1_cc610c3a9e974a7bf85441f320c38751/node_modules/next-intl/dist/esm/production/shared/NextIntlClientProvider.js:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in "src/components/ui/collapsible.tsx" may not
+│  be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m src/components/ui/collapsible.tsx:1:1 [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in "src/components/ui/select.tsx" may not be
+│  preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m src/components/ui/select.tsx:1:1 [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in "src/components/ui/label.tsx" may not be
+│  preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m src/components/ui/label.tsx:1:1 [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/lucide-react@1.61.0_@types+react@19.3.0_react@19.3.0/node_modules/lucide-react/dist/esm/context.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/lucide-react@1.61.0_@types+react@19.3.0_react@19.3.0/node_modules/lucide-react/dist/esm/context.mjs:2:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m2 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/lucide-react@1.61.0_@types+react@19.3.0_react@19.3.0/node_modules/lucide-react/dist/esm/Icon.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/lucide-react@1.61.0_@types+react@19.3.0_react@19.3.0/node_modules/lucide-react/dist/esm/Icon.mjs:2:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m2 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/next@16.4.3_@babel+core@7.29.13_supports-color@10.2.2__@playwright+test@1.64.1_@types+n_e2d2622612ac5b2fc06d61005838893c/node_modules/next/dist/shared/lib/server-inserted-html.shared-runtime.js"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/next@16.4.3_@babel+core@7.29.13_supports-color@10.2.2__@playwright+test@1.64.1_@types+n_e2d2622612ac5b2fc06d61005838893c/node_modules/next/dist/shared/lib/server-inserted-html.shared-runtime.js:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m 'use client';
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-focus-guards@1.2.0_@types+react@19.3.0_react@19.3.0/node_modules/@radix-ui/react-focus-guards/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-focus-guards@1.2.0_@types+react@19.3.0_react@19.3.0/node_modules/@radix-ui/react-focus-guards/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-dismissable-layer@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@t_2656bb590de67d8af7daa53dbff259b7/node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-dismissable-layer@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@t_2656bb590de67d8af7daa53dbff259b7/node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-collection@1.2.0_@types+react-dom@19.3.0_@types+react@19.3.0__@types+re_ed1cf60c896980c87315abaf5b210e94/node_modules/@radix-ui/react-collection/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-collection@1.2.0_@types+react-dom@19.3.0_@types+react@19.3.0__@types+re_ed1cf60c896980c87315abaf5b210e94/node_modules/@radix-ui/react-collection/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-roving-focus@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+_aff1a8706ec7fd31d50401219eccf7bc/node_modules/@radix-ui/react-roving-focus/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-roving-focus@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+_aff1a8706ec7fd31d50401219eccf7bc/node_modules/@radix-ui/react-roving-focus/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-presence@1.1.11_@types+react-dom@19.3.0_@types+react@19.3.0__@types+rea_fea964e47d1f796c036ae060b7c5470f/node_modules/@radix-ui/react-presence/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-presence@1.1.11_@types+react-dom@19.3.0_@types+react@19.3.0__@types+rea_fea964e47d1f796c036ae060b7c5470f/node_modules/@radix-ui/react-presence/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-primitive@2.2.0_@types+react-dom@19.3.0_@types+react@19.3.0__@types+rea_c31f5d2e8dd1090b081609bcec07c67f/node_modules/@radix-ui/react-primitive/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-primitive@2.2.0_@types+react-dom@19.3.0_@types+react@19.3.0__@types+rea_c31f5d2e8dd1090b081609bcec07c67f/node_modules/@radix-ui/react-primitive/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-popper@1.4.0_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_25dd0b9b4aa60217c4c6d2973ec26adf/node_modules/@radix-ui/react-popper/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-popper@1.4.0_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_25dd0b9b4aa60217c4c6d2973ec26adf/node_modules/@radix-ui/react-popper/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-focus-scope@1.3.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+r_c545200fe192271ccc07b707063d52f1/node_modules/@radix-ui/react-focus-scope/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-focus-scope@1.3.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+r_c545200fe192271ccc07b707063d52f1/node_modules/@radix-ui/react-focus-scope/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-menu@2.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@19_c1dfce9d83c1c8808d1274f6610bc405/node_modules/@radix-ui/react-menu/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-menu@2.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@19_c1dfce9d83c1c8808d1274f6610bc405/node_modules/@radix-ui/react-menu/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/@radix-ui+react-arrow@1.1.17_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_87b97c80112cadbf114ecf5fb3348e77/node_modules/@radix-ui/react-arrow/dist/index.mjs"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/@radix-ui+react-arrow@1.1.17_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_87b97c80112cadbf114ecf5fb3348e77/node_modules/@radix-ui/react-arrow/dist/index.mjs:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m "use client";
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│
+▲  Vite [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level
+│  directive "use client" in
+│  "../../node_modules/.pnpm/next@16.4.3_@babel+core@7.29.13_supports-color@10.2.2__@playwright+test@1.64.1_@types+n_e2d2622612ac5b2fc06d61005838893c/node_modules/next/dist/client/script.js"
+│  may not be preserved when bundling.
+│  [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m
+│  ../../node_modules/.pnpm/next@16.4.3_@babel+core@7.29.13_supports-color@10.2.2__@playwright+test@1.64.1_@types+n_e2d2622612ac5b2fc06d61005838893c/node_modules/next/dist/client/script.js:1:1
+│  [38;5;246m][0m
+│  [38;5;246m│[0m
+│  [38;5;246m1 │[0m 'use client';
+│  [38;5;240m│[0m ──────┬──────
+│  [38;5;240m│[0m       ╰──────── module level directive may not be preserved
+│  [38;5;240m│[0m
+│  [38;5;240m│[0m [38;5;115mHelp[0m: For more information, see ]8;;https://rolldown.rs/in-depth/directives#other-directiveshttps://rolldown.rs/in-depth/d...]8;;
+│  [38;5;246m───╯[0m
+
+│  Vite ✓ built in 3.53s
+│
+◇  Output directory:
+│  /home/arun/Documents/Nexiqon/Nexiqon/frontend/apps/studio/storybook-static
+│
+└  Storybook build completed successfully

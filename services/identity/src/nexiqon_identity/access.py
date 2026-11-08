@@ -253,7 +253,11 @@ class AccessService:
                 roles=frozenset(roles),
                 region=tenant.region,
             )
-        return self.issuer.issue(ctx), float(self.policy.cache_seconds)
+            ttl = float(self.policy.cache_seconds)
+            if key.expires_at is not None:
+                # QA-01: a cached decision must never outlive the key itself.
+                ttl = min(ttl, (key.expires_at - now).total_seconds())
+        return self.issuer.issue(ctx), ttl
 
     async def context_for(
         self, authorization: str | None, selector: str | None, origin: str | None

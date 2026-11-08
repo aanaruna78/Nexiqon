@@ -1,0 +1,12 @@
+/policies/nexiqon/authz_test.rego:
+data.nexiqon.authz_test.test_admin_can_write_members: PASS (2.070972ms)
+data.nexiqon.authz_test.test_member_can_read_but_not_write: PASS (913.319µs)
+data.nexiqon.authz_test.test_cross_tenant_always_denied: PASS (939.654µs)
+data.nexiqon.authz_test.test_owner_only_actions: PASS (1.743726ms)
+data.nexiqon.authz_test.test_no_roles_denied: PASS (530.533µs)
+data.nexiqon.authz_test.test_widget_cannot_escalate: PASS (883.053µs)
+data.nexiqon.authz_test.test_editor_cannot_manage_members: PASS (963.624µs)
+data.nexiqon.authz_test.test_decision_lists_granting_role: PASS (1.977319ms)
+data.nexiqon.authz_test.test_audit_log_is_admin_only: PASS (2.587694ms)
+--------------------------------------------------------------------------------
+PASS: 9/9

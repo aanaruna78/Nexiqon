@@ -1,0 +1,36 @@
+[
+  {
+    "name": "Security (secrets, dependencies, filesystem)",
+    "conclusion": "failure",
+    "failed_steps": [
+      "Set up job"
+    ],
+    "url": "https://github.com/aanaruna78/Nexiqon/actions/runs/42383786753/job/128436755637"
+  },
+  {
+    "name": "Python (lint, types, architecture, contracts, tests)",
+    "conclusion": "success",
+    "failed_steps": [],
+    "url": "https://github.com/aanaruna78/Nexiqon/actions/runs/42383786753/job/128436755814"
+  },
+  {
+    "name": "Frontend (lint, types, tests, build)",
+    "conclusion": "success",
+    "failed_steps": [],
+    "url": "https://github.com/aanaruna78/Nexiqon/actions/runs/42383786753/job/128436755868"
+  },
+  {
+    "name": "Contracts (breaking changes vs base)",
+    "conclusion": "skipped",
+    "failed_steps": [],
+    "url": "https://github.com/aanaruna78/Nexiqon/actions/runs/42383786753/job/128436757090"
+  },
+  {
+    "name": "Container image (build, smoke test, scan)",
+    "conclusion": "failure",
+    "failed_steps": [
+      "Set up job"
+    ],
+    "url": "https://github.com/aanaruna78/Nexiqon/actions/runs/42383786753/job/128436891026"
+  }
+]

@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1.7
 # One image for every deployment group; NEXIQON_GROUP selects which services run (deploy/groups.yaml).
 FROM ghcr.io/astral-sh/uv:0.13.0 AS uv
 
@@ -9,8 +8,9 @@ WORKDIR /app
 COPY pyproject.toml uv.lock .python-version ./
 COPY libs libs
 COPY services services
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --all-packages --no-editable
+# Plain RUN (no BuildKit cache mount) so the image builds with any Docker builder; CI caches layers.
+RUN uv sync --frozen --no-dev --all-packages --no-editable \
+    && rm -rf /root/.cache/uv
 
 FROM python:3.12.15-slim
 RUN useradd --system --uid 10001 --no-create-home nexiqon

@@ -6,7 +6,7 @@ PNPM := npx --yes pnpm@12.15.0 --dir frontend
 comma := ,
 PROFILE_FLAGS := $(foreach p,$(subst $(comma), ,$(PROFILES)),--profile $(p))
 
-.PHONY: dev-secrets help setup lint format typecheck test test-unit arch contracts contracts-check \
+.PHONY: studio dev-secrets help setup lint format typecheck test test-unit arch contracts contracts-check \
         fe-install fe-lint fe-test fe-build check new-service dev-up dev-down dev-logs run-group image
 
 help: ## Show targets
@@ -79,6 +79,9 @@ dev-logs: ## Follow logs
 
 run-group: ## Run a group locally without Docker: make run-group GROUP=control-core
 	uv run nexiqon-run --group $(GROUP) --port $${PORT:-8000}
+
+studio: ## Run Studio (admin UI) on :3100 against the local stack (needs make dev-up PROFILES=platform,apps)
+	npx --yes pnpm@12.15.0 --dir frontend/apps/studio exec next dev --port 3100
 
 image: ## Build the platform image
 	docker build -f deploy/docker/Dockerfile -t nexiqon/platform:dev .

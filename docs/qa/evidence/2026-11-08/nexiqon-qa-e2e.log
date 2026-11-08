@@ -1,0 +1,21 @@
+$ playwright test
+
+Running 13 tests using 1 worker
+
+(node:373662) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 e2e/studio.spec.ts:43:7 › Studio › onboarding creates an organization and lands on Home (1.7s)
+  ✓   2 e2e/studio.spec.ts:56:7 › Studio › skip link is the first stop for keyboard users (386ms)
+  ✓   3 e2e/studio.spec.ts:65:7 › Studio › members: invite someone (1.2s)
+  ✓   4 e2e/studio.spec.ts:75:7 › Studio › API keys: secret shown once, then revoked (1.4s)
+  ✓   5 e2e/studio.spec.ts:91:7 › Studio › configuration: create, publish and deploy via the schema form (2.2s)
+  ✓   6 e2e/studio.spec.ts:108:7 › Studio › configuration: client validation explains missing fields (422ms)
+  ✓   7 e2e/studio.spec.ts:117:7 › Studio › audit: events recorded and chain verifies (1.0s)
+  ✓   8 e2e/studio.spec.ts:127:7 › Studio › command palette navigates from the keyboard (386ms)
+  ✓   9 e2e/studio.spec.ts:135:7 › Studio › planned sections have designed placeholders, not dead ends (688ms)
+  ✓  10 e2e/studio.spec.ts:141:7 › Studio › sidebar explains each section in a tooltip and shows planned ones as Soon (670ms)
+  ✓  11 e2e/studio.spec.ts:149:7 › Studio › help dialog lists keyboard shortcuts (958ms)
+  ✓  12 e2e/studio.spec.ts:159:7 › Studio › Arabic switches the whole UI to right-to-left (1.3s)
+  ✓  13 e2e/studio.spec.ts:174:7 › Studio › sign out ends the session (434ms)
+
+  13 passed (14.8s)

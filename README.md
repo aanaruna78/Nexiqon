@@ -37,10 +37,11 @@ With `observability` in `PROFILES`, Grafana (`localhost:3000`, admin/admin) show
 and the **Nexiqon services** dashboard; every request is traced from the gateway through services and
 events. Feature flags are served by flagd from `deploy/compose/flags/flags.json`.
 
-**Studio** (admin UI) runs on `localhost:3100`:
+**Studio** (admin UI) is not part of the Compose stack; start it separately on `localhost:3100`:
 
 ```bash
-cd frontend/apps/studio && pnpm dev          # sign in with the dev Keycloak user
+make studio                                  # = next dev on :3100; sign in with dev / dev-password
+cd frontend/apps/studio
 pnpm test                                    # unit + accessibility tests
 pnpm storybook                               # design-system catalog
 pnpm e2e                                     # end-to-end against the running stack (see e2e/README.md)

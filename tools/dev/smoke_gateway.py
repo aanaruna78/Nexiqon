@@ -97,6 +97,33 @@ def main() -> int:
         )
         check("API key (member role) cannot invite", r.status_code == 403, r.text)
 
+        # QA-01: an expiring key must stop working at expiry even though the gateway caches decisions.
+        from datetime import UTC, datetime, timedelta
+
+        soon = (datetime.now(UTC) + timedelta(seconds=3)).isoformat()
+        r = gw.post(
+            "/identity/v1/api-keys",
+            json={"name": "expiring", "kind": "server", "expires_at": soon},
+            headers={**auth, "X-Nexiqon-Tenant": slug},
+        )
+        expiring = {"Authorization": f"Bearer {r.json()['secret']}"}
+        check(
+            "expiring key works before expiry",
+            gw.get("/identity/v1/tenant", headers=expiring).status_code == 200,
+        )
+        time.sleep(4)
+        r = gw.get("/identity/v1/tenant", headers=expiring)
+        check(
+            "expired key refused despite gateway cache (QA-01)", r.status_code == 401, r.status_code
+        )
+        # QA-02: an expiry without a timezone is a validation error, not a server error.
+        r = gw.post(
+            "/identity/v1/api-keys",
+            json={"name": "naive", "kind": "server", "expires_at": "2099-01-01T00:00:00"},
+            headers={**auth, "X-Nexiqon-Tenant": slug},
+        )
+        check("timezone-free expiry rejected with 422 (QA-02)", r.status_code == 422, r.status_code)
+
         r = gw.get("/identity/v1/tenant", headers={"X-Nexiqon-Context": "forged.token.value"})
         check(
             "forged context header without credentials is rejected",

@@ -343,3 +343,64 @@ def test_clerk_webhook_signature_required(env: Env) -> None:
     event = {"type": "organization.created", "data": {"id": "org_forged", "name": "Forged"}}
     other = "whsec_" + "QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVowMTIzNDU="
     assert env.webhook(event, secret=other).status_code == 401
+
+
+# ------------------------------------------------------------------ QA regressions (2026-11-08)
+
+
+def test_qa01_expired_key_is_refused_even_when_cached(env: Env) -> None:
+    import time
+    from datetime import UTC, datetime, timedelta
+
+    _, owner = env.signup("qa01", "qa01@a.example.com", slug())
+    env.client.app.state.access.policy.cache_seconds = 30  # type: ignore[attr-defined]
+    expires = (datetime.now(UTC) + timedelta(seconds=2)).isoformat()
+    created = env.client.post(
+        "/v1/api-keys",
+        json={"name": "short", "kind": "server", "expires_at": expires},
+        headers=h(owner),
+    )
+    assert created.status_code == 201, created.text
+    secret = created.json()["secret"]
+    headers = {"Authorization": f"Bearer {secret}"}
+    assert (
+        env.client.post("/internal/ext-authz/x", headers=headers).status_code == 200
+    )  # cached now
+    time.sleep(2.5)
+    assert env.client.post("/internal/ext-authz/x", headers=headers).status_code == 401
+
+
+def test_qa01_unexpiring_key_is_still_cached(env: Env) -> None:
+    _, owner = env.signup("qa01b", "qa01b@a.example.com", slug())
+    access = env.client.app.state.access  # type: ignore[attr-defined]
+    access.policy.cache_seconds = 30
+    secret = env.client.post(
+        "/v1/api-keys", json={"name": "k", "kind": "server"}, headers=h(owner)
+    ).json()["secret"]
+    headers = {"Authorization": f"Bearer {secret}"}
+    first = env.client.post("/internal/ext-authz/x", headers=headers).headers[CONTEXT_HEADER]
+    second = env.client.post("/internal/ext-authz/x", headers=headers).headers[CONTEXT_HEADER]
+    assert first == second  # served from cache, not re-minted
+
+
+def test_qa02_expiry_needs_a_timezone(env: Env) -> None:
+    _, owner = env.signup("qa02", "qa02@a.example.com", slug())
+    naive = env.client.post(
+        "/v1/api-keys",
+        json={"name": "n", "kind": "server", "expires_at": "2099-01-01T00:00:00"},
+        headers=h(owner),
+    )
+    assert naive.status_code == 422
+    assert naive.json()["code"] == "validation_failed"
+    past = env.client.post(
+        "/v1/api-keys",
+        json={"name": "p", "kind": "server", "expires_at": "2000-01-01T00:00:00Z"},
+        headers=h(owner),
+    )
+    assert past.status_code == 400
+    aware = env.client.post(
+        "/v1/api-keys",
+        json={"name": "a", "kind": "server", "expires_at": "2099-01-01T00:00:00+05:30"},
+        headers=h(owner),
+    )
+    assert aware.status_code == 201

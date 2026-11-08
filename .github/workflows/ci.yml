@@ -1,8 +1,10 @@
 name: CI
 
 on:
+  # Every branch push runs CI (phase branches get green evidence before merging); PRs add the
+  # breaking-contract comparison.
   push:
-    branches: [main]
+    branches: ["**"]
   pull_request:
 
 permissions:
@@ -103,7 +105,7 @@ jobs:
           uv export --frozen --all-packages --no-dev --no-hashes --no-emit-workspace -o /tmp/requirements.txt
           uvx pip-audit -r /tmp/requirements.txt --strict
       - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.28.0
         with:
           scan-type: fs
           severity: CRITICAL
@@ -131,7 +133,7 @@ jobs:
           for i in $(seq 1 30); do curl -fs localhost:8000/healthz && break; sleep 1; done
           curl -fs localhost:8000/identity/meta
       - name: Trivy image scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.28.0
         with:
           image-ref: nexiqon/platform:ci
           severity: CRITICAL

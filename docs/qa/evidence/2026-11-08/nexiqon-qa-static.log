@@ -1,0 +1,10 @@
+uv run ruff check .
+All checks passed!
+uv run ruff format --check .
+231 files already formatted
+uv run mypy libs/nexiqon-core/src services/*/src
+Success: no issues found in 137 source files
+uv run python tools/lint/check_architecture.py
+architecture check: 0 violation(s)
+uv run python -m tools.contracts.export_openapi --check
+contracts ok

@@ -1,0 +1,58 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.2.0, pluggy-1.7.0
+rootdir: /home/arun/Documents/Nexiqon/Nexiqon
+configfile: pyproject.toml
+plugins: asyncio-1.4.1.post1, cov-7.1.0, platformdirs-4.14.5, anyio-4.16.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 208 items
+
+libs/nexiqon-core/tests/test_app_and_runner.py .......                   [  3%]
+libs/nexiqon-core/tests/test_authz.py .........                          [  7%]
+libs/nexiqon-core/tests/test_bus.py .......                              [ 11%]
+libs/nexiqon-core/tests/test_ids_and_events.py ..                        [ 12%]
+libs/nexiqon-core/tests/test_rls_postgres.py ....                        [ 13%]
+libs/nexiqon-core/tests/test_settings.py ...                             [ 15%]
+libs/nexiqon-core/tests/test_tenancy.py ........                         [ 19%]
+libs/nexiqon-core/tests/test_tracing_and_flags.py ..                     [ 20%]
+libs/nexiqon-core/tests/test_workflows.py ..                             [ 21%]
+services/agent-runtime/tests/test_service.py ....                        [ 23%]
+services/audit/tests/test_service.py ..                                  [ 24%]
+services/authz/tests/test_decisions.py .....                             [ 26%]
+services/authz/tests/test_service.py ..                                  [ 27%]
+services/channel/tests/test_service.py ....                              [ 29%]
+services/config/tests/test_config_api.py .............                   [ 35%]
+services/config/tests/test_logic.py ................................     [ 50%]
+services/config/tests/test_service.py ..                                 [ 51%]
+services/config/tests/test_snapshot_client.py .                          [ 52%]
+services/conversation/tests/test_service.py ....                         [ 54%]
+services/evaluation/tests/test_service.py ....                           [ 56%]
+services/governance/tests/test_service.py ....                           [ 58%]
+services/identity/tests/test_identity.py ...................             [ 67%]
+services/identity/tests/test_oidc.py ...                                 [ 68%]
+services/identity/tests/test_service.py ...                              [ 70%]
+services/ingestion/tests/test_service.py ....                            [ 72%]
+services/metering/tests/test_service.py ....                             [ 74%]
+services/model-gateway/tests/test_service.py ....                        [ 75%]
+services/notification/tests/test_service.py ....                         [ 77%]
+services/retrieval/tests/test_service.py ....                            [ 79%]
+services/tool-gateway/tests/test_service.py ....                         [ 81%]
+tests/integration/test_audit_flow.py ....                                [ 83%]
+tests/isolation/test_route_isolation.py ..............................   [ 98%]
+tools/lint/test_check_architecture.py ....                               [100%]
+
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /home/arun/Documents/Nexiqon/Nexiqon/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+libs/nexiqon-core/tests/test_bus.py::test_jetstream_delivery_dedupe_and_dlq
+  /home/arun/Documents/Nexiqon/Nexiqon/libs/nexiqon-core/tests/test_bus.py:80: DeprecationWarning: The wait_for_logs function with string or callable predicates is deprecated and will be removed in a future version. Use structured wait strategies instead: container.waiting_for(LogMessageWaitStrategy('ready')) or container.waiting_for(LogMessageWaitStrategy(re.compile(r'pattern')))
+    wait_for_logs(container, "Server is ready", timeout=30)
+
+libs/nexiqon-core/tests/test_rls_postgres.py::test_tenant_cannot_read_or_write_other_tenant
+  /home/arun/Documents/Nexiqon/Nexiqon/libs/nexiqon-core/src/nexiqon_core/pytest_plugin.py:52: DeprecationWarning: testcontainers.postgres is deprecated, use testcontainers.community.postgres instead
+    from testcontainers.postgres import PostgresContainer
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+---------------- generated xml file: /tmp/nexiqon-qa-pytest.xml ----------------
+======================= 208 passed, 3 warnings in 47.83s =======================

@@ -1,0 +1,105 @@
+npx --yes pnpm@12.15.0 --dir frontend lint
+$ pnpm -r --if-present lint
+$ eslint
+npx --yes pnpm@12.15.0 --dir frontend typecheck
+$ pnpm -r --if-present typecheck
+apps/studio typecheck$ next typegen && tsc --noEmit
+apps/widget typecheck$ tsc --noEmit
+packages/client typecheck$ tsc --noEmit
+apps/studio typecheck: Generating route types...
+apps/studio typecheck: ✓ Types generated successfully
+packages/client typecheck: Done
+apps/widget typecheck: Done
+apps/studio typecheck: Done
+npx --yes pnpm@12.15.0 --dir frontend test
+$ pnpm -r --if-present test
+Scope: 3 of 4 workspace projects
+apps/studio test$ vitest run
+apps/widget test$ vitest run
+apps/studio test: (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+apps/studio test:   - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+apps/studio test: Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+apps/widget test:
+apps/widget test:  RUN  v5.0.5 /home/arun/Documents/Nexiqon/Nexiqon/frontend/apps/widget
+apps/widget test:
+apps/studio test:
+apps/studio test:  RUN  v5.0.5 /home/arun/Documents/Nexiqon/Nexiqon/frontend/apps/studio
+apps/studio test:
+apps/widget test:
+apps/widget test:  Test Files  1 passed (1)
+apps/widget test:       Tests  3 passed (3)
+apps/widget test:    Start at  09:10:09
+apps/widget test:    Duration  838ms (environment 82%, import 8%, tests 6%, transform 3%, worker 1%)
+apps/widget test:
+apps/widget test: Done
+apps/studio test:
+apps/studio test:  Test Files  4 passed (4)
+apps/studio test:       Tests  16 passed (16)
+apps/studio test:    Start at  09:10:09
+apps/studio test:    Duration  1.46s (environment 51%, setup 17%, tests 15%, import 12%, transform 4%, worker 1%)
+apps/studio test:
+apps/studio test: Done
+npx --yes pnpm@12.15.0 --dir frontend build
+$ pnpm -r --if-present build
+apps/studio build$ next build
+apps/widget build$ tsc --noEmit && vite build
+apps/studio build: ▲ Next.js 16.4.3 (Turbopack)
+apps/studio build: ✓ Running next.config.ts took 65ms
+apps/studio build:
+apps/studio build:   Creating an optimized production build ...
+apps/widget build: vite v8.3.5 building client environment for production...
+apps/widget build: transforming...
+apps/widget build: ✓ 20 modules transformed.
+apps/widget build: rendering chunks...
+apps/widget build: computing gzip size...
+apps/widget build: dist/nexiqon-chat.js  23.19 kB │ gzip: 7.84 kB
+apps/widget build:
+apps/widget build: ✓ built in 114ms
+apps/widget build: Done
+apps/studio build: ✓ Compiled successfully in 731ms
+apps/studio build:   Running TypeScript ...
+apps/studio build:   Finished TypeScript in 3.0s ...
+apps/studio build:   Collecting page data using 7 workers ...
+apps/studio build:   Generating static pages using 7 workers (0/28) ...
+apps/studio build:   Generating static pages using 7 workers (7/28)
+apps/studio build:   Generating static pages using 7 workers (14/28)
+apps/studio build:   Generating static pages using 7 workers (21/28)
+apps/studio build: ✓ Generating static pages using 7 workers (28/28) in 247ms
+apps/studio build:   Finalizing page optimization ...
+apps/studio build:
+apps/studio build: Route (app)
+apps/studio build: ┌ ƒ /
+apps/studio build: ├ ƒ /_not-found
+apps/studio build: ├ ƒ /actions
+apps/studio build: ├ ƒ /api/health
+apps/studio build: ├ ƒ /api/locale
+apps/studio build: ├ ƒ /api/nx/[...path]
+apps/studio build: ├ ƒ /api/session
+apps/studio build: ├ ƒ /api/session/tenant
+apps/studio build: ├ ƒ /assistants
+apps/studio build: ├ ƒ /auth/callback
+apps/studio build: ├ ƒ /auth/login
+apps/studio build: ├ ƒ /auth/logout
+apps/studio build: ├ ƒ /conversations
+apps/studio build: ├ ƒ /domain-packs
+apps/studio build: ├ ƒ /evaluations
+apps/studio build: ├ ƒ /insights
+apps/studio build: ├ ƒ /knowledge
+apps/studio build: ├ ƒ /onboarding
+apps/studio build: ├ ƒ /playground
+apps/studio build: ├ ƒ /select-org
+apps/studio build: ├ ƒ /settings
+apps/studio build: ├ ƒ /settings/api-keys
+apps/studio build: ├ ƒ /settings/audit
+apps/studio build: ├ ƒ /settings/configuration
+apps/studio build: ├ ƒ /settings/configuration/[kind]/[name]
+apps/studio build: ├ ƒ /settings/members
+apps/studio build: ├ ƒ /settings/organization
+apps/studio build: └ ƒ /signed-out
+apps/studio build:
+apps/studio build:
+apps/studio build: ƒ Proxy (Middleware)
+apps/studio build:
+apps/studio build: ƒ  (Dynamic)  server-rendered on demand
+apps/studio build:
+apps/studio build: Done

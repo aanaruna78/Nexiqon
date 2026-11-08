@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Header, Request, Response
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import AwareDatetime, BaseModel, EmailStr, Field, field_validator
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -536,7 +536,8 @@ class ApiKeyIn(BaseModel):
     roles: list[str] = Field(default_factory=list)
     allowed_origins: list[str] = Field(default_factory=list)
     agent_ids: list[str] = Field(default_factory=list)
-    expires_at: datetime | None = None
+    # QA-02: must carry a timezone (e.g. "2099-01-01T00:00:00Z"); naive values are rejected with 422.
+    expires_at: AwareDatetime | None = None
 
     @field_validator("allowed_origins")
     @classmethod
