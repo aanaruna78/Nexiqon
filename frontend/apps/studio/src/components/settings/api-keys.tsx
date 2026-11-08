@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, KeyRound, Plus } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -49,6 +49,8 @@ export function ApiKeysPage() {
   const t = useTranslations("apiKeys");
   const tc = useTranslations("common");
   const format = useFormatter();
+  // Explicit "now" (refreshed every minute) keeps "5 minutes ago" consistent and up to date.
+  const now = useNow({ updateInterval: 60_000 });
   const params = useSearchParams();
   const { isAdmin } = useStudio();
   const queryClient = useQueryClient();
@@ -110,7 +112,7 @@ export function ApiKeysPage() {
                 <TableCell><code dir="ltr" className="text-xs">nxq_{k.kind[0]}_{k.prefix}_…</code></TableCell>
                 <TableCell>{k.roles.join(", ")}</TableCell>
                 <TableCell className="text-muted-foreground">
-                  {k.last_used_at ? format.relativeTime(new Date(k.last_used_at)) : tc("never")}
+                  {k.last_used_at ? format.relativeTime(new Date(k.last_used_at), now) : tc("never")}
                 </TableCell>
                 <TableCell>
                   {k.revoked_at ? (
