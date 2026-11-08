@@ -31,3 +31,19 @@ Responds to [2026-11-08-phase-1-verification.md](2026-11-08-phase-1-verification
 Process note: pre-commit whitespace hooks normalised trailing whitespace/final newlines in two evidence logs (`nexiqon-qa-frontend.log`, `nexiqon-qa-image.log`) before they were excluded; content is otherwise unchanged.
 
 Not re-verified here: live Clerk/Auth0 sign-in, live admin-MFA flow, and full WCAG/mobile usability (unchanged from the report).
+
+## Independent QA re-verification
+
+Rechecked at `7f80882` on `phase-1/qa-fixes`, 8 November 2026. Both original identity defects are closed for the reproduced cases. No new blocker was observed in this run.
+
+- Independently reviewed the expiry TTL cap, `AwareDatetime` validation, regression tests, Dockerfile, CI and Studio startup changes.
+- `make lint typecheck arch contracts-check`: pass.
+- Full Python suite: **211 passed**, no skips, 3 deprecation warnings (80.14 seconds).
+- Real gateway smoke: **26 checks passed**, including cached-key expiry and timezone-free expiry rejection.
+- Studio browser suite against the running local stack: **13 passed** (1.9 minutes), including EN/AR axe checks.
+- Docker image built successfully with the local legacy builder (cached layers were reused). A new container from that image returned **200** for `/healthz` and `/identity/meta`, running as **UID 10001**; the temporary container was removed.
+- Independently queried GitHub: the cited run is green. The newer [run 42445206018](https://github.com/aanaruna78/Nexiqon/actions/runs/42445206018) is also green at the reviewed commit `7f80882`: Python, Frontend, OPA, Security and Container image all succeeded; breaking-contract comparison was skipped on this push.
+
+The local gateway/browser reruns used the existing running stack; this review did not replace it or independently repeat the full-stack rebuild. Security scans and frontend build/unit results were confirmed through the current-commit GitHub jobs rather than repeated locally. Open scope and exclusions above remain unchanged. No application code was changed, and no branches were merged or pushed during re-verification.
+
+At the final working-tree check, additional uncommitted changes had appeared in the config API, store, model-profile schema and config tests. Those concurrent edits are outside this remediation sign-off; the completed runs do not establish that they were included. They were left untouched.
