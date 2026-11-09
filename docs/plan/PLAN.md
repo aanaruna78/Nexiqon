@@ -22,6 +22,7 @@ Related: [ARCHITECTURE.md](ARCHITECTURE.md) · [BACKLOG.md](BACKLOG.md) · [UX.m
 | P2 · slice 1 | `phase-2/model-gateway` | M-01, M-03, M-04, M-05; M-02 without streaming (adapters tested against recorded wire shapes, not yet live); M-06, M-07 open |
 | P2 · slice 2 | `phase-2/ingestion` | IN-01..08 and IN-07 (IN-09 summary nodes deferred: P1, gated on RT-05); retrieval index write side (part of RT-01); ADR 0017 |
 | P2 · slice 3 | `phase-2/retrieval` | RT-01, RT-02, RT-03, RT-05 (offline-embedding gate; real-model run is M-07), RT-07, RT-08; RT-04 and RT-06 (P1) open |
+| P2 · slice 4 | `phase-2/knowledge-ui` | ST-04 (Knowledge UI), ST-05 (Playground with grounded answers and source preview), offline dev provider; UX-08 sessions and M-07 bake-off (needs real models) open |
 
 ## 1. Decisions
 

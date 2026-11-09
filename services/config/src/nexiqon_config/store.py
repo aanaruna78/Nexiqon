@@ -495,6 +495,43 @@ class Store:
             "profile": spec,
         }
 
+    async def list_profiles(self, kind: str, environment: str) -> list[dict[str, Any]]:
+        """Profiles usable in ``environment``: deployed tenant objects and built-ins, each with
+        whether the security floors allow it (pickers show blocked ones disabled, with the reason)."""
+        if kind not in PROFILE_KINDS:
+            raise BadRequest(f"{kind} is not a profile kind")
+        names = set(_defaults("profiles").get(kind, {}))
+        deployed = await self.s.scalars(
+            select(ConfigObject.name)
+            .join(ConfigDeployment, ConfigDeployment.object_id == ConfigObject.id)
+            .where(ConfigObject.kind == kind, ConfigDeployment.environment == environment)
+        )
+        names.update(deployed.all())
+        out: list[dict[str, Any]] = []
+        for name in sorted(names):
+            try:
+                resolved = await self.resolve_profile(kind, name, environment)
+                out.append(
+                    {
+                        "name": name,
+                        "source": resolved["source"],
+                        "allowed": True,
+                        "reason": None,
+                        "profile": resolved["profile"],
+                    }
+                )
+            except FloorViolation as exc:
+                out.append(
+                    {
+                        "name": name,
+                        "source": None,
+                        "allowed": False,
+                        "reason": exc.detail,
+                        "profile": None,
+                    }
+                )
+        return out
+
     # ------------------------------------------------------------------ snapshots
     async def snapshot(self, environment: str) -> dict[str, Any]:
         rows = (

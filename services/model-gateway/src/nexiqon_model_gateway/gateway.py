@@ -45,6 +45,8 @@ log = structlog.get_logger(__name__)
 SERVICE = "model-gateway"
 USAGE_EVENT = "nexiqon.model-gateway.usage.recorded"
 MAX_ROUTING_HOPS = 3
+# Providers that keep data inside the deployment.
+ON_PREM_PROVIDERS = {"openai_compatible", "offline"}
 
 
 class ProviderFailed(NexiqonError):
@@ -152,7 +154,7 @@ class Gateway:
             if reranker.get("enabled"):
                 sections.append(reranker)
             for section in sections:
-                if section and section.get("provider") != "openai_compatible":
+                if section and section.get("provider") not in ON_PREM_PROVIDERS:
                     raise ProfileRejected(
                         f"Profile {target.name!r} is on-prem but uses provider "
                         f"{section.get('provider')!r}"

@@ -29,6 +29,10 @@ copied onto every node. RLS confines every query to the tenant. Ingestion writes
 removes citations to passages the caller cannot see, quotes not found in the passage, and markers on
 sentences their passages do not support. It abstains when none remain.
 
+**Grounded answer** (`POST /v1/answer`, used by the Playground). Search runs first; if it abstains, no
+model is called. Otherwise the model gets numbered sources and a domain-neutral prompt (server side),
+and its `[n]` citations are verified. Unsupported answers come back as abstained.
+
 **Quality gate.** `make eval-retrieval` runs the SaaS Knowledge Assistant gold set
 (`packs/saas-knowledge-assistant/eval`; English, Spanish and Arabic) with offline embeddings. It
 requires Recall@5 >= 0.8, small-to-big >= the flat baseline, and P95 < 100 ms. For real models (M-07),

@@ -37,8 +37,8 @@ export const NAV: NavGroup[] = [
     items: [
       { key: "home", href: "/", icon: House, tone: "teal" },
       { key: "assistants", href: "/assistants", icon: Bot, tone: "violet", phase: "Phase 3" },
-      { key: "knowledge", href: "/knowledge", icon: BookOpenText, tone: "sky", phase: "Phase 2" },
-      { key: "playground", href: "/playground", icon: FlaskConical, tone: "amber", phase: "Phase 2–3" },
+      { key: "knowledge", href: "/knowledge", icon: BookOpenText, tone: "sky" },
+      { key: "playground", href: "/playground", icon: FlaskConical, tone: "amber" },
       { key: "domainPacks", href: "/domain-packs", icon: Package, tone: "teal", phase: "Phase 3" },
     ],
   },

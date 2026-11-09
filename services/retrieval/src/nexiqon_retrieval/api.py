@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 import uuid
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field, model_validator
@@ -19,6 +19,7 @@ from nexiqon_core.db import TenantSessionFactory
 from nexiqon_core.errors import Conflict, NotFound, ServiceUnavailable
 from nexiqon_core.profiles import ProfileResolver
 from nexiqon_core.tenancy import TenantContext, require_current_context
+from nexiqon_retrieval.answer import answer
 from nexiqon_retrieval.citations import Citation, verify
 from nexiqon_retrieval.models import DIMENSIONS, IndexNode
 from nexiqon_retrieval.search import Searcher, SearchRequest
@@ -452,4 +453,87 @@ async def verify_citations(body: AnswerIn, request: Request, ctx: Ctx) -> Verifi
         supported_sentences=result.supported_sentences,
         cited_sentences=result.cited_sentences,
         abstain=result.abstain,
+    )
+
+
+# ===================================================================== grounded answer (ST-05)
+
+
+class AnswerRequest(SearchIn):
+    min_support: float = Field(default=0.5, ge=0, le=1)
+    max_tokens: int = Field(default=800, ge=50, le=4000)
+
+
+class AnswerCitation(BaseModel):
+    marker: str
+    passage_id: uuid.UUID
+    citation: str
+
+
+class AnswerOut(BaseModel):
+    answer: str | None
+    abstained: bool
+    reason: str | None
+    citations: list[AnswerCitation]
+    removed: list[RemovedOut]
+    search: SearchOut
+    model: dict[str, Any]
+    usage: dict[str, Any]
+
+
+def _search_out(result: Any) -> SearchOut:
+    return SearchOut(
+        passages=[
+            PassageOut(**{k: v for k, v in p.__dict__.items() if k != "matched_chunk_ids"})
+            for p in result.passages
+        ],
+        abstain=result.abstain,
+        evidence_score=result.evidence_score,
+        embedding_model=result.embedding_model,
+        reranked=result.reranked,
+        timings_ms=result.timings_ms,
+    )
+
+
+@tenant_router.post("/answer", response_model=AnswerOut)
+async def grounded_answer(body: AnswerRequest, request: Request, ctx: Ctx) -> AnswerOut:
+    """Search, ask the model with numbered sources, verify citations (abstains when unsupported)."""
+    await check_permission(request, "retrieval.search.answer", Resource(type="collection"))
+    settings = request.app.state.settings
+    token = _token(request)
+    profiles: ProfileResolver = request.app.state.profiles
+    profile = await profiles.get(
+        str(ctx.tenant_id), token, body.retrieval_profile or settings.default_retrieval_profile
+    )
+    searcher: Searcher = request.app.state.searcher
+    result = await answer(
+        searcher,
+        searcher.models,
+        ctx.tenant_id,
+        token,
+        SearchRequest(
+            query=body.query,
+            filters=_filters(request, ctx, body.collection_ids),
+            profile=profile,
+            model_profile=body.model_profile or settings.default_model_profile,
+            classification=body.classification,
+            top_k=body.top_k,
+            small_to_big=body.small_to_big,
+            rerank=body.rerank,
+        ),
+        min_support=body.min_support,
+        max_tokens=body.max_tokens,
+    )
+    return AnswerOut(
+        answer=result.text,
+        abstained=result.abstained,
+        reason=result.reason,
+        citations=[
+            AnswerCitation(marker=m, passage_id=p.id, citation=p.citation)
+            for m, p in result.citations
+        ],
+        removed=[RemovedOut(marker=r.marker, reason=r.reason) for r in result.removed],
+        search=_search_out(result.search),
+        model=result.model,
+        usage=result.usage,
     )

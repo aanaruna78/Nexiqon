@@ -20,3 +20,6 @@ flags:
   flagd_port: 8013
 workflows:
   address: temporal:7233
+# Model gateway: serve the deterministic "offline" provider (profile dev-offline) so the local stack
+# indexes and answers without API keys or GPUs. Not a language model; never enable in production.
+allow_offline_provider: true

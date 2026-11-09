@@ -85,6 +85,7 @@ widget_actions := {
 	"config.profiles.resolve",
 	"retrieval.search.run",
 	"retrieval.search.verify",
+	"retrieval.search.answer",
 }
 
 resource_tenant := object.get(input.resource, "tenant_id", input.actor.tenant_id)

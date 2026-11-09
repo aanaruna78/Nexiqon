@@ -14,6 +14,10 @@ class ModelUnavailable(NexiqonError):
     status, code, title = 502, "model_unavailable", "Model call failed"
 
 
+class BudgetExceeded(NexiqonError):
+    status, code, title = 429, "budget_exceeded", "Budget exceeded"
+
+
 class ModelClient(Protocol):
     async def embed_query(
         self, token: str, profile: str, classification: str, query: str
@@ -31,6 +35,17 @@ class ModelClient(Protocol):
         top_n: int,
     ) -> list[tuple[int, float]] | None:
         """Best-first (index, score); None when the profile has no reranker."""
+        ...
+
+    async def chat(
+        self,
+        token: str,
+        profile: str,
+        classification: str,
+        messages: list[dict[str, str]],
+        max_tokens: int,
+    ) -> dict[str, object]:
+        """The model gateway's chat response (content, route, usage)."""
         ...
 
     async def aclose(self) -> None: ...
@@ -105,6 +120,33 @@ class GatewayModelClient:
         if r.status_code >= 400:
             raise (Forbidden if r.status_code == 403 else ModelUnavailable)(_detail(r))
         return [(int(x["index"]), float(x["score"])) for x in r.json()["results"]]
+
+    async def chat(
+        self,
+        token: str,
+        profile: str,
+        classification: str,
+        messages: list[dict[str, str]],
+        max_tokens: int,
+    ) -> dict[str, object]:
+        r = await self._post(
+            token,
+            "/v1/chat",
+            {
+                "profile": profile,
+                "messages": messages,
+                "classification": classification,
+                "max_tokens": max_tokens,
+            },
+        )
+        if r.status_code == 403:
+            raise Forbidden(_detail(r))
+        if r.status_code == 429:
+            raise BudgetExceeded(_detail(r))
+        if r.status_code >= 400:
+            raise (BadRequest if r.status_code < 500 else ModelUnavailable)(_detail(r))
+        body: dict[str, object] = r.json()
+        return body
 
     async def aclose(self) -> None:
         await self._client.aclose()

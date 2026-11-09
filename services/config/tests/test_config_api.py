@@ -432,3 +432,35 @@ def test_resolve_profile_builtin_tenant_and_floors(make_client: ClientFactory) -
         ]["data_policy"]["location"]
         == "on_prem"
     )
+
+
+def test_list_profiles_marks_floor_blocked_ones(make_client: ClientFactory) -> None:
+    owner = TwoTenants.create(roles=frozenset({"owner"}))
+    c = make_client(owner)
+    h = owner.a.headers
+    names = {
+        p["name"]: p for p in ok(c.get("/v1/profiles/model_profile?environment=dev", headers=h))
+    }
+    assert {"cloud-frontier", "on-prem-standard", "dev-offline"} <= set(names)
+    assert names["cloud-frontier"]["allowed"] is True
+    floors = {"rules": [{"path": "model.data_policy.location", "op": "equals", "value": "on_prem"}]}
+    ok(
+        c.post(
+            "/v1/objects",
+            json={"kind": "security_floors", "name": "default", "spec": floors},
+            headers=h,
+        ),
+        201,
+    )
+    ok(c.post("/v1/objects/security_floors/default/versions/1/publish", headers=h))
+    ok(c.put("/v1/objects/security_floors/default/deployments/dev", json={"version": 1}, headers=h))
+    names = {
+        p["name"]: p for p in ok(c.get("/v1/profiles/model_profile?environment=dev", headers=h))
+    }
+    assert names["cloud-frontier"]["allowed"] is False
+    assert names["cloud-frontier"]["reason"]
+    assert names["on-prem-standard"]["allowed"] is True
+    assert {p["name"] for p in ok(c.get("/v1/profiles/retrieval_profile", headers=h))} >= {
+        "standard",
+        "dev-offline",
+    }

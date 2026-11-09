@@ -1192,6 +1192,64 @@
         ]
       }
     },
+    "/v1/profiles/{kind}": {
+      "get": {
+        "description": "Profiles of a kind usable in an environment (built-in and deployed), for Studio pickers.",
+        "operationId": "list_profiles_v1_profiles__kind__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "environment",
+            "required": false,
+            "schema": {
+              "default": "dev",
+              "title": "Environment",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response List Profiles V1 Profiles  Kind  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Profiles",
+        "tags": [
+          "config"
+        ]
+      }
+    },
     "/v1/resolve/agents/{name}": {
       "get": {
         "description": "The agent as the runtime will see it: every layer merged, profiles inlined, floors checked,\nwith per-field provenance. ``version`` previews a specific (even draft) agent version.",

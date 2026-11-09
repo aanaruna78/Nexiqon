@@ -23,6 +23,23 @@ async function openPalette(page: Page) {
   }).toPass({ timeout: 10_000 });
 }
 
+const GUIDE = `# Operations Guide
+
+## Backups
+
+Backups run every night at 02:00 UTC. Each backup is kept for 35 days and copied to a second region.
+
+## Restores
+
+To restore, open the console and choose Restore from backup. Large restores can take up to two hours.
+`;
+
+/** Choose an option from a labelled Radix select. */
+async function pick(page: Page, label: string, option: RegExp) {
+  await page.getByLabel(label).click();
+  await page.getByRole("option", { name: option }).click();
+}
+
 async function signIn(page: Page) {
   await page.goto("/");
   await page.waitForURL(/realms\/nexiqon/);
@@ -124,6 +141,88 @@ test.describe.serial("Studio", () => {
     await a11y(page, "audit");
   });
 
+  test("knowledge: create a collection, upload files and watch them index", async () => {
+    await page.goto("/knowledge");
+    await expect(page.getByRole("heading", { name: "Add your first collection" })).toBeVisible();
+    await a11y(page, "knowledge empty");
+    await page.getByTestId("create-collection").click();
+    await page.getByLabel("Name", { exact: true }).fill("Product Docs");
+    await expect(page.getByLabel("Name", { exact: true })).toHaveValue("product-docs");
+    await pick(page, "Model profile", /dev-offline/);
+    await pick(page, "Retrieval profile", /dev-offline/);
+    await a11y(page, "new collection dialog");
+    await page.getByRole("button", { name: "Create collection" }).click();
+    await page.waitForURL(/\/knowledge\/[0-9a-f-]{36}$/);
+    await page.getByTestId("upload-input").setInputFiles([
+      { name: "guide.md", mimeType: "text/markdown", buffer: Buffer.from(GUIDE) },
+      { name: "archive.zip", mimeType: "application/zip", buffer: Buffer.from("PK\u0003\u0004") },
+      { name: "blank.txt", mimeType: "text/plain", buffer: Buffer.from("   \n\n  ") },
+    ]);
+    await expect(page.getByTestId("upload-archive.zip")).toContainText("Unsupported file type"); // refused before upload
+    const guide = page.getByTestId("doc-Operations Guide");
+    await expect(guide).toContainText("Ready", { timeout: 60_000 });
+    const blank = page.getByTestId("doc-blank.txt");
+    await expect(blank).toContainText("Needs attention", { timeout: 60_000 });
+    await expect(blank).toContainText("No text was found");
+    await a11y(page, "collection documents");
+    await guide.getByRole("button", { name: /^Operations Guide/ }).click();
+    const outline = page.getByTestId("outline");
+    await expect(outline).toContainText("Backups");
+    await expect(outline).toContainText("Restores");
+    await a11y(page, "document sheet");
+    await page.keyboard.press("Escape");
+  });
+
+  test("knowledge: add a website source from the connector gallery", async () => {
+    await page.getByRole("tab", { name: /Sources/ }).click();
+    await page.getByTestId("add-source").click();
+    await a11y(page, "connector gallery");
+    await page.getByTestId("connector-web").click();
+    await page.getByTestId("save-source").click();
+    await expect(page.getByRole("alert").filter({ hasText: "Some settings need attention" })).toBeVisible();
+    await page.getByLabel("Start urls").fill("https://docs.example.com/");
+    await page.getByLabel("Start urls").press("Enter");
+    await page.getByLabel("Sync right away").click();
+    await a11y(page, "web connector form");
+    await page.getByTestId("save-source").click();
+    await expect(page.getByTestId("source-website")).toContainText("Never synced");
+  });
+
+  test("playground: grounded answer with citations and source preview", async () => {
+    await page.getByRole("link", { name: "Try in Playground" }).click();
+    await page.waitForURL(/\/playground\?collection=/);
+    await pick(page, "Retrieval profile", /dev-offline/);
+    await page.getByTestId("playground-query").fill("How long is each backup kept?");
+    await page.getByTestId("playground-run").click();
+    const answer = page.getByTestId("playground-answer");
+    await expect(answer).toContainText("35 days");
+    await expect(answer).toContainText("1 source");
+    await expect(page.getByTestId("diagnostics")).toContainText("hash-ngram-1024");
+    await a11y(page, "playground answer");
+    await answer.getByRole("button", { name: /Source 1/ }).click();
+    const preview = page.getByTestId("source-preview");
+    await expect(preview).toContainText("Operations Guide");
+    await expect(preview.locator("mark").first()).toBeVisible();
+    await a11y(page, "source preview");
+    await page.keyboard.press("Escape");
+    await page.getByRole("radio", { name: "Search only" }).click();
+    await page.getByTestId("playground-query").fill("zebra savannah migration");
+    await page.getByTestId("playground-run").click();
+    await expect(page.getByText("Weak evidence").or(page.getByText("No passages"))).toBeVisible();
+  });
+
+  test("knowledge: delete shows the impact first", async () => {
+    await page.goto("/knowledge");
+    await page.getByTestId("collection-product-docs").click();
+    await page.getByRole("button", { name: "Delete: product-docs" }).click();
+    const dialog = page.getByRole("alertdialog");
+    await expect(dialog).toContainText("2 documents");
+    await expect(dialog).toContainText("1 connected source");
+    await dialog.getByTestId("confirm-delete-collection").click();
+    await page.waitForURL(/\/knowledge$/);
+    await expect(page.getByRole("heading", { name: "Add your first collection" })).toBeVisible();
+  });
+
   test("command palette navigates from the keyboard", async () => {
     await page.goto("/");
     await openPalette(page);
@@ -133,15 +232,15 @@ test.describe.serial("Studio", () => {
   });
 
   test("planned sections have designed placeholders, not dead ends", async () => {
-    await page.goto("/knowledge");
-    await expect(page.getByRole("heading", { name: "Knowledge is coming" })).toBeVisible();
+    await page.goto("/assistants");
+    await expect(page.getByRole("heading", { name: "Assistants is coming" })).toBeVisible();
     await a11y(page, "coming soon");
   });
 
   test("sidebar explains each section in a tooltip and shows planned ones as Soon", async () => {
     await page.goto("/");
-    const knowledge = page.getByRole("link", { name: /Knowledge/ }).first();
-    await expect(knowledge).toContainText("Soon");
+    await expect(page.getByRole("link", { name: /Assistants/ }).first()).toContainText("Soon");
+    await expect(page.getByRole("link", { name: /Knowledge/ }).first()).not.toContainText("Soon");
     await page.getByRole("link", { name: /API keys/ }).first().hover();
     await expect(page.getByRole("tooltip")).toContainText("Keys for your backend and website widget");
   });
@@ -165,6 +264,11 @@ test.describe.serial("Studio", () => {
     await expect(page.locator("html")).toHaveAttribute("lang", "ar");
     await expect(page.getByRole("link", { name: "الرئيسية" }).first()).toBeVisible();
     await a11y(page, "home (ar)");
+    await page.goto("/knowledge");
+    await expect(page.getByRole("heading", { name: "المعرفة" })).toBeVisible();
+    await a11y(page, "knowledge (ar)");
+    await page.goto("/playground");
+    await a11y(page, "playground (ar)");
     await openPalette(page);
     await page.keyboard.type("English");
     await page.keyboard.press("Enter");

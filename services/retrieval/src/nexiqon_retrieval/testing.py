@@ -6,26 +6,11 @@ measured in CI without a model. Real-model quality is measured in the model bake
 
 from __future__ import annotations
 
-import hashlib
-import math
-import re
 from typing import Any
 
-DIMS = 1024
-MODEL = "hash-ngram-1024"
-WORD = re.compile(r"\w+", re.UNICODE)
+from nexiqon_core.offline_models import EMBED_MODEL, WORD, extractive_answer, hash_embed
 
-
-def hash_embed(text: str) -> list[float]:
-    vec = [0.0] * DIMS
-    for word in WORD.findall(text.lower()):
-        padded = f"#{word}#"
-        grams = [padded[i : i + 3] for i in range(max(1, len(padded) - 2))] + [f"w:{word}"]
-        for gram in grams:
-            h = int.from_bytes(hashlib.blake2b(gram.encode(), digest_size=8).digest(), "big")
-            vec[h % DIMS] += 1.0 if (h >> 63) & 1 else -1.0
-    norm = math.sqrt(sum(v * v for v in vec)) or 1.0
-    return [v / norm for v in vec]
+MODEL = EMBED_MODEL
 
 
 class HashModelClient:
@@ -33,6 +18,7 @@ class HashModelClient:
 
     def __init__(self, rerank_enabled: bool = False) -> None:
         self.rerank_enabled = rerank_enabled
+        self.answer: str | None = None  # fixed answer text (e.g. to test fabricated citations)
         self.calls: list[dict[str, Any]] = []
 
     async def embed_query(
@@ -60,6 +46,23 @@ class HashModelClient:
         ]
         scored.sort(key=lambda x: x[1], reverse=True)
         return scored[:top_n]
+
+    async def chat(
+        self,
+        token: str,
+        profile: str,
+        classification: str,
+        messages: list[dict[str, str]],
+        max_tokens: int,
+    ) -> dict[str, object]:
+        self.calls.append({"op": "chat", "profile": profile, "messages": messages})
+        prompt = messages[-1]["content"]
+        answer = self.answer or extractive_answer(prompt, prompt.rsplit("Question:", 1)[-1])
+        return {
+            "content": answer,
+            "route": {"profile": profile, "model": "extractive", "provider": "offline"},
+            "usage": {"input_tokens": len(prompt) // 4, "output_tokens": len(answer) // 4},
+        }
 
     async def aclose(self) -> None:
         return None

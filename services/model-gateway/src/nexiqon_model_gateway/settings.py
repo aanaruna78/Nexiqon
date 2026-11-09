@@ -36,3 +36,5 @@ class ServiceSettings(CoreSettings):
     max_batch_inputs: int = 256
     max_rerank_documents: int = 200
     prices_file: Path | None = None  # overrides defaults/prices.yaml
+    # Development only: serve the deterministic "offline" provider (not a language model).
+    allow_offline_provider: bool = False

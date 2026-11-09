@@ -370,6 +370,18 @@ async def resolve_profile(
         )
 
 
+@tenant_router.get("/profiles/{kind}")
+async def list_profiles(
+    kind: str, request: Request, ctx: Ctx, environment: str = "dev"
+) -> list[dict[str, Any]]:
+    """Profiles of a kind usable in an environment (built-in and deployed), for Studio pickers."""
+    await _allow(request, "config.profiles.resolve", _kind(kind))
+    if environment not in ENVIRONMENTS:
+        raise BadRequest(f"environment must be one of {ENVIRONMENTS}")
+    async with _db(request).session(ctx) as s:
+        return await Store(s, ctx, request.app.state.settings).list_profiles(kind, environment)
+
+
 @tenant_router.get("/snapshots/{environment}")
 async def snapshot(
     environment: str,

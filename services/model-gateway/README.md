@@ -28,6 +28,11 @@ For every call the gateway:
 6. **Records usage** (`usage_records`, no prompt or completion text) and emits
    `nexiqon.model-gateway.usage.recorded` through the outbox.
 
+**Offline development provider.** With `allow_offline_provider: true` (the local stack sets it), the
+`offline` provider serves the built-in `dev-offline` profile: hash embeddings, a lexical reranker and an
+extractive "answer" that quotes the best-matching source sentence. It is **not a language model**. It
+exists so the whole platform runs end to end without keys or GPUs, and it is refused unless enabled.
+
 Provider keys: `NEXIQON_PROVIDERS__OPENAI_API_KEY`, `..._ANTHROPIC_API_KEY`, `..._GEMINI_API_KEY`,
 `..._OPENAI_COMPATIBLE_API_KEY` (from OpenBao in production). Prices in
 `defaults/prices.yaml` are illustrative; verify them before using costs for billing.

@@ -24,7 +24,8 @@
             "openai",
             "anthropic",
             "gemini",
-            "openai_compatible"
+            "openai_compatible",
+            "offline"
           ]
         },
         "model": {
@@ -60,7 +61,8 @@
         "provider": {
           "enum": [
             "openai",
-            "openai_compatible"
+            "openai_compatible",
+            "offline"
           ]
         },
         "model": {

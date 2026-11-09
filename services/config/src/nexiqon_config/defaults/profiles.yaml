@@ -31,6 +31,14 @@ model_profile:
     reranker: { enabled: true, provider: openai_compatible, model: qwen3-reranker-0.6b, base_url: "http://vllm-rerank:8000/v1" }
     capabilities: { tool_calling: true, json_schema_output: false, context_tokens: 32768 }
     data_policy: { location: on_prem, allow_training: false }
+  # Development stacks without API keys or GPUs: deterministic stand-ins, NOT language models.
+  # Works only where the model gateway enables the offline provider (allow_offline_provider).
+  dev-offline:
+    chat: { provider: offline, model: extractive, max_output_tokens: 400 }
+    embedding: { provider: offline, model: hash-ngram-1024, dimensions: 1024 }
+    reranker: { enabled: true, provider: offline, model: lexical }
+    capabilities: { tool_calling: false, json_schema_output: false, context_tokens: 32768 }
+    data_policy: { location: on_prem, allow_training: false }
 retrieval_profile:
   standard:
     chunking: { strategy: heading_aware, max_tokens: 400, overlap_tokens: 40 }
@@ -38,6 +46,13 @@ retrieval_profile:
     small_to_big: { enabled: true, max_context_tokens: 3000 }
     summary_nodes: false
     min_evidence_score: 0.55
+  # Hash embeddings score lower than real models; pair with the dev-offline model profile.
+  dev-offline:
+    chunking: { strategy: heading_aware, max_tokens: 200, overlap_tokens: 20 }
+    search: { top_k: 6, vector_weight: 0.6, keyword_weight: 0.4, rerank: false }
+    small_to_big: { enabled: true, max_context_tokens: 3000 }
+    summary_nodes: false
+    min_evidence_score: 0.15
 retention_profile:
   standard:
     conversations_days: 365

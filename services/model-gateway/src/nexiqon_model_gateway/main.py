@@ -62,7 +62,9 @@ def create_app(
             cache_seconds=settings.profile_cache_seconds,
             transport=config_transport,
         ),
-        Providers(settings.providers, provider_transport),
+        Providers(
+            settings.providers, provider_transport, allow_offline=settings.allow_offline_provider
+        ),
         PriceBook.load(settings.prices_file),
         db,
     )

@@ -184,3 +184,56 @@ def test_permissions(stack: SearchStack) -> None:
         stack.client.post("/v1/search", json=body, headers=stack.headers({"viewer"})).status_code
         == 403
     )
+
+
+def test_grounded_answer_cites_verified_passages(stack: SearchStack) -> None:
+    stack.index(GUIDE, "upload://ops-guide.md")
+    r = stack.client.post(
+        "/v1/answer",
+        json={
+            "query": "How long is each backup kept?",
+            "collection_ids": [str(stack.collection)],
+            "retrieval_profile": "dev-offline",
+        },
+        headers=stack.headers({"member"}),
+    )
+    assert r.status_code == 200, r.text
+    out = r.json()
+    assert out["abstained"] is False
+    assert "35 days" in out["answer"]
+    assert out["citations"][0]["citation"].endswith("Backups")
+    assert out["citations"][0]["passage_id"] == out["search"]["passages"][0]["id"]
+    assert "generate" in out["search"]["timings_ms"]
+    chat = next(c for c in stack.models.calls if c["op"] == "chat")
+    prompt = chat["messages"][1]["content"]
+    assert prompt.startswith("Sources:\n\n[1] Operations Guide")
+    assert prompt.endswith("Question: How long is each backup kept?")
+
+
+def test_answer_with_fabricated_citations_abstains(stack: SearchStack) -> None:
+    stack.index(GUIDE, "upload://ops-guide.md")
+    stack.models.answer = "Backups are stored on the moon by penguins [1]. See also [7]."
+    out = stack.client.post(
+        "/v1/answer",
+        json={
+            "query": "Where are backups stored?",
+            "collection_ids": [str(stack.collection)],
+            "retrieval_profile": "dev-offline",
+        },
+        headers=stack.headers({"member"}),
+    ).json()
+    assert out["abstained"] is True
+    assert out["citations"] == []
+    assert {x["reason"] for x in out["removed"]} == {"unsupported"}
+    assert "[1]" not in out["answer"]
+    assert "[7]" not in out["answer"]
+
+
+def test_answer_abstains_without_evidence_and_skips_the_model(stack: SearchStack) -> None:
+    out = stack.client.post(
+        "/v1/answer",
+        json={"query": "anything at all", "collection_ids": [str(stack.collection)]},
+        headers=stack.headers({"member"}),
+    ).json()
+    assert (out["abstained"], out["reason"], out["answer"]) == (True, "no_passages", None)
+    assert not any(c["op"] == "chat" for c in stack.models.calls)

@@ -21,6 +21,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Grounded Answer
+         * @description Search, ask the model with numbered sources, verify citations (abstains when unsupported).
+         */
+        post: operations["grounded_answer_v1_answer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/citations/verify": {
         parameters: {
             query?: never;
@@ -160,6 +180,18 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AnswerCitation */
+        AnswerCitation: {
+            /** Citation */
+            citation: string;
+            /** Marker */
+            marker: string;
+            /**
+             * Passage Id
+             * Format: uuid
+             */
+            passage_id: string;
+        };
         /**
          * AnswerIn
          * @description The answer contract every grounded answer follows: text with [marker] citations.
@@ -176,6 +208,61 @@ export interface components {
              * @default 0.5
              */
             min_support: number;
+        };
+        /** AnswerOut */
+        AnswerOut: {
+            /** Abstained */
+            abstained: boolean;
+            /** Answer */
+            answer: string | null;
+            /** Citations */
+            citations: components["schemas"]["AnswerCitation"][];
+            /** Model */
+            model: {
+                [key: string]: unknown;
+            };
+            /** Reason */
+            reason: string | null;
+            /** Removed */
+            removed: components["schemas"]["RemovedOut"][];
+            search: components["schemas"]["SearchOut"];
+            /** Usage */
+            usage: {
+                [key: string]: unknown;
+            };
+        };
+        /** AnswerRequest */
+        AnswerRequest: {
+            /**
+             * Classification
+             * @default internal
+             * @enum {string}
+             */
+            classification: "public" | "internal" | "confidential" | "restricted";
+            /** Collection Ids */
+            collection_ids: string[];
+            /**
+             * Max Tokens
+             * @default 800
+             */
+            max_tokens: number;
+            /**
+             * Min Support
+             * @default 0.5
+             */
+            min_support: number;
+            /** Model Profile */
+            model_profile?: string | null;
+            /** Query */
+            query: string;
+            /** Rerank */
+            rerank?: boolean | null;
+            /** Retrieval Profile */
+            retrieval_profile?: string | null;
+            /** Small To Big */
+            small_to_big?: boolean | null;
+            /** Top K */
+            top_k?: number | null;
         };
         /** CitationIn */
         CitationIn: {
@@ -486,6 +573,39 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    grounded_answer_v1_answer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnswerRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnswerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

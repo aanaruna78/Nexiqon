@@ -8,6 +8,7 @@ from pydantic import SecretStr
 from nexiqon_core.errors import BadRequest
 from nexiqon_model_gateway.adapters.anthropic import Anthropic
 from nexiqon_model_gateway.adapters.gemini import Gemini
+from nexiqon_model_gateway.adapters.offline import Offline
 from nexiqon_model_gateway.adapters.openai_compat import OpenAICompatible
 from nexiqon_model_gateway.providers import (
     ChatProvider,
@@ -23,7 +24,11 @@ def _secret(value: SecretStr | None) -> str | None:
 
 class Providers:
     def __init__(
-        self, credentials: ProviderCredentials, transport: httpx.AsyncBaseTransport | None = None
+        self,
+        credentials: ProviderCredentials,
+        transport: httpx.AsyncBaseTransport | None = None,
+        *,
+        allow_offline: bool = False,
     ) -> None:
         # Per-call deadlines come from the profile (asyncio.timeout in the gateway).
         self._client = httpx.AsyncClient(
@@ -41,6 +46,11 @@ class Providers:
         }
         self._embed: dict[str, EmbeddingProvider] = {"openai": openai, "openai_compatible": compat}
         self._rerank: dict[str, RerankProvider] = {"openai_compatible": compat}
+        if allow_offline:  # development only: deterministic stand-ins, no network
+            offline = Offline()
+            self._chat["offline"] = offline
+            self._embed["offline"] = offline
+            self._rerank["offline"] = offline
 
     def chat(self, name: str) -> ChatProvider:
         return _pick(self._chat, name, "chat")

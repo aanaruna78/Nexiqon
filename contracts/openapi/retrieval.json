@@ -1,6 +1,30 @@
 {
   "components": {
     "schemas": {
+      "AnswerCitation": {
+        "properties": {
+          "citation": {
+            "title": "Citation",
+            "type": "string"
+          },
+          "marker": {
+            "title": "Marker",
+            "type": "string"
+          },
+          "passage_id": {
+            "format": "uuid",
+            "title": "Passage Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "marker",
+          "passage_id",
+          "citation"
+        ],
+        "title": "AnswerCitation",
+        "type": "object"
+      },
       "AnswerIn": {
         "description": "The answer contract every grounded answer follows: text with [marker] citations.",
         "properties": {
@@ -40,6 +64,185 @@
           "collection_ids"
         ],
         "title": "AnswerIn",
+        "type": "object"
+      },
+      "AnswerOut": {
+        "properties": {
+          "abstained": {
+            "title": "Abstained",
+            "type": "boolean"
+          },
+          "answer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/AnswerCitation"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "model": {
+            "additionalProperties": true,
+            "title": "Model",
+            "type": "object"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "removed": {
+            "items": {
+              "$ref": "#/components/schemas/RemovedOut"
+            },
+            "title": "Removed",
+            "type": "array"
+          },
+          "search": {
+            "$ref": "#/components/schemas/SearchOut"
+          },
+          "usage": {
+            "additionalProperties": true,
+            "title": "Usage",
+            "type": "object"
+          }
+        },
+        "required": [
+          "answer",
+          "abstained",
+          "reason",
+          "citations",
+          "removed",
+          "search",
+          "model",
+          "usage"
+        ],
+        "title": "AnswerOut",
+        "type": "object"
+      },
+      "AnswerRequest": {
+        "properties": {
+          "classification": {
+            "default": "internal",
+            "enum": [
+              "public",
+              "internal",
+              "confidential",
+              "restricted"
+            ],
+            "title": "Classification",
+            "type": "string"
+          },
+          "collection_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Collection Ids",
+            "type": "array"
+          },
+          "max_tokens": {
+            "default": 800,
+            "maximum": 4000.0,
+            "minimum": 50.0,
+            "title": "Max Tokens",
+            "type": "integer"
+          },
+          "min_support": {
+            "default": 0.5,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Min Support",
+            "type": "number"
+          },
+          "model_profile": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Profile"
+          },
+          "query": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Query",
+            "type": "string"
+          },
+          "rerank": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rerank"
+          },
+          "retrieval_profile": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retrieval Profile"
+          },
+          "small_to_big": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Small To Big"
+          },
+          "top_k": {
+            "anyOf": [
+              {
+                "maximum": 50.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top K"
+          }
+        },
+        "required": [
+          "query",
+          "collection_ids"
+        ],
+        "title": "AnswerRequest",
         "type": "object"
       },
       "CitationIn": {
@@ -905,6 +1108,48 @@
         "summary": "Meta",
         "tags": [
           "ops"
+        ]
+      }
+    },
+    "/v1/answer": {
+      "post": {
+        "description": "Search, ask the model with numbered sources, verify citations (abstains when unsupported).",
+        "operationId": "grounded_answer_v1_answer_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnswerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnswerOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Grounded Answer",
+        "tags": [
+          "retrieval"
         ]
       }
     },
