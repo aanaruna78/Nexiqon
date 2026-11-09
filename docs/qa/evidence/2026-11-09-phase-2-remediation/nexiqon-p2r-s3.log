@@ -1,0 +1,1 @@
+PASS: listing and fetch reached only the approved 127.0.0.2 listener; rebound 127.0.0.1 received no requests

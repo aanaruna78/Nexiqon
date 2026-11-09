@@ -51,6 +51,11 @@ role_permissions := {
 		"retrieval.index.write",
 		"retrieval.index.read",
 	],
+	# Reads agent configuration and collection names; model, retrieval and tool calls use the user's token.
+	"service:agent-runtime": [
+		"config.agent.read",
+		"ingestion.collections.read",
+	],
 }
 
 # Actions only an owner may perform, whatever other roles grant.

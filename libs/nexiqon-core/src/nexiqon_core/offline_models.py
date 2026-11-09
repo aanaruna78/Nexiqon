@@ -100,6 +100,8 @@ def extractive_answer(prompt: str, question: str) -> str:
             score = len(q & words) / (len(q) or 1)
             if score > best[0]:
                 best = (score, marker, sentence.strip())
+    if not PASSAGE.search(sources):  # no sources at all (e.g. a greeting): say what this is
+        return "Hello! I'm the offline development model, so I can only quote your documents."
     if not best[1]:
         return "I could not find this in the provided sources."
     return f"{best[2]} [{best[1]}]"

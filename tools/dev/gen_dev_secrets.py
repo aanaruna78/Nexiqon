@@ -18,7 +18,10 @@ from nexiqon_core.testing import make_keypair
 
 CONFIG = Path(__file__).resolve().parents[2] / "deploy" / "compose" / "config"
 OUT = CONFIG / "dev-secrets.yaml"
-SERVICE_IDENTITIES = ["ingestion"]  # services that sign their own tenant-scoped tokens
+SERVICE_IDENTITIES = [
+    "ingestion",
+    "agent-runtime",
+]  # services that sign their own tenant-scoped tokens
 
 
 def _write(path: Path, data: dict[str, object]) -> None:
@@ -31,20 +34,30 @@ def _write(path: Path, data: dict[str, object]) -> None:
 
 
 def service_keys(force: bool) -> None:
+    """Create a key pair for every service identity that lacks one; keep the existing ones."""
     public_file = CONFIG / "dev-service-keys.yaml"
-    if public_file.exists() and not force:
-        return
-    public_keys: dict[str, str] = {}
-    mapping: dict[str, str] = {}
+    current = (
+        (yaml.safe_load(public_file.read_text()) or {})
+        if public_file.exists() and not force
+        else {}
+    )
+    tokens = current.get("context_token", {})
+    public_keys: dict[str, str] = dict(tokens.get("public_keys", {}))
+    mapping: dict[str, str] = dict(tokens.get("service_keys", {}))
+    changed = False
     for service in SERVICE_IDENTITIES:
         kid = f"svc-{service}-dev-1"
+        secret_file = CONFIG / f"dev-secrets-{service}.yaml"
+        if not force and secret_file.exists() and kid in public_keys:
+            continue
         private_pem, public_pem = make_keypair()
         public_keys[kid], mapping[kid] = public_pem, service
+        _write(secret_file, {"service_identity": {"key_id": kid, "private_key": private_pem}})
+        changed = True
+    if changed:
         _write(
-            CONFIG / f"dev-secrets-{service}.yaml",
-            {"service_identity": {"key_id": kid, "private_key": private_pem}},
+            public_file, {"context_token": {"public_keys": public_keys, "service_keys": mapping}}
         )
-    _write(public_file, {"context_token": {"public_keys": public_keys, "service_keys": mapping}})
 
 
 def main() -> int:

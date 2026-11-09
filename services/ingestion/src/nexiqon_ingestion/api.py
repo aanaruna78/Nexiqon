@@ -180,6 +180,10 @@ def _sees(request: Request, ctx: TenantContext, c: Collection) -> bool:
     and to the roles that manage knowledge. Hidden collections are reported as not found."""
     if not c.acl_groups or ctx.has_role(*request.app.state.settings.content_manager_roles):
         return True
+    if (
+        ctx.actor_type == "service"
+    ):  # platform services resolve names; access is enforced per user downstream
+        return True
     return bool(set(c.acl_groups) & ctx.groups)
 
 

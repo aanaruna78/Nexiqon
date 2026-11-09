@@ -23,6 +23,7 @@ Related: [ARCHITECTURE.md](ARCHITECTURE.md) · [BACKLOG.md](BACKLOG.md) · [UX.m
 | P2 · slice 2 | `phase-2/ingestion` | IN-01..08 and IN-07 (IN-09 summary nodes deferred: P1, gated on RT-05); retrieval index write side (part of RT-01); ADR 0017 |
 | P2 · slice 3 | `phase-2/retrieval` | RT-01, RT-02, RT-03, RT-05 (offline-embedding gate; real-model run is M-07), RT-07, RT-08; RT-04 and RT-06 (P1) open |
 | P2 · slice 4 | `phase-2/knowledge-ui` | ST-04 (Knowledge UI), ST-05 (Playground with grounded answers and source preview), offline dev provider; UX-08 sessions and M-07 bake-off (needs real models) open |
+| P3 · slice 1 | `phase-3/agent-runtime` | AG-01 (graph compiler + node library), AG-02 (tenant checkpointer, interrupts/resume, capability-aware routing), CV-01 (conversations, answer contract, feedback, retention); ADR 0018 |
 
 ## 1. Decisions
 

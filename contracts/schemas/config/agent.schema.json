@@ -85,6 +85,11 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "product_name": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "What the assistant supports (fills {{product_name}} in pack prompts)"
+        },
         "tone": {
           "enum": [
             "neutral",

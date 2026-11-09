@@ -44,3 +44,28 @@ Change the settings if you want a stricter rule.
 Unchanged and still open, as QA listed: live provider interoperability, M-07 with real models,
 production-scale concurrency and budget races, external S3 and Git behaviour, a live Grafana alert firing,
 and browser E2E in CI.
+
+## Independent QA re-verification — 9 November 2026
+
+Reviewed at **`a6ceedf90f508e24942e7f5097e7da22a46e69bc`**, initially clean. **QA2-01 through QA2-06 are closed for the reported reproduction cases.** No additional blocker was observed in this review. This closes the six findings in the original verification report; the exclusions above remain open.
+
+| Independently checked | Result |
+|---|---|
+| Source review: classification propagation, S3 pinning, incomplete discovery/migration, visibility predicates, citation occurrences and context cap | Consistent with the described fixes |
+| Original retrieval acceptance cases, unchanged | **5 passed** |
+| Original transient-crawl acceptance case, unchanged | **1 passed**; original S3 case deliberately deselected because its approved public address is unreachable in the fixed implementation |
+| Additional S3 check with successful real connections | **Pass**: both listing and object fetch reached only an approved `127.0.0.2` listener; DNS for the synthetic hostname was rebound to `127.0.0.1`, whose listener received **zero requests** |
+| Full Python suite, including maintained S3 and other remediation regressions | **339 passed**, no skips, 3 deprecation warnings, 93.40 seconds |
+| Lint, format, strict mypy, architecture and OpenAPI freshness | Pass; **201** source files type checked |
+| Generated TypeScript client regeneration | No tracked differences |
+| Frontend lint, types and unit tests | Pass; **23 Studio + 3 widget tests** |
+| Browser suite against the running stack | **17 passed**, including EN/AR axe checks, 28.1 seconds |
+| Real gateway smoke | **26 checks passed** |
+
+The additional S3 probe uses an explicitly allowed private CIDR for the approved local listener, dummy credentials and two local sockets. It verifies a successful connection to the approved address as well as the absence of a connection to the rebound address; no public network service is needed. The original reproduction files were left unchanged. The maintained socket regression also passed in the full suite.
+
+Independently queried GitHub: the cited `2190c13` run succeeded, and the newer [run 42567566788](https://github.com/aanaruna78/Nexiqon/actions/runs/42567566788) is green at reviewed commit `a6ceedf`. Python, Frontend, OPA, Security and Container image all succeeded. Breaking-contract comparison was skipped on this push. Image builds, security scans and OPA results were confirmed through these current-commit CI jobs rather than repeated locally. Gateway/browser reruns used the existing stack; this review did not rebuild or replace it.
+
+The editor access-group bypass is a deliberate **authorization policy change**, extending the previous owner/admin bypass to editors. This verification confirms the documented behavior; it does not independently establish that broader access is the desired product policy. Both ingestion and retrieval settings must remain aligned.
+
+Outputs and the additional local S3 probe are preserved in [evidence/2026-11-09-phase-2-remediation](evidence/2026-11-09-phase-2-remediation/). Only QA notes/evidence were added during re-verification. Application code, the original reproduction files and deployment settings were not changed; no merge or push was performed.

@@ -4,7 +4,19 @@ members = ["libs/*", "services/*"]
 
 [tool.uv]
 # Transitive pins: only versions released at least two weeks before they were adopted.
-constraint-dependencies = ["soupsieve<4"]
+constraint-dependencies = [
+  "soupsieve<4",
+  "langgraph-checkpoint<=4.3.0",
+  "langchain-core<=1.7.0",
+  "langgraph-sdk<=0.4.9",
+  "langgraph-prebuilt<=1.1.1",
+  "jsonpatch<=1.37",
+  "jsonpointer<=3.5",
+  "langchain-protocol<=0.0.20",
+  "langsmith<=0.14.12",
+  "ormsgpack<=1.13.0",
+  "uuid-utils<=0.18.0",
+]
 
 [dependency-groups]
 dev = [

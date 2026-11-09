@@ -1,0 +1,16 @@
+[2m2026-11-09T05:33:36.767819Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mcontrol[0m [36mservice[0m=[35mconfig[0m [36mversion[0m=[35m0.1.0[0m
+[2m2026-11-09T05:33:36.767973Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mdata[0m [36mservice[0m=[35mretrieval[0m [36mversion[0m=[35m0.1.0[0m
+[2m2026-11-09T05:33:36.768020Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mdata[0m [36mservice[0m=[35mingestion[0m [36mversion[0m=[35m0.1.0[0m
+2026-11-09T05:33:36.901122Z  WARN temporalio_sdk_core::worker: Temporal Server 1.16.0 or newer is required to guarantee that the latest heartbeat details are preserved when an activity fails; the server did not advertise the activity_failure_include_heartbeat capability, so heartbeat details may be lost on failure
+second sync: completed warnings: [{'uri': 'https://docs.example.com/a', 'message': 'HTTP 503'}] deleted: 0 remaining: ['https://docs.example.com/', 'https://docs.example.com/a']
+.[2m2026-11-09T05:33:37.966033Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mingestion[0m
+[2m2026-11-09T05:33:37.979896Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mretrieval[0m
+[2m2026-11-09T05:33:37.982683Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mconfig[0m
+
+=============================== warnings summary ===============================
+docs/qa/reproductions/phase2_ingestion_cases.py::test_transient_crawl_failure_must_not_delete_indexed_documents
+  /home/arun/Documents/Nexiqon/Nexiqon/libs/nexiqon-core/src/nexiqon_core/pytest_plugin.py:52: DeprecationWarning: testcontainers.postgres is deprecated, use testcontainers.community.postgres instead
+    from testcontainers.postgres import PostgresContainer
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1 passed, 1 deselected, 1 warning in 4.65s

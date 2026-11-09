@@ -94,3 +94,18 @@ test_search_is_open_to_inference_callers if {
 	not authz.allow with input as {"actor": widget, "action": "retrieval.index.read", "resource": {"type": "document"}}
 	not authz.allow with input as {"actor": actor(["member"]), "action": "retrieval.search.run", "resource": {"type": "collection", "tenant_id": "t-b"}}
 }
+
+test_agent_runtime_identity_reads_config_only if {
+	svc := {"tenant_id": "t-a", "id": "service:agent-runtime", "type": "service", "roles": ["service:agent-runtime"], "groups": []}
+	authz.allow with input as {"actor": svc, "action": "config.agent.read", "resource": {"type": "agent"}}
+	authz.allow with input as {"actor": svc, "action": "ingestion.collections.read", "resource": {"type": "collection"}}
+	not authz.allow with input as {"actor": svc, "action": "retrieval.search.run", "resource": {"type": "collection"}}
+	not authz.allow with input as {"actor": svc, "action": "model.inference.run", "resource": {"type": "model_profile"}}
+	not authz.allow with input as {"actor": svc, "action": "ingestion.documents.read", "resource": {"type": "document"}}
+}
+
+test_end_users_read_only_their_own_conversations if {
+	authz.allow with input as {"actor": actor(["end_user"]), "action": "conversation.own.read", "resource": {"type": "conversation"}}
+	not authz.allow with input as {"actor": actor(["end_user"]), "action": "conversation.all.read", "resource": {"type": "conversation"}}
+	authz.allow with input as {"actor": actor(["member"]), "action": "conversation.all.read", "resource": {"type": "conversation"}}
+}

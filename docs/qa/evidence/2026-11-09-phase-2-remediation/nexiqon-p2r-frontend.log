@@ -1,0 +1,41 @@
+npx --yes pnpm@12.15.0 --dir frontend lint
+$ pnpm -r --if-present lint
+$ eslint
+npx --yes pnpm@12.15.0 --dir frontend typecheck
+$ pnpm -r --if-present typecheck
+apps/studio typecheck$ next typegen && tsc --noEmit
+apps/widget typecheck$ tsc --noEmit
+packages/client typecheck$ tsc --noEmit
+apps/studio typecheck: Generating route types...
+apps/studio typecheck: ✓ Types generated successfully
+apps/widget typecheck: Done
+packages/client typecheck: Done
+apps/studio typecheck: Done
+npx --yes pnpm@12.15.0 --dir frontend test
+$ pnpm -r --if-present test
+Scope: 3 of 4 workspace projects
+apps/studio test$ vitest run
+apps/widget test$ vitest run
+apps/studio test: (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+apps/studio test:   - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+apps/studio test: Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+apps/widget test: 
+apps/widget test:  RUN  v5.0.5 /home/arun/Documents/Nexiqon/Nexiqon/frontend/apps/widget
+apps/widget test: 
+apps/studio test: 
+apps/studio test:  RUN  v5.0.5 /home/arun/Documents/Nexiqon/Nexiqon/frontend/apps/studio
+apps/studio test: 
+apps/widget test: 
+apps/widget test:  Test Files  1 passed (1)
+apps/widget test:       Tests  3 passed (3)
+apps/widget test:    Start at  11:03:46
+apps/widget test:    Duration  1.34s (environment 76%, import 12%, tests 7%, transform 4%, worker 1%)
+apps/widget test: 
+apps/widget test: Done
+apps/studio test: 
+apps/studio test:  Test Files  5 passed (5)
+apps/studio test:       Tests  23 passed (23)
+apps/studio test:    Start at  11:03:46
+apps/studio test:    Duration  2.22s (environment 54%, setup 17%, import 16%, tests 9%, transform 3%, worker 1%)
+apps/studio test: 
+apps/studio test: Done

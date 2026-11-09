@@ -1,0 +1,25 @@
+$ playwright test
+
+Running 17 tests using 1 worker
+
+(node:196741) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 e2e/studio.spec.ts:60:7 › Studio › onboarding creates an organization and lands on Home (2.1s)
+  ✓   2 e2e/studio.spec.ts:73:7 › Studio › skip link is the first stop for keyboard users (384ms)
+  ✓   3 e2e/studio.spec.ts:82:7 › Studio › members: invite someone (1.3s)
+  ✓   4 e2e/studio.spec.ts:92:7 › Studio › API keys: secret shown once, then revoked (1.4s)
+  ✓   5 e2e/studio.spec.ts:108:7 › Studio › configuration: create, publish and deploy via the schema form (2.5s)
+  ✓   6 e2e/studio.spec.ts:125:7 › Studio › configuration: client validation explains missing fields (430ms)
+  ✓   7 e2e/studio.spec.ts:134:7 › Studio › audit: events recorded and chain verifies (840ms)
+  ✓   8 e2e/studio.spec.ts:144:7 › Studio › knowledge: create a collection, upload files and watch them index (6.6s)
+  ✓   9 e2e/studio.spec.ts:176:7 › Studio › knowledge: add a website source from the connector gallery (1.6s)
+  ✓  10 e2e/studio.spec.ts:191:7 › Studio › playground: grounded answer with citations and source preview (3.0s)
+  ✓  11 e2e/studio.spec.ts:214:7 › Studio › knowledge: delete shows the impact first (590ms)
+  ✓  12 e2e/studio.spec.ts:226:7 › Studio › command palette navigates from the keyboard (346ms)
+  ✓  13 e2e/studio.spec.ts:234:7 › Studio › planned sections have designed placeholders, not dead ends (598ms)
+  ✓  14 e2e/studio.spec.ts:240:7 › Studio › sidebar explains each section in a tooltip and shows planned ones as Soon (588ms)
+  ✓  15 e2e/studio.spec.ts:248:7 › Studio › help dialog lists keyboard shortcuts (814ms)
+  ✓  16 e2e/studio.spec.ts:258:7 › Studio › Arabic switches the whole UI to right-to-left (2.5s)
+  ✓  17 e2e/studio.spec.ts:278:7 › Studio › sign out ends the session (518ms)
+
+  17 passed (28.1s)
