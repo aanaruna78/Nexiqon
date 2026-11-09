@@ -39,6 +39,7 @@ Change the settings if you want a stricter rule.
 | Studio typecheck, lint, unit tests | Pass, **23** tests |
 | Stack rebuilt from this checkout (migration 0002 applied); browser suite with axe, EN and AR | **17 passed** |
 | Gateway smoke | **26 checks passed** |
+| **GitHub CI** on `phase-2/knowledge-ui` at `2190c13` | **Success**: [run 42567005017](https://github.com/aanaruna78/Nexiqon/actions/runs/42567005017). Python, Frontend, OPA policies, Security and Container image all pass; the breaking-contract job runs on PRs only |
 
 Unchanged and still open, as QA listed: live provider interoperability, M-07 with real models,
 production-scale concurrency and budget races, external S3 and Git behaviour, a live Grafana alert firing,
