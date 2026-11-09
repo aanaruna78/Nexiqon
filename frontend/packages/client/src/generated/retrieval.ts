@@ -437,6 +437,8 @@ export interface components {
             chunk_ids: string[];
             /** Citation */
             citation: string;
+            /** Classification */
+            classification: string;
             /**
              * Collection Id
              * Format: uuid
@@ -470,6 +472,8 @@ export interface components {
             title: string | null;
             /** Token Count */
             token_count: number;
+            /** Truncated */
+            truncated: boolean;
         };
         /** RemovedOut */
         RemovedOut: {

@@ -40,3 +40,16 @@ def test_unreferenced_citation_is_dropped_and_punctuation_tidied() -> None:
     assert v.answer == "Something unrelated entirely."
     assert v.abstain
     assert {r.reason for r in v.removed} == {"not_referenced"}
+
+
+def test_qa2_05_each_occurrence_is_checked_on_its_own() -> None:
+    v = verify(
+        "Backups run every night [1]. Penguins pilot spaceships [1].",
+        [Citation("1", P1)],
+        PASSAGES,
+        0.5,
+    )
+    assert v.answer == "Backups run every night [1]. Penguins pilot spaceships."
+    assert [c.marker for c in v.citations] == ["1"]
+    assert [(r.marker, r.reason) for r in v.removed] == [("1", "unsupported")]
+    assert (v.supported_sentences, v.cited_sentences) == (1, 2)

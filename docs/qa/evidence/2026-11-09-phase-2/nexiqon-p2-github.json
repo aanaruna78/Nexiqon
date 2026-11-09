@@ -1,0 +1,26 @@
+[
+  {
+    "head_branch": "phase-2/model-gateway",
+    "head_sha": "5dd5e6ca1260b3a437204823eb97ab55d01d5e1f",
+    "conclusion": "success",
+    "html_url": "https://github.com/aanaruna78/Nexiqon/actions/runs/42446831089"
+  },
+  {
+    "head_branch": "phase-2/ingestion",
+    "head_sha": "42cf99dac00c1a4120d70d4a122492a9543f8cb0",
+    "conclusion": "success",
+    "html_url": "https://github.com/aanaruna78/Nexiqon/actions/runs/42496783087"
+  },
+  {
+    "head_branch": "phase-2/retrieval",
+    "head_sha": "5bdca5d251e437b2396a5e68ec50bb5c30fb333a",
+    "conclusion": "success",
+    "html_url": "https://github.com/aanaruna78/Nexiqon/actions/runs/42498874890"
+  },
+  {
+    "head_branch": "phase-2/knowledge-ui",
+    "head_sha": "4e7bf06a4e1f01b8b9ad43f01823ab200983ac5f",
+    "conclusion": "success",
+    "html_url": "https://github.com/aanaruna78/Nexiqon/actions/runs/42563212428"
+  }
+]

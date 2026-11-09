@@ -92,6 +92,7 @@ class FakeWeb:
         self.pages: dict[str, tuple[str, str]] = {}  # path -> (content type, body)
         self.robots = "User-agent: *\nDisallow: /private/\n"
         self.requests: list[str] = []
+        self.fail: dict[str, int] = {}  # path -> HTTP status to return (transient outages)
 
     async def resolve(self, host: str, port: int) -> list[str]:
         return {self.HOST: [self.ADDRESS], "intranet.example.com": ["10.1.2.3"]}.get(host, [host])
@@ -99,6 +100,8 @@ class FakeWeb:
     def __call__(self, request: httpx.Request) -> httpx.Response:
         path = request.url.path
         self.requests.append(path)
+        if path in self.fail:
+            return httpx.Response(self.fail[path], text="temporarily unavailable")
         if path == "/robots.txt":
             return httpx.Response(200, text=self.robots)
         if path not in self.pages:

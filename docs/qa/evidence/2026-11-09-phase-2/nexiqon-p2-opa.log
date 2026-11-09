@@ -1,0 +1,17 @@
+/policies/nexiqon/authz_test.rego:
+data.nexiqon.authz_test.test_admin_can_write_members: PASS (3.05602ms)
+data.nexiqon.authz_test.test_member_can_read_but_not_write: PASS (2.589773ms)
+data.nexiqon.authz_test.test_cross_tenant_always_denied: PASS (1.811873ms)
+data.nexiqon.authz_test.test_owner_only_actions: PASS (1.125784ms)
+data.nexiqon.authz_test.test_no_roles_denied: PASS (333.12µs)
+data.nexiqon.authz_test.test_widget_cannot_escalate: PASS (938.678µs)
+data.nexiqon.authz_test.test_editor_cannot_manage_members: PASS (1.321817ms)
+data.nexiqon.authz_test.test_decision_lists_granting_role: PASS (2.487809ms)
+data.nexiqon.authz_test.test_audit_log_is_admin_only: PASS (2.327352ms)
+data.nexiqon.authz_test.test_any_tenant_role_may_run_inference_but_not_manage: PASS (825.902µs)
+data.nexiqon.authz_test.test_inference_callers_may_resolve_profiles_without_reading_the_registry: PASS (3.695504ms)
+data.nexiqon.authz_test.test_ingestion_service_identity_is_narrow: PASS (2.734833ms)
+data.nexiqon.authz_test.test_index_writes_are_service_only: PASS (3.3413ms)
+data.nexiqon.authz_test.test_search_is_open_to_inference_callers: PASS (3.574122ms)
+--------------------------------------------------------------------------------
+PASS: 14/14

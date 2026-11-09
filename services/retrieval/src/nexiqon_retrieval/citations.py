@@ -19,6 +19,9 @@ from dataclasses import dataclass, field
 from nexiqon_retrieval.search import STOP, TERM
 
 MARKER = re.compile(r"\[(\w{1,8})\]")
+SENTENCE_SPLIT = re.compile(
+    "(?<=[.!?" + "".join(map(chr, (0x3002, 0xFF01, 0xFF1F, 0x061F))) + r"])(\s+)"
+)
 SENTENCE = re.compile("(?<=[.!?\\u3002\\uff01\\uff1f\\u061f])\\s+")
 
 
@@ -72,35 +75,38 @@ def verify(
         else:
             valid.setdefault(c.marker, []).append(c)
 
+    # Each sentence is judged on its own: a marker supported in one sentence does not validate
+    # the same marker in another (QA2-05). Unsupported sentences lose their markers.
     supported_markers: set[str] = set()
-    unsupported: set[str] = set()
     cited = supported = 0
-    for sentence in SENTENCE.split(answer):
-        markers = [m for m in MARKER.findall(sentence) if m in valid]
-        if not markers:
+    pieces: list[str] = []
+    for index, piece in enumerate(SENTENCE_SPLIT.split(answer)):
+        if index % 2:  # whitespace between sentences
+            pieces.append(piece)
             continue
-        cited += 1
-        words = _content(MARKER.sub("", sentence))
-        evidence = set().union(
-            *(_content(passages[c.passage_id]) for m in markers for c in valid[m])
-        )
-        share = len(words & evidence) / len(words) if words else 1.0
-        if share >= min_support:
-            supported += 1
-            supported_markers.update(markers)
-        else:
-            unsupported.update(markers)
-    # A marker is kept only if it supports at least one sentence it appears in.
-    for marker in sorted(unsupported - supported_markers):
-        removed.append(Removed(marker, "unsupported"))
+        markers = [m for m in MARKER.findall(piece) if m in valid]
+        keep_here: set[str] = set()
+        if markers:
+            cited += 1
+            words = _content(MARKER.sub("", piece))
+            evidence = set().union(
+                *(_content(passages[c.passage_id]) for m in markers for c in valid[m])
+            )
+            share = len(words & evidence) / len(words) if words else 1.0
+            if share >= min_support:
+                supported += 1
+                keep_here = set(markers)
+                supported_markers.update(markers)
+            else:
+                removed.extend(Removed(m, "unsupported") for m in dict.fromkeys(markers))
+
+        def strip(match: re.Match[str], keep: set[str] = keep_here) -> str:
+            return match.group(0) if match.group(1) in keep else ""
+
+        pieces.append(MARKER.sub(strip, piece))
     in_text = set(MARKER.findall(answer))
     for marker in sorted(set(valid) - in_text):
         removed.append(Removed(marker, "not_referenced"))
-    keep = supported_markers
-
-    def strip(match: re.Match[str]) -> str:
-        return match.group(0) if match.group(1) in keep else ""
-
-    cleaned = re.sub(r"\s+([.,;:!?])", r"\1", MARKER.sub(strip, answer)).strip()
-    kept = [c for m in sorted(keep) for c in valid[m]]
+    cleaned = re.sub(r"\s+([.,;:!?])", r"\1", "".join(pieces)).strip()
+    kept = [c for m in sorted(supported_markers) for c in valid[m]]
     return Verification(cleaned, kept, removed, supported, cited)

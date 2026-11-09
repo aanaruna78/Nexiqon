@@ -31,6 +31,7 @@ _COLUMNS = (
     N.page_start,
     N.page_end,
     N.source_uri,
+    N.classification,
 )
 
 
@@ -38,15 +39,18 @@ def _ctx(tenant: uuid.UUID) -> TenantContext:
     return TenantContext(tenant_id=tenant, actor_id="service:retrieval", actor_type="service")
 
 
-def _filtered(query: Select[Any], filters: Filters) -> Select[Any]:
-    query = query.where(
-        N.collection_id.in_(filters.collection_ids), N.classification.in_(filters.classifications)
-    )
+def visibility(filters: Filters) -> list[Any]:
+    """SQL predicates for what a caller may see: classification ceiling and access groups."""
+    clauses: list[Any] = [N.classification.in_(filters.classifications)]
     if filters.groups is not None:
-        query = query.where(
+        clauses.append(
             or_(func.cardinality(N.acl_groups) == 0, N.acl_groups.overlap(filters.groups))
         )
-    return query
+    return clauses
+
+
+def _filtered(query: Select[Any], filters: Filters) -> Select[Any]:
+    return query.where(N.collection_id.in_(filters.collection_ids), *visibility(filters))
 
 
 def _hit(row: Any, score: float) -> Hit:
@@ -63,6 +67,7 @@ def _hit(row: Any, score: float) -> Hit:
         page_end=row.page_end,
         source_uri=row.source_uri,
         score=float(score),
+        classification=row.classification,
     )
 
 
@@ -81,6 +86,7 @@ def _node(n: IndexNode) -> Node:
         page_end=n.page_end,
         source_uri=n.source_uri,
         collection_id=n.collection_id,
+        classification=n.classification,
     )
 
 

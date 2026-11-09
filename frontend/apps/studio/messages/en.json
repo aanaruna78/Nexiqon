@@ -483,7 +483,8 @@
       "result": "Result",
       "when": "Started",
       "truncated": "Stopped at the item limit; nothing was removed.",
-      "warnings": "{count, plural, one {# page was skipped} other {# pages were skipped}}"
+      "warnings": "{count, plural, one {# page was skipped} other {# pages were skipped}}",
+      "incomplete": "Some pages could not be fetched (see warnings), so nothing was removed this time."
     }
   },
   "playground": {
@@ -515,7 +516,8 @@
     "abstainReasons": {
       "low_evidence": "The best passages were not close enough to the question, so no answer was generated.",
       "no_passages": "Nothing in the selected collections matches this question.",
-      "unsupported": "The model's answer was not supported by the sources, so it is not shown as an answer."
+      "unsupported": "The model's answer was not supported by the sources, so it is not shown as an answer.",
+      "sensitivity": "The selected model profile may not receive content this sensitive, so no answer was generated."
     },
     "removedCitations": "{count, plural, one {# citation was} other {# citations were}} removed: {reasons}.",
     "removeReasons": {
@@ -550,6 +552,7 @@
     "viewSource": "View source",
     "openOriginal": "Open original",
     "openCollection": "Open collection",
-    "mode": "Mode"
+    "mode": "Mode",
+    "shortened": "shortened to fit"
   }
 }

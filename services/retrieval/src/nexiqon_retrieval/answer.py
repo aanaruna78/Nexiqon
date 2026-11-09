@@ -12,9 +12,11 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any
 
+from nexiqon_core.errors import Forbidden
 from nexiqon_retrieval.citations import Citation, Removed, verify
 from nexiqon_retrieval.models_client import ModelClient
 from nexiqon_retrieval.search import Passage, Searcher, SearchRequest, SearchResult
+from nexiqon_retrieval.store import strictest
 
 SYSTEM = (
     "You answer questions using only the numbered sources provided. "
@@ -64,16 +66,22 @@ async def answer(
         )
     passages = found.passages
     started = time.perf_counter()
-    reply = await models.chat(
-        token,
-        req.model_profile,
-        req.classification,
-        [
-            {"role": "system", "content": SYSTEM},
-            {"role": "user", "content": build_prompt(req.query, passages)},
-        ],
-        max_tokens,
-    )
+    # The prompt carries every passage, so the call is labelled with the strictest of them; the
+    # model gateway then routes it (e.g. restricted -> on-prem) or refuses (QA2-01).
+    label = strictest(req.classification, *(p.classification for p in passages))
+    try:
+        reply = await models.chat(
+            token,
+            req.model_profile,
+            label,
+            [
+                {"role": "system", "content": SYSTEM},
+                {"role": "user", "content": build_prompt(req.query, passages)},
+            ],
+            max_tokens,
+        )
+    except Forbidden:
+        return Answer(None, True, "sensitivity", [], [], found)
     found.timings_ms["generate"] = round((time.perf_counter() - started) * 1000, 2)
     text = str(reply.get("content") or "").strip()
     by_marker = {str(i): p for i, p in enumerate(passages, start=1)}

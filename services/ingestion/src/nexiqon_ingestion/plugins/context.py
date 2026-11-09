@@ -39,6 +39,9 @@ class Context:
         self.transport = transport  # for adapters' own HTTP clients (tests inject a mock)
         self.state: dict[str, Any] = {}
         self.warnings: list[tuple[str, str]] = []
+        # Set when discovery could not see everything (timeouts, 5xx, blocked robots.txt...): the
+        # run then must not treat missing items as removed from the source (QA2-03).
+        self.incomplete = False
         self._blobs = blobs
         self._scratch = scratch
         self._credentials = credentials
@@ -68,6 +71,10 @@ class Context:
 
     def warn(self, uri: str, message: str) -> None:
         self.warnings.append((uri, message[:300]))
+
+    def mark_incomplete(self, uri: str, message: str) -> None:
+        self.incomplete = True
+        self.warn(uri, message)
 
     # Pages fetched during discovery, reused by fetch on the same worker (avoids a second download).
     def _cache_path(self, uri: str) -> Path:

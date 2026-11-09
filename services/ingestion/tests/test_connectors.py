@@ -257,3 +257,87 @@ def test_plugins_are_discovered_from_entry_points_and_validated() -> None:
         )
     gallery = [m.name for m in registry.manifests(PluginKind.CONNECTOR)]
     assert gallery == ["git", "s3", "sample", "upload", "web"]
+
+
+async def test_qa2_02_s3_connections_are_pinned_to_the_checked_address(tmp_path: Path) -> None:
+    """DNS may change after the safety check (rebinding): requests must still go to the checked IP."""
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        if request.url.params.get("list-type") == "2":
+            body = b"<ListBucketResult><IsTruncated>false</IsTruncated><Contents><Key>a.md</Key><Size>3</Size><ETag>e</ETag></Contents></ListBucketResult>"
+            return httpx.Response(200, content=body)
+        return httpx.Response(200, content=b"# A")
+
+    async def resolve(host: str, port: int) -> list[str]:
+        return ["93.184.216.34"]  # what the safety check approved
+
+    transport = httpx.MockTransport(handler)
+    ctx = Context(
+        tenant_id=TENANT,
+        http=SafeFetcher(FetchPolicy(), resolver=resolve, transport=transport),
+        blobs=MemoryBlobStore(),
+        scratch=tmp_path,
+        credentials={f"{TENANT}/kb": {"access_key": "ak", "secret_key": "sk"}},
+        max_items=10,
+        max_bytes=10_000,
+        transport=transport,
+    )
+    config = {"endpoint": "https://s3.rebind.example", "bucket": "docs", "credentials_ref": "kb"}
+    items = await collect(S3Connector(), ctx, config)
+    await S3Connector().fetch(ctx, config, items[0], None)
+    assert [r.url.host for r in seen] == ["93.184.216.34", "93.184.216.34"]
+    assert {r.headers["host"] for r in seen} == {"s3.rebind.example"}
+    assert {r.extensions.get("sni_hostname") for r in seen} == {"s3.rebind.example"}
+    assert all("SignedHeaders=host;" in r.headers["authorization"] for r in seen)
+
+
+async def test_qa2_02_dns_rebinding_cannot_redirect_a_real_socket(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """QA's scenario on real sockets: the check approves 127.0.0.2, DNS then answers 127.0.0.1
+    (where a listener waits). The connection must go to 127.0.0.2 (refused), never the listener."""
+    import socket
+
+    hits: list[str] = []
+
+    async def listener(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        hits.append((await reader.readuntil(b"\r\n")).decode())
+        writer.close()
+
+    server = await asyncio.start_server(listener, "127.0.0.1", 0)
+    port = server.sockets[0].getsockname()[1]
+    real = socket.getaddrinfo
+
+    def rebinding(host: Any, *args: Any, **kwargs: Any) -> Any:
+        name = host.decode() if isinstance(host, bytes) else host
+        return real("127.0.0.1" if name == "s3.rebind.example" else host, *args, **kwargs)
+
+    monkeypatch.setattr(socket, "getaddrinfo", rebinding)
+
+    async def approve(host: str, port: int) -> list[str]:
+        return ["127.0.0.2"]
+
+    policy = FetchPolicy(allowed_ports=[port], allowed_private_cidrs=["127.0.0.2/32"])
+    ctx = Context(
+        tenant_id=TENANT,
+        http=SafeFetcher(policy, resolver=approve),
+        blobs=MemoryBlobStore(),
+        scratch=tmp_path,
+        credentials={f"{TENANT}/kb": {"access_key": "ak", "secret_key": "sk"}},
+        max_items=10,
+        max_bytes=10_000,
+    )
+    config = {
+        "endpoint": f"http://s3.rebind.example:{port}",
+        "bucket": "docs",
+        "credentials_ref": "kb",
+    }
+    try:
+        with pytest.raises(Exception):  # noqa: B017, PT011 - connection refused at 127.0.0.2
+            await collect(S3Connector(), ctx, config)
+        assert hits == []
+    finally:
+        server.close()
+        await server.wait_closed()

@@ -1,0 +1,33 @@
+$ pnpm --filter @nexiqon/client generate
+$ node scripts/generate.mjs
+✨ openapi-typescript 7.13.0
+🚀 /home/arun/Documents/Nexiqon/Nexiqon/contracts/openapi/agent-runtime.json → /home/arun/Documents/Nexiqon/Nexiqon/frontend/packages/client/src/generated/agent-runtime.ts [30.4ms]
+✨ openapi-typescript 7.13.0
+🚀 /home/arun/Documents/Nexiqon/Nexiqon/contracts/openapi/audit.json → /home/arun/Documents/Nexiqon/Nexiqon/frontend/packages/client/src/generated/audit.ts [37.5ms]
+✨ openapi-typescript 7.13.0
+🚀 /home/arun/Documents/Nexiqon/Nexiqon/contracts/openapi/authz.json → /home/arun/Documents/Nexiqon/Nexiqon/frontend/packages/client/src/generated/authz.ts [24.6ms]
+✨ openapi-typescript 7.13.0
+🚀 /home/arun/Documents/Nexiqon/Nexiqon/contracts/openapi/channel.json → /home/arun/Documents/Nexiqon/Nexiqon/frontend/packages/client/src/generated/channel.ts [21.2ms]
+✨ openapi-typescript 7.13.0
+🚀 /home/arun/Documents/Nexiqon/Nexiqon/contracts/openapi/config.json → /home/arun/Documents/Nexiqon/Nexiqon/frontend/packages/client/src/generated/config.ts [46.7ms]
+✨ openapi-typescript 7.13.0
+🚀 /home/arun/Documents/Nexiqon/Nexiqon/contracts/openapi/conversation.json → /home/arun/Documents/Nexiqon/Nexiqon/frontend/packages/client/src/generated/conversation.ts [56.3ms]
+✨ openapi-typescript 7.13.0
+🚀 /home/arun/Documents/Nexiqon/Nexiqon/contracts/openapi/evaluation.json → /home/arun/Documents/Nexiqon/Nexiqon/frontend/packages/client/src/generated/evaluation.ts [27.1ms]
+✨ openapi-typescript 7.13.0
+🚀 /home/arun/Documents/Nexiqon/Nexiqon/contracts/openapi/governance.json → /home/arun/Documents/Nexiqon/Nexiqon/frontend/packages/client/src/generated/governance.ts [22.1ms]
+✨ openapi-typescript 7.13.0
+🚀 /home/arun/Documents/Nexiqon/Nexiqon/contracts/openapi/identity.json → /home/arun/Documents/Nexiqon/Nexiqon/frontend/packages/client/src/generated/identity.ts [45.7ms]
+✨ openapi-typescript 7.13.0
+🚀 /home/arun/Documents/Nexiqon/Nexiqon/contracts/openapi/ingestion.json → /home/arun/Documents/Nexiqon/Nexiqon/frontend/packages/client/src/generated/ingestion.ts [54.3ms]
+✨ openapi-typescript 7.13.0
+🚀 /home/arun/Documents/Nexiqon/Nexiqon/contracts/openapi/metering.json → /home/arun/Documents/Nexiqon/Nexiqon/frontend/packages/client/src/generated/metering.ts [21.5ms]
+✨ openapi-typescript 7.13.0
+🚀 /home/arun/Documents/Nexiqon/Nexiqon/contracts/openapi/model-gateway.json → /home/arun/Documents/Nexiqon/Nexiqon/frontend/packages/client/src/generated/model-gateway.ts [38.6ms]
+✨ openapi-typescript 7.13.0
+🚀 /home/arun/Documents/Nexiqon/Nexiqon/contracts/openapi/notification.json → /home/arun/Documents/Nexiqon/Nexiqon/frontend/packages/client/src/generated/notification.ts [21.9ms]
+✨ openapi-typescript 7.13.0
+🚀 /home/arun/Documents/Nexiqon/Nexiqon/contracts/openapi/retrieval.json → /home/arun/Documents/Nexiqon/Nexiqon/frontend/packages/client/src/generated/retrieval.ts [50.9ms]
+✨ openapi-typescript 7.13.0
+🚀 /home/arun/Documents/Nexiqon/Nexiqon/contracts/openapi/tool-gateway.json → /home/arun/Documents/Nexiqon/Nexiqon/frontend/packages/client/src/generated/tool-gateway.ts [22.1ms]
+generated types for 15 services

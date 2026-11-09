@@ -19,6 +19,7 @@ from nexiqon_core.db import TenantSessionFactory
 from nexiqon_core.errors import Conflict, NotFound, ServiceUnavailable
 from nexiqon_core.profiles import ProfileResolver
 from nexiqon_core.tenancy import TenantContext, require_current_context
+from nexiqon_retrieval.adapters.pgvector import visibility
 from nexiqon_retrieval.answer import answer
 from nexiqon_retrieval.citations import Citation, verify
 from nexiqon_retrieval.models import DIMENSIONS, IndexNode
@@ -234,11 +235,13 @@ async def outline(document_id: uuid.UUID, request: Request, ctx: Ctx) -> Outline
     await check_permission(
         request, "retrieval.index.read", Resource(type="document", id=str(document_id))
     )
+    # Same visibility as search: a hidden document's titles and headings are not disclosed (QA2-04).
+    seen = visibility(_filters(request, ctx, []))
     async with _db(request).session(ctx) as s:
         rows = (
             await s.scalars(
                 select(IndexNode)
-                .where(IndexNode.document_id == document_id)
+                .where(IndexNode.document_id == document_id, *seen)
                 .order_by(IndexNode.path)
             )
         ).all()
@@ -278,6 +281,7 @@ async def stats(collection_id: uuid.UUID, request: Request, ctx: Ctx) -> Collect
         request, "retrieval.index.read", Resource(type="collection", id=str(collection_id))
     )
     n = IndexNode
+    seen = visibility(_filters(request, ctx, []))
     async with _db(request).session(ctx) as s:
         row = (
             await s.execute(
@@ -286,7 +290,7 @@ async def stats(collection_id: uuid.UUID, request: Request, ctx: Ctx) -> Collect
                     func.count().filter(n.kind == "section"),
                     func.count().filter(n.kind == "chunk"),
                     func.coalesce(func.sum(n.token_count).filter(n.kind == "chunk"), 0),
-                ).where(n.collection_id == collection_id)
+                ).where(n.collection_id == collection_id, *seen)
             )
         ).one()
     return CollectionStats(
@@ -347,6 +351,8 @@ class PassageOut(BaseModel):
     token_count: int
     score: float
     chunk_ids: list[uuid.UUID]
+    classification: str
+    truncated: bool
 
 
 class SearchOut(BaseModel):

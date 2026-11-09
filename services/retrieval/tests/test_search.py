@@ -6,7 +6,8 @@ import uuid
 
 import pytest
 
-from nexiqon_retrieval.search import SEPARATOR
+from nexiqon_retrieval.search import SEPARATOR, SearchRequest
+from nexiqon_retrieval.store import Filters
 
 from .conftest import SearchStack
 
@@ -237,3 +238,78 @@ def test_answer_abstains_without_evidence_and_skips_the_model(stack: SearchStack
     ).json()
     assert (out["abstained"], out["reason"], out["answer"]) == (True, "no_passages", None)
     assert not any(c["op"] == "chat" for c in stack.models.calls)
+
+
+# ---------------------------------------------------------------- QA 2026-11-09 regressions
+
+
+def _answer(stack: SearchStack, query: str, **extra: object) -> dict:  # type: ignore[type-arg]
+    body = {
+        "query": query,
+        "collection_ids": [str(stack.collection)],
+        "retrieval_profile": "dev-offline",
+        **extra,
+    }
+    r = stack.client.post("/v1/answer", json=body, headers=stack.headers({"member"}))
+    assert r.status_code == 200, r.text
+    out: dict = r.json()  # type: ignore[type-arg]
+    return out
+
+
+def test_qa2_01_model_calls_carry_the_strictest_source_label(stack: SearchStack) -> None:
+    stack.index(SECRET, "upload://payroll.md", classification="restricted")
+    stack.index(GUIDE, "upload://ops-guide.md", classification="public")
+    _answer(stack, "Payroll backups use a separate encryption key", classification="internal")
+    chat = [c for c in stack.models.calls if c["op"] == "chat"]
+    assert chat
+    assert {c["classification"] for c in chat} == {"restricted"}  # not the caller's "internal"
+    stack.models.calls.clear()
+    stack.search("payroll backups encrypted separate key", rerank=True, classification="public")
+    rerank = [c for c in stack.models.calls if c["op"] == "rerank"]
+    assert [c["classification"] for c in rerank] == ["restricted"]
+
+
+def test_qa2_01_keyword_candidates_from_another_vector_space_keep_their_label(
+    stack: SearchStack,
+) -> None:
+    stack.index(
+        SECRET, "upload://payroll.md", classification="restricted", model="onprem-only-model"
+    )
+    stack.search("payroll backups encrypted separate key", rerank=True)
+    rerank = [c for c in stack.models.calls if c["op"] == "rerank"]
+    assert [c["classification"] for c in rerank] == ["restricted"]
+
+
+def test_qa2_01_refused_labels_never_reach_the_model(stack: SearchStack) -> None:
+    stack.index(SECRET, "upload://payroll.md", classification="restricted")
+    stack.models.refuse = {"restricted"}
+    stack.models.rerank_enabled = True
+    searched = stack.search("payroll backups encrypted separate key", rerank=True)
+    assert searched["reranked"] is False  # skipped, results still returned to the authorised reader
+    assert searched["passages"][0]["classification"] == "restricted"
+    out = _answer(stack, "Payroll backups use a separate encryption key")
+    assert (out["abstained"], out["reason"], out["answer"]) == (True, "sensitivity", None)
+
+
+def test_qa2_06_context_cap_holds_for_the_first_passage(stack: SearchStack) -> None:
+    stack.index(
+        "# Guide\n\n## Policy\n\n" + "Backups run every night. " * 60,
+        "upload://large.md",
+        max_tokens=400,
+    )
+    for cap in (256, 300):
+        r = stack.client.portal.call(  # type: ignore[union-attr]
+            stack.client.app.state.searcher.search,  # type: ignore[attr-defined]
+            stack.tenants.a.context.tenant_id,
+            stack.tenants.a.token,
+            SearchRequest(
+                query="Backups run every night",
+                filters=Filters([stack.collection]),
+                profile={"small_to_big": {"max_context_tokens": cap}},
+                model_profile="dev-offline",
+                classification="internal",
+            ),
+        )
+        assert sum(p.token_count for p in r.passages) <= cap
+        assert r.passages[0].truncated is True
+        assert r.passages[0].text.endswith("\u2026")

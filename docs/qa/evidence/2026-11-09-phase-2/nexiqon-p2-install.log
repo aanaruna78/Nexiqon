@@ -1,0 +1,5 @@
+Checked 154 packages in 3ms
+Scope: all 4 workspace projects
+✓ Lockfile passes supply-chain policies (verified 1d ago)
+Lockfile is up to date, resolution step is skipped
+Done in 78ms using pnpm v12.15.0

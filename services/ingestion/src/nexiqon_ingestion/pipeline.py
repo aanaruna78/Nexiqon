@@ -181,6 +181,7 @@ class Pipeline:
             assert run is not None
             run.discovered = len(items)
             run.truncated = len(items) >= context.max_items
+            run.incomplete = context.incomplete
             run.warnings = [{"uri": u, "message": m} for u, m in context.warnings[:MAX_WARNINGS]]
         return Discovery(run_id, items)
 
@@ -504,6 +505,7 @@ class Pipeline:
                 run.kind == "sync"
                 and error is None
                 and not run.truncated
+                and not run.incomplete  # only a complete discovery proves removal (QA2-03)
                 and run.source_id is not None
             ):
                 stale = list(

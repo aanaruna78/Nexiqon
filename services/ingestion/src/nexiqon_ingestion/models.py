@@ -110,6 +110,8 @@ class Run(TenantScopedMixin, Base):
     quarantined: Mapped[int] = mapped_column(Integer, default=0)
     deleted: Mapped[int] = mapped_column(Integer, default=0)
     truncated: Mapped[bool] = mapped_column(default=False)
+    # Discovery could not see the whole source; nothing may be deleted on this run's evidence.
+    incomplete: Mapped[bool] = mapped_column(default=False)
     warnings: Mapped[list[dict[str, str]]] = mapped_column(_JSON, default=list)
     error: Mapped[str | None] = mapped_column(Text, default=None)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)

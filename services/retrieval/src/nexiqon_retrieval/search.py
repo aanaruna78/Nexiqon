@@ -13,16 +13,18 @@
 from __future__ import annotations
 
 import hashlib
+import math
 import re
 import time
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from opentelemetry import metrics
 
+from nexiqon_core.errors import Forbidden
 from nexiqon_retrieval.models_client import ModelClient
-from nexiqon_retrieval.store import Filters, Hit, Node, VectorStore
+from nexiqon_retrieval.store import Filters, Hit, Node, VectorStore, strictest
 
 SEPARATOR = " \u203a "
 TERM = re.compile(r"\w+", re.UNICODE)
@@ -90,6 +92,21 @@ _duration = metrics.get_meter("nexiqon.retrieval").create_histogram(
 )
 
 
+def estimate_tokens(text: str) -> int:
+    """Model-neutral estimate, the same one ingestion uses (about four characters per token)."""
+    return max(1, math.ceil(len(text) / 4)) if text else 0
+
+
+def cut_to_tokens(text: str, tokens: int) -> str:
+    """Longest prefix that ends at a word boundary and, with its ellipsis, fits in ``tokens``."""
+    limit = tokens * 4
+    if len(text) <= limit:
+        return text
+    cut = text[: limit - 1]  # leave room for the ellipsis
+    space = cut.rfind(" ")
+    return (cut[:space] if space > limit // 2 else cut).rstrip() + "\u2026"
+
+
 def query_terms(query: str, limit: int = 32) -> list[str]:
     seen: list[str] = []
     for word in TERM.findall(query.lower()):
@@ -125,6 +142,8 @@ class Passage:
     score: float
     chunk_ids: list[uuid.UUID]
     matched_chunk_ids: list[uuid.UUID]
+    classification: str = "internal"
+    truncated: bool = False
 
 
 @dataclass
@@ -206,14 +225,15 @@ class Searcher:
         if rerank_on and fused:
             pool = fused[: min(len(fused), 50)]
             r0 = time.perf_counter()
-            ranked = await self.models.rerank(
-                token,
-                req.model_profile,
-                req.classification,
-                req.query,
-                [h.text for h in pool],
-                len(pool),
-            )
+            # The model gateway routes or refuses by classification, so it must see the true label
+            # of the text it receives: the strictest of the request and every candidate (QA2-01).
+            label = strictest(req.classification, *(h.classification for h in pool))
+            try:
+                ranked = await self.models.rerank(
+                    token, req.model_profile, label, req.query, [h.text for h in pool], len(pool)
+                )
+            except Forbidden:
+                ranked = None  # this profile may not see these passages: keep the fused order
             timings["rerank"] = round((time.perf_counter() - r0) * 1000, 2)
             if ranked is not None:
                 reranked = True
@@ -298,6 +318,7 @@ class Searcher:
                 score=h.score,
                 chunk_ids=[h.id],
                 matched_chunk_ids=[h.id],
+                classification=h.classification,
             )
             for h in hits
         ]
@@ -320,13 +341,20 @@ class Searcher:
             kids = children.get(parent_id, [])
             full = sum(k.token_count for k in kids)
             whole = bool(kids) and used + full <= budget
+            truncated = False
             if whole:
                 chosen: list[Node | Hit] = list(kids)
             else:  # the whole section does not fit: keep only the matching chunks, in order
                 chosen = sorted(group, key=lambda h: h.path)
-                size = sum(h.token_count for h in group)
-                if used + size > budget and passages:
-                    continue
+                if used + sum(h.token_count for h in chosen) > budget:
+                    if passages:
+                        continue
+                    # The best match alone exceeds the budget: cut it at a word boundary so the
+                    # cap holds for the first passage too (QA2-06).
+                    best = group[0]
+                    chosen = [replace(best, text=cut_to_tokens(best.text, budget), token_count=0)]
+                    chosen[0].token_count = estimate_tokens(chosen[0].text)
+                    truncated = True
             used += sum(c.token_count for c in chosen)
             first = group[0]
             pages = [p for c in chosen for p in (c.page_start, c.page_end) if p is not None]
@@ -351,6 +379,8 @@ class Searcher:
                     score=first.score,
                     chunk_ids=[c.id for c in chosen],
                     matched_chunk_ids=[h.id for h in group if h.id in {c.id for c in chosen}],
+                    classification=strictest(*(c.classification for c in chosen)),
+                    truncated=truncated,
                 )
             )
         return passages

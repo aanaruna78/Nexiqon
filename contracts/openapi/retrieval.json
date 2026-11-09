@@ -727,6 +727,10 @@
             "title": "Citation",
             "type": "string"
           },
+          "classification": {
+            "title": "Classification",
+            "type": "string"
+          },
           "collection_id": {
             "format": "uuid",
             "title": "Collection Id",
@@ -808,6 +812,10 @@
           "token_count": {
             "title": "Token Count",
             "type": "integer"
+          },
+          "truncated": {
+            "title": "Truncated",
+            "type": "boolean"
           }
         },
         "required": [
@@ -824,7 +832,9 @@
           "text",
           "token_count",
           "score",
-          "chunk_ids"
+          "chunk_ids",
+          "classification",
+          "truncated"
         ],
         "title": "PassageOut",
         "type": "object"

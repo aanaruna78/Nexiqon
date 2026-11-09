@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from nexiqon_core.errors import Forbidden
 from nexiqon_core.offline_models import EMBED_MODEL, WORD, extractive_answer, hash_embed
 
 MODEL = EMBED_MODEL
@@ -19,6 +20,8 @@ class HashModelClient:
     def __init__(self, rerank_enabled: bool = False) -> None:
         self.rerank_enabled = rerank_enabled
         self.answer: str | None = None  # fixed answer text (e.g. to test fabricated citations)
+        # Classifications the "gateway" refuses for every profile (as a floor or routing would).
+        self.refuse: set[str] = set()
         self.calls: list[dict[str, Any]] = []
 
     async def embed_query(
@@ -36,7 +39,16 @@ class HashModelClient:
         documents: list[str],
         top_n: int,
     ) -> list[tuple[int, float]] | None:
-        self.calls.append({"op": "rerank", "profile": profile, "n": len(documents)})
+        self.calls.append(
+            {
+                "op": "rerank",
+                "profile": profile,
+                "classification": classification,
+                "n": len(documents),
+            }
+        )
+        if classification in self.refuse:
+            raise Forbidden(f"{classification} data may not be sent to {profile}")
         if not self.rerank_enabled:
             return None
         q = set(WORD.findall(query.lower()))
@@ -55,7 +67,16 @@ class HashModelClient:
         messages: list[dict[str, str]],
         max_tokens: int,
     ) -> dict[str, object]:
-        self.calls.append({"op": "chat", "profile": profile, "messages": messages})
+        self.calls.append(
+            {
+                "op": "chat",
+                "profile": profile,
+                "classification": classification,
+                "messages": messages,
+            }
+        )
+        if classification in self.refuse:
+            raise Forbidden(f"{classification} data may not be sent to {profile}")
         prompt = messages[-1]["content"]
         answer = self.answer or extractive_answer(prompt, prompt.rsplit("Question:", 1)[-1])
         return {

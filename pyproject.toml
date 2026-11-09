@@ -25,7 +25,7 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-extend-exclude = ["templates", "frontend", "node_modules"]
+extend-exclude = ["templates", "frontend", "node_modules", "docs/qa"]  # QA files stay as QA wrote them
 src = ["libs/*/src", "services/*/src", "tools"]
 
 [tool.ruff.lint]

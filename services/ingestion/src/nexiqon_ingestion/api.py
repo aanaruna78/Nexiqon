@@ -170,9 +170,17 @@ async def _get_collection(
 ) -> Collection:
     async with _pipeline(request).d.db.session(ctx) as s:
         c = await s.get(Collection, collection_id)
-    if c is None:
+    if c is None or not _sees(request, ctx, c):
         raise NotFound("Collection not found")
     return c
+
+
+def _sees(request: Request, ctx: TenantContext, c: Collection) -> bool:
+    """Same rule as retrieval: a collection with access groups is visible only to those groups
+    and to the roles that manage knowledge. Hidden collections are reported as not found."""
+    if not c.acl_groups or ctx.has_role(*request.app.state.settings.content_manager_roles):
+        return True
+    return bool(set(c.acl_groups) & ctx.groups)
 
 
 def _live() -> Any:
@@ -193,7 +201,7 @@ async def list_collections(request: Request, ctx: Ctx) -> list[CollectionOut]:
                 )
             ).all()
         )
-    return [_collection_out(c, int(counts.get(c.id, 0))) for c in rows]
+    return [_collection_out(c, int(counts.get(c.id, 0))) for c in rows if _sees(request, ctx, c)]
 
 
 @tenant_router.get("/collections/{collection_id}", response_model=CollectionOut)
@@ -270,6 +278,7 @@ class RunOut(BaseModel):
     quarantined: int
     deleted: int
     truncated: bool
+    incomplete: bool
     warnings: list[dict[str, str]]
     error: str | None
     created_at: datetime
@@ -394,6 +403,7 @@ async def _schedule(request: Request, ctx: TenantContext, source: SourceOut) -> 
 @tenant_router.get("/collections/{collection_id}/sources", response_model=list[SourceOut])
 async def list_sources(collection_id: uuid.UUID, request: Request, ctx: Ctx) -> list[SourceOut]:
     await _allow(request, "ingestion.sources.read", "source")
+    await _get_collection(request, ctx, collection_id)
     async with _pipeline(request).d.db.session(ctx) as s:
         rows = (
             await s.scalars(
@@ -613,6 +623,7 @@ async def list_documents(
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> list[DocumentOut]:
     await _allow(request, "ingestion.documents.read", "document")
+    await _get_collection(request, ctx, collection_id)
     q = select(Document).where(Document.collection_id == collection_id)
     q = q.where(Document.status == status) if status else q.where(_live())
     async with _pipeline(request).d.db.session(ctx) as s:
@@ -627,6 +638,10 @@ async def get_document(document_id: uuid.UUID, request: Request, ctx: Ctx) -> Do
         doc = await s.get(Document, document_id)
     if doc is None or doc.status == "deleted":
         raise NotFound("Document not found")
+    try:
+        await _get_collection(request, ctx, doc.collection_id)
+    except NotFound:
+        raise NotFound("Document not found") from None
     return _doc_out(doc)
 
 
@@ -649,7 +664,12 @@ async def delete_document(document_id: uuid.UUID, request: Request, ctx: Ctx) ->
 @tenant_router.get("/runs/{run_id}", response_model=RunOut)
 async def get_run(run_id: uuid.UUID, request: Request, ctx: Ctx) -> RunOut:
     await _allow(request, "ingestion.runs.read", "run", run_id)
-    return await _run_out(request, ctx, run_id)
+    run = await _run_out(request, ctx, run_id)
+    try:
+        await _get_collection(request, ctx, run.collection_id)
+    except NotFound:
+        raise NotFound("Run not found") from None
+    return run
 
 
 @tenant_router.get("/collections/{collection_id}/runs", response_model=list[RunOut])
@@ -660,6 +680,7 @@ async def list_runs(
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
 ) -> list[RunOut]:
     await _allow(request, "ingestion.runs.read", "run")
+    await _get_collection(request, ctx, collection_id)
     async with _pipeline(request).d.db.session(ctx) as s:
         rows = (
             await s.scalars(

@@ -84,7 +84,11 @@ class S3Client:
         *,
         transport: httpx.AsyncBaseTransport | None = None,
         timeout: float = 30.0,
+        pinned_address: str | None = None,
     ) -> None:
+        """``pinned_address``: connect only to this (already validated) IP; the Host header, TLS
+        SNI and signature keep the endpoint's name, so DNS cannot change the target afterwards."""
+        self._pinned = pinned_address
         self._endpoint = endpoint.rstrip("/")
         self._region = region
         self._access = access_key
@@ -119,7 +123,16 @@ class S3Client:
             region=self._region,
             now=now,
         )
-        return await self._client.request(method, url, headers=headers, content=body or None)
+        if self._pinned is None:
+            return await self._client.request(method, url, headers=headers, content=body or None)
+        request = self._client.build_request(
+            method,
+            url.copy_with(host=self._pinned),
+            headers=headers,  # includes the original host, which the signature covers
+            content=body or None,
+            extensions={"sni_hostname": url.host} if url.scheme == "https" else {},
+        )
+        return await self._client.send(request)
 
     @staticmethod
     def _path(bucket: str, key: str = "") -> str:

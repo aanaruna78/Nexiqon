@@ -40,6 +40,7 @@ const run = (over: Partial<Run>): Run => ({
   quarantined: 0,
   deleted: 0,
   truncated: false,
+  incomplete: false,
   warnings: [],
   error: null,
   created_at: "",

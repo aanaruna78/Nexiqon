@@ -1,0 +1,424 @@
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon  1.949MB
+Step 1/19 : FROM ghcr.io/astral-sh/uv:0.13.0 AS uv
+ ---> cdc6093146eb
+Step 2/19 : FROM python:3.12.15-slim AS build
+ ---> a0f57064cbdc
+Step 3/19 : COPY --from=uv /uv /uvx /bin/
+ ---> Using cache
+ ---> 095bc078a1d2
+Step 4/19 : ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
+ ---> Using cache
+ ---> 56d3e3a1d1e1
+Step 5/19 : WORKDIR /app
+ ---> Using cache
+ ---> bd56f4ef7a62
+Step 6/19 : COPY pyproject.toml uv.lock .python-version ./
+ ---> 7e047fb07b7b
+Step 7/19 : COPY libs libs
+ ---> 3177fb31df92
+Step 8/19 : COPY services services
+ ---> 08b82e4ca4a8
+Step 9/19 : RUN uv sync --frozen --no-dev --all-packages --no-editable     && rm -rf /root/.cache/uv
+ ---> Running in dff17c30f971
+[91mUsing CPython 3.12.15 interpreter at: /usr/local/bin/python3.12
+Creating virtual environment at: .venv
+[0m[91m   Building nexiqon-channel @ file:///app/services/channel
+[0m[91m   Building nexiqon-config @ file:///app/services/config
+[0m[91m   Building nexiqon-core @ file:///app/libs/nexiqon-core
+   Building nexiqon-evaluation @ file:///app/services/evaluation
+   Building nexiqon-governance @ file:///app/services/governance
+   Building nexiqon-identity @ file:///app/services/identity
+   Building nexiqon-conversation @ file:///app/services/conversation
+   Building nexiqon-ingestion @ file:///app/services/ingestion
+   Building nexiqon-metering @ file:///app/services/metering
+   Building nexiqon-retrieval @ file:///app/services/retrieval
+   Building nexiqon-notification @ file:///app/services/notification
+   Building nexiqon-model-gateway @ file:///app/services/model-gateway
+   Building nexiqon-sdk @ file:///app/libs/nexiqon-sdk
+   Building nexiqon-agent-runtime @ file:///app/services/agent-runtime
+   Building nexiqon-audit @ file:///app/services/audit
+   Building nexiqon-authz @ file:///app/services/authz
+   Building nexiqon-tool-gateway @ file:///app/services/tool-gateway
+[0m[91mDownloading pydantic-core (2.2MiB)
+[0m[91mDownloading uvloop (4.3MiB)
+[0m[91mDownloading cryptography (4.5MiB)
+[0m[91mDownloading lxml (5.0MiB)
+[0m[91mDownloading grpcio (7.0MiB)
+[0m[91mDownloading asyncpg (3.6MiB)
+[0m[91mDownloading temporalio (13.7MiB)
+[0m[91mDownloading sqlalchemy (4.5MiB)
+[0m[91m      Built nexiqon-metering @ file:///app/services/metering
+[0m[91m      Built nexiqon-notification @ file:///app/services/notification
+[0m[91m      Built nexiqon-tool-gateway @ file:///app/services/tool-gateway
+[0m[91m      Built nexiqon-audit @ file:///app/services/audit
+[0m[91m      Built nexiqon-channel @ file:///app/services/channel
+[0m[91m      Built nexiqon-identity @ file:///app/services/identity
+[0m[91m      Built[0m[91m nexiqon-model-gateway @ file:///app/services/model-gateway
+[0m[91m      Built nexiqon-core @ file:///app/libs/nexiqon-core
+[0m[91m      Built nexiqon-conversation @ file:///app/services/conversation
+[0m[91m      Built nexiqon-sdk @ file:///app/libs/nexiqon-sdk
+[0m[91m      Built nexiqon-evaluation @ file:///app/services/evaluation
+[0m[91m      Built nexiqon-config @ file:///app/services/config
+[0m[91m      Built nexiqon-agent-runtime @ file:///app/services/agent-runtime
+[0m[91m      Built nexiqon-governance @ file:///app/services/governance[0m[91m
+[0m[91m      Built nexiqon-ingestion @ file:///app/services/ingestion
+[0m[91m      Built nexiqon-retrieval @ file:///app/services/retrieval
+[0m[91m      Built nexiqon-authz @ file:///app/services/authz
+[0m[91m Downloaded pydantic-core
+[0m[91m Downloaded asyncpg
+[0m[91m Downloaded uvloop
+[0m[91m Downloaded sqlalchemy
+[0m[91m Downloaded cryptography
+[0m[91m Downloaded lxml
+[0m[91m Downloaded grpcio
+[0m[91m Downloaded temporalio
+[0m[91mPrepared 101 packages in 21.39s
+[0m[91mInstalled 101 packages in 203ms
+[0m[91mBytecode compiled 2927 files in 594ms
+[0m[91m + alembic==1.20.1
+ + annotated-doc==0.0.5
+ + annotated-types==0.8.0
+ + anyio[0m[91m==4.16.0
+ + asgiref==3.13.0
+ + asyncpg==0.32.0
+ + attrs==26.1.0
+ + beautifulsoup4==4.15.0
+ + cachebox[0m[91m==5.2.3
+ + [0m[91mcbor2==5.9.0
+ + certifi[0m[91m==2026.10.23
+ + [0m[91mcffi==2.1.1[0m[91m
+ + charset-normalizer[0m[91m==3.5.2
+[0m[91m + click==8.5[0m[91m.1
+ + [0m[91mcryptography==50.0.2[0m[91m
+ + dnspython[0m[91m==2.9.2[0m[91m
+ + email-validator[0m[91m==2.3.0
+ + fastapi[0m[91m==0.162.1
+ + googleapis-common-protos==1.[0m[91m76.0
+ + greenlet==3.5[0m[91m.6
+ +[0m[91m grpcio==1.85.1
+ + h11==0.16.0
+ + httpcore==[0m[91m1.0.9
+ + httptools==[0m[91m0.9.0
+ +[0m[91m httpx==0.28[0m[91m.1
+[0m[91m + [0m[91midna==3.[0m[91m20
+ [0m[91m+ jsonschema==[0m[91m4.26.0[0m[91m
+ + [0m[91mjsonschema-specifications==[0m[91m2025.9.[0m[91m1
+ + lxml==6.1.3
+ + mako==1.4.3
+ + markdown-it-py==4.2.0
+ + [0m[91mmarkupsafe==3.0.4
+ + mdurl==0.1.2
+ + mmh3==5.3.1
+ + nats-py==2.16.0
+ + nexiqon-agent-runtime==0.1.0 (from file:///app/services/agent-runtime)
+ + nexiqon-audit[0m[91m==0.1.0 (from file:///app/services/audit)
+ + nexiqon-authz==0.1.0 (from file:///app/services/authz)
+ + nexiqon-channel==0.1.0 (from file:///app/services/channel)
+ + nexiqon-config==0.1.0 (from file:///app/services/config)
+[0m[91m + nexiqon-conversation==0[0m[91m.1.0 (from file://[0m[91m/app/services/conversation)
+ +[0m[91m nexiqon-core[0m[91m==0[0m[91m.1.0[0m[91m (from file:///app/libs/nexiqon-core)
+ + nexiqon-evaluation==0.1.0 (from file:///app/services/evaluation)[0m[91m
+ + nexiqon-governance==0.1.0 (from file:///app/services/governance)
+ +[0m[91m nexiqon-identity==0.1.0 (from [0m[91mfile:///app/services/identity)
+ [0m[91m+ nexiqon-ingestion==0.[0m[91m1.0 (from file:///app/services/ingestion)
+ [0m[91m+ nexiqon-metering==[0m[91m0.1.[0m[91m0 (from file:[0m[91m//[0m[91m/app/services/metering)
+ + nexiqon-model-gateway==0.1.0 (from file://[0m[91m/app/services/model-gateway)
+ +[0m[91m nexiqon-notification==0.1.0[0m[91m (from file://[0m[91m/app/services/notification)
+ [0m[91m+ nexiqon-retrieval==[0m[91m0.1.0[0m[91m (from file:[0m[91m///app/services/retrieval)[0m[91m
+ +[0m[91m nexiqon-sdk==0.[0m[91m1.0 (from file:///app/libs/nexiqon-sdk)
+[0m[91m +[0m[91m nexiqon-tool-gateway[0m[91m==0.1.0 (from file:///app/services/tool-gateway)
+ + nexus-rpc==1.4.0
+ [0m[91m+ openfeature-flagd-api==1.0.0
+ + openfeature-flagd-core==2.[0m[91m0.0
+ + [0m[91mopenfeature-provider-flagd==0.6.1
+[0m[91m + openfeature-sdk==[0m[91m0.10.0
+ [0m[91m+ opentelemetry-api[0m[91m==1.45.2
+[0m[91m + opentelemetry-exporter-http-transport==0.66b2[0m[91m
+ + [0m[91mopentelemetry-exporter-otlp-common==0[0m[91m.66b[0m[91m2
+ +[0m[91m opentelemetry-exporter-otlp-proto-common==1.45.2
+[0m[91m + opentelemetry-exporter-otlp-proto-http==[0m[91m1.45.2[0m[91m
+ + [0m[91mopentelemetry-instrumentation[0m[91m==0.[0m[91m66b2
+[0m[91m [0m[91m+ [0m[91mopentelemetry-instrumentation-asgi==[0m[91m0.66[0m[91mb[0m[91m2
+ +[0m[91m opentelemetry-instrumentation-fastapi==[0m[91m0.66b2[0m[91m
+ + opentelemetry-instrumentation-httpx==0[0m[91m.66b2
+ [0m[91m+ opentelemetry-proto[0m[91m==1.45.2[0m[91m
+ + opentelemetry-sdk==1.45.2[0m[91m
+ + opentelemetry-semantic-conventions[0m[91m==0.66b2
+ [0m[91m+[0m[91m opentelemetry-util-http==0[0m[91m.66b[0m[91m2[0m[91m
+ + packaging[0m[91m==26.3[0m[91m
+ + panzi-json-logic[0m[91m==1.0.1
+ +[0m[91m pgvector==[0m[91m0.5.1
+[0m[91m [0m[91m+ [0m[91mprotobuf[0m[91m==7.36[0m[91m.2
+[0m[91m +[0m[91m pycparser==3.[0m[91m12[0m[91m
+ [0m[91m+ pydantic[0m[91m==2.[0m[91m14.3
+ [0m[91m+[0m[91m pydantic-core[0m[91m==[0m[91m2.50[0m[91m.4
+[0m[91m +[0m[91m pydantic-settings[0m[91m==2.[0m[91m16.2
+[0m[91m [0m[91m+ pyjwt[0m[91m==2[0m[91m.15[0m[91m.1
+[0m[91m +[0m[91m pypdf[0m[91m==6.[0m[91m21.4[0m[91m
+ [0m[91m+ [0m[91mpython-docx[0m[91m==1.2.0
+ + python-dotenv==1[0m[91m.2.4
+[0m[91m +[0m[91m pyyaml[0m[91m==6[0m[91m.0.3[0m[91m
+ [0m[91m+ referencing[0m[91m==0.37.0[0m[91m
+ +[0m[91m requests[0m[91m==2.34.2
+ [0m[91m+ rpds-py[0m[91m==2026.9[0m[91m.1
+[0m[91m + [0m[91msemver==[0m[91m3.1.0
+[0m[91m + soupsieve[0m[91m==3.0.4
+ [0m[91m+ sqlalchemy==2[0m[91m.1.8[0m[91m
+ + starlette==1.10.0
+ + structlog[0m[91m==26.1.0
+[0m[91m + temporalio==[0m[91m1.35.0
+ +[0m[91m types-protobuf[0m[91m==7.35.1.20260906
+ [0m[91m+ typing-extensions[0m[91m==4[0m[91m.16.0[0m[91m
+[0m[91m +[0m[91m typing-inspection[0m[91m==0.4.5[0m[91m
+ +[0m[91m urllib3[0m[91m==2.[0m[91m8.[0m[91m0
+[0m[91m +[0m[91m [0m[91muvicorn==0[0m[91m.54.0
+ [0m[91m+ uvloop[0m[91m==0.23.0
+[0m[91m + watchfiles==[0m[91m1.3.0[0m[91m
+ + websockets[0m[91m==17.4
+[0m[91m +[0m[91m wrapt==2.5.2
+[0m ---> Removed intermediate container dff17c30f971
+ ---> e3cf6d794673
+Step 10/19 : FROM python:3.12.15-slim
+ ---> a0f57064cbdc
+Step 11/19 : RUN apt-get update     && apt-get install -y --no-install-recommends git     && rm -rf /var/lib/apt/lists/*     && useradd --system --uid 10001 --no-create-home nexiqon
+ ---> Running in 07501dfd316f
+Hit:1 http://deb.debian.org/debian trixie InRelease
+Get:2 http://deb.debian.org/debian trixie-updates InRelease [47.3 kB]
+Get:3 http://deb.debian.org/debian-security trixie-security InRelease [43.4 kB]
+Get:4 http://deb.debian.org/debian trixie/main amd64 Packages [9678 kB]
+Get:5 http://deb.debian.org/debian trixie-updates/main amd64 Packages [1108 B]
+Get:6 http://deb.debian.org/debian-security trixie-security/main amd64 Packages [301 kB]
+Fetched 10.1 MB in 1s (7239 kB/s)
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following additional packages will be installed:
+  git-man libbrotli1 libcom-err2 libcurl3t64-gnutls liberror-perl libexpat1
+  libgdbm-compat4t64 libgnutls30t64 libgssapi-krb5-2 libidn2-0 libk5crypto3
+  libkeyutils1 libkrb5-3 libkrb5support0 libldap2 libnghttp2-14 libnghttp3-9
+  libngtcp2-16 libngtcp2-crypto-gnutls8 libp11-kit0 libperl5.40 libpsl5t64
+  librtmp1 libsasl2-2 libsasl2-modules-db libssh2-1t64 libtasn1-6
+  libunistring5 perl perl-modules-5.40
+Suggested packages:
+  gettext-base git-doc git-email git-gui gitk gitweb git-cvs git-mediawiki
+  git-svn gnutls-bin krb5-doc krb5-user sensible-utils perl-doc
+  libterm-readline-gnu-perl | libterm-readline-perl-perl make
+  libtap-harness-archive-perl
+Recommended packages:
+  patch less ssh-client krb5-locales libldap-common publicsuffix
+  libsasl2-modules
+The following NEW packages will be installed:
+  git git-man libbrotli1 libcom-err2 libcurl3t64-gnutls liberror-perl
+  libexpat1 libgdbm-compat4t64 libgnutls30t64 libgssapi-krb5-2 libidn2-0
+  libk5crypto3 libkeyutils1 libkrb5-3 libkrb5support0 libldap2 libnghttp2-14
+  libnghttp3-9 libngtcp2-16 libngtcp2-crypto-gnutls8 libp11-kit0 libperl5.40
+  libpsl5t64 librtmp1 libsasl2-2 libsasl2-modules-db libssh2-1t64 libtasn1-6
+  libunistring5 perl perl-modules-5.40
+0 upgraded, 31 newly installed, 0 to remove and 4 not upgraded.
+Need to get 23.6 MB of archives.
+After this operation, 119 MB of additional disk space will be used.
+Get:1 http://deb.debian.org/debian-security trixie-security/main amd64 libexpat1 amd64 2.9.0-1~deb13u1 [126 kB]
+Get:2 http://deb.debian.org/debian trixie/main amd64 perl-modules-5.40 all 5.40.1-6+deb13u1 [3014 kB]
+Get:3 http://deb.debian.org/debian trixie/main amd64 libgdbm-compat4t64 amd64 1.24-2 [50.3 kB]
+Get:4 http://deb.debian.org/debian trixie/main amd64 libperl5.40 amd64 5.40.1-6+deb13u1 [4326 kB]
+Get:5 http://deb.debian.org/debian trixie/main amd64 perl amd64 5.40.1-6+deb13u1 [268 kB]
+Get:6 http://deb.debian.org/debian-security trixie-security/main amd64 libbrotli1 amd64 1.1.0-2+deb13u1 [304 kB]
+Get:7 http://deb.debian.org/debian trixie/main amd64 libunistring5 amd64 1.3-2 [477 kB]
+Get:8 http://deb.debian.org/debian trixie/main amd64 libidn2-0 amd64 2.3.8-2 [109 kB]
+Get:9 http://deb.debian.org/debian trixie/main amd64 libp11-kit0 amd64 0.25.5-3 [425 kB]
+Get:10 http://deb.debian.org/debian trixie/main amd64 libtasn1-6 amd64 4.20.0-2+deb13u1 [50.1 kB]
+Get:11 http://deb.debian.org/debian trixie/main amd64 libgnutls30t64 amd64 3.8.9-3+deb13u4 [1469 kB]
+Get:12 http://deb.debian.org/debian trixie/main amd64 libkrb5support0 amd64 1.21.3-5+deb13u1 [33.1 kB]
+Get:13 http://deb.debian.org/debian trixie/main amd64 libcom-err2 amd64 1.47.2-3+b12 [25.0 kB]
+Get:14 http://deb.debian.org/debian trixie/main amd64 libk5crypto3 amd64 1.21.3-5+deb13u1 [81.2 kB]
+Get:15 http://deb.debian.org/debian trixie/main amd64 libkeyutils1 amd64 1.6.3-6 [9456 B]
+Get:16 http://deb.debian.org/debian trixie/main amd64 libkrb5-3 amd64 1.21.3-5+deb13u1 [326 kB]
+Get:17 http://deb.debian.org/debian trixie/main amd64 libgssapi-krb5-2 amd64 1.21.3-5+deb13u1 [138 kB]
+Get:18 http://deb.debian.org/debian trixie/main amd64 libsasl2-modules-db amd64 2.1.28+dfsg1-9 [19.8 kB]
+Get:19 http://deb.debian.org/debian trixie/main amd64 libsasl2-2 amd64 2.1.28+dfsg1-9 [57.5 kB]
+Get:20 http://deb.debian.org/debian trixie/main amd64 libldap2 amd64 2.6.10+dfsg-1 [194 kB]
+Get:21 http://deb.debian.org/debian trixie/main amd64 libnghttp2-14 amd64 1.64.0-1.1+deb13u1 [76.2 kB]
+Get:22 http://deb.debian.org/debian trixie/main amd64 libnghttp3-9 amd64 1.8.0-1 [67.7 kB]
+Get:23 http://deb.debian.org/debian trixie/main amd64 libngtcp2-16 amd64 1.11.0-1+deb13u1 [132 kB]
+Get:24 http://deb.debian.org/debian trixie/main amd64 libngtcp2-crypto-gnutls8 amd64 1.11.0-1+deb13u1 [29.5 kB]
+Get:25 http://deb.debian.org/debian trixie/main amd64 libpsl5t64 amd64 0.21.2-1.1+b1 [57.2 kB]
+Get:26 http://deb.debian.org/debian trixie/main amd64 librtmp1 amd64 2.4+20151223.gitfa8646d.1-2+b5 [58.8 kB]
+Get:27 http://deb.debian.org/debian trixie/main amd64 libssh2-1t64 amd64 1.11.1-1+deb13u2 [245 kB]
+Get:28 http://deb.debian.org/debian-security trixie-security/main amd64 libcurl3t64-gnutls amd64 8.14.1-2+deb13u7 [385 kB]
+Get:29 http://deb.debian.org/debian trixie/main amd64 liberror-perl all 0.17030-1 [26.9 kB]
+Get:30 http://deb.debian.org/debian trixie/main amd64 git-man all 1:2.47.3-0+deb13u1 [2205 kB]
+Get:31 http://deb.debian.org/debian trixie/main amd64 git amd64 1:2.47.3-0+deb13u1 [8862 kB]
+[91mdebconf: unable to initialize frontend: Dialog
+debconf: (TERM is not set, so the dialog frontend is not usable.)
+debconf: falling back to frontend: Readline
+[0m[91mdebconf: unable to initialize frontend: Readline
+debconf: (Can't locate Term/ReadLine.pm in @INC (you may need to install the Term::ReadLine module) (@INC entries checked: /etc/perl /usr/local/lib/x86_64-linux-gnu/perl/5.40.1 /usr/local/share/perl/5.40.1 /usr/lib/x86_64-linux-gnu/perl5/5.40 /usr/share/perl5 /usr/lib/x86_64-linux-gnu/perl-base /usr/lib/x86_64-linux-gnu/perl/5.40 /usr/share/perl/5.40 /usr/local/lib/site_perl) at /usr/share/perl5/Debconf/FrontEnd/Readline.pm line 8, <STDIN> line 31.)
+debconf: falling back to frontend: Teletype
+[0m[91mdebconf: unable to initialize frontend: Teletype
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Noninteractive
+[0mFetched 23.6 MB in 12s (2008 kB/s)
+Selecting previously unselected package libexpat1:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 5658 files and directories currently installed.)
+Preparing to unpack .../00-libexpat1_2.9.0-1~deb13u1_amd64.deb ...
+Unpacking libexpat1:amd64 (2.9.0-1~deb13u1) ...
+Selecting previously unselected package perl-modules-5.40.
+Preparing to unpack .../01-perl-modules-5.40_5.40.1-6+deb13u1_all.deb ...
+Unpacking perl-modules-5.40 (5.40.1-6+deb13u1) ...
+Selecting previously unselected package libgdbm-compat4t64:amd64.
+Preparing to unpack .../02-libgdbm-compat4t64_1.24-2_amd64.deb ...
+Unpacking libgdbm-compat4t64:amd64 (1.24-2) ...
+Selecting previously unselected package libperl5.40:amd64.
+Preparing to unpack .../03-libperl5.40_5.40.1-6+deb13u1_amd64.deb ...
+Unpacking libperl5.40:amd64 (5.40.1-6+deb13u1) ...
+Selecting previously unselected package perl.
+Preparing to unpack .../04-perl_5.40.1-6+deb13u1_amd64.deb ...
+Unpacking perl (5.40.1-6+deb13u1) ...
+Selecting previously unselected package libbrotli1:amd64.
+Preparing to unpack .../05-libbrotli1_1.1.0-2+deb13u1_amd64.deb ...
+Unpacking libbrotli1:amd64 (1.1.0-2+deb13u1) ...
+Selecting previously unselected package libunistring5:amd64.
+Preparing to unpack .../06-libunistring5_1.3-2_amd64.deb ...
+Unpacking libunistring5:amd64 (1.3-2) ...
+Selecting previously unselected package libidn2-0:amd64.
+Preparing to unpack .../07-libidn2-0_2.3.8-2_amd64.deb ...
+Unpacking libidn2-0:amd64 (2.3.8-2) ...
+Selecting previously unselected package libp11-kit0:amd64.
+Preparing to unpack .../08-libp11-kit0_0.25.5-3_amd64.deb ...
+Unpacking libp11-kit0:amd64 (0.25.5-3) ...
+Selecting previously unselected package libtasn1-6:amd64.
+Preparing to unpack .../09-libtasn1-6_4.20.0-2+deb13u1_amd64.deb ...
+Unpacking libtasn1-6:amd64 (4.20.0-2+deb13u1) ...
+Selecting previously unselected package libgnutls30t64:amd64.
+Preparing to unpack .../10-libgnutls30t64_3.8.9-3+deb13u4_amd64.deb ...
+Unpacking libgnutls30t64:amd64 (3.8.9-3+deb13u4) ...
+Selecting previously unselected package libkrb5support0:amd64.
+Preparing to unpack .../11-libkrb5support0_1.21.3-5+deb13u1_amd64.deb ...
+Unpacking libkrb5support0:amd64 (1.21.3-5+deb13u1) ...
+Selecting previously unselected package libcom-err2:amd64.
+Preparing to unpack .../12-libcom-err2_1.47.2-3+b12_amd64.deb ...
+Unpacking libcom-err2:amd64 (1.47.2-3+b12) ...
+Selecting previously unselected package libk5crypto3:amd64.
+Preparing to unpack .../13-libk5crypto3_1.21.3-5+deb13u1_amd64.deb ...
+Unpacking libk5crypto3:amd64 (1.21.3-5+deb13u1) ...
+Selecting previously unselected package libkeyutils1:amd64.
+Preparing to unpack .../14-libkeyutils1_1.6.3-6_amd64.deb ...
+Unpacking libkeyutils1:amd64 (1.6.3-6) ...
+Selecting previously unselected package libkrb5-3:amd64.
+Preparing to unpack .../15-libkrb5-3_1.21.3-5+deb13u1_amd64.deb ...
+Unpacking libkrb5-3:amd64 (1.21.3-5+deb13u1) ...
+Selecting previously unselected package libgssapi-krb5-2:amd64.
+Preparing to unpack .../16-libgssapi-krb5-2_1.21.3-5+deb13u1_amd64.deb ...
+Unpacking libgssapi-krb5-2:amd64 (1.21.3-5+deb13u1) ...
+Selecting previously unselected package libsasl2-modules-db:amd64.
+Preparing to unpack .../17-libsasl2-modules-db_2.1.28+dfsg1-9_amd64.deb ...
+Unpacking libsasl2-modules-db:amd64 (2.1.28+dfsg1-9) ...
+Selecting previously unselected package libsasl2-2:amd64.
+Preparing to unpack .../18-libsasl2-2_2.1.28+dfsg1-9_amd64.deb ...
+Unpacking libsasl2-2:amd64 (2.1.28+dfsg1-9) ...
+Selecting previously unselected package libldap2:amd64.
+Preparing to unpack .../19-libldap2_2.6.10+dfsg-1_amd64.deb ...
+Unpacking libldap2:amd64 (2.6.10+dfsg-1) ...
+Selecting previously unselected package libnghttp2-14:amd64.
+Preparing to unpack .../20-libnghttp2-14_1.64.0-1.1+deb13u1_amd64.deb ...
+Unpacking libnghttp2-14:amd64 (1.64.0-1.1+deb13u1) ...
+Selecting previously unselected package libnghttp3-9:amd64.
+Preparing to unpack .../21-libnghttp3-9_1.8.0-1_amd64.deb ...
+Unpacking libnghttp3-9:amd64 (1.8.0-1) ...
+Selecting previously unselected package libngtcp2-16:amd64.
+Preparing to unpack .../22-libngtcp2-16_1.11.0-1+deb13u1_amd64.deb ...
+Unpacking libngtcp2-16:amd64 (1.11.0-1+deb13u1) ...
+Selecting previously unselected package libngtcp2-crypto-gnutls8:amd64.
+Preparing to unpack .../23-libngtcp2-crypto-gnutls8_1.11.0-1+deb13u1_amd64.deb ...
+Unpacking libngtcp2-crypto-gnutls8:amd64 (1.11.0-1+deb13u1) ...
+Selecting previously unselected package libpsl5t64:amd64.
+Preparing to unpack .../24-libpsl5t64_0.21.2-1.1+b1_amd64.deb ...
+Unpacking libpsl5t64:amd64 (0.21.2-1.1+b1) ...
+Selecting previously unselected package librtmp1:amd64.
+Preparing to unpack .../25-librtmp1_2.4+20151223.gitfa8646d.1-2+b5_amd64.deb ...
+Unpacking librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2+b5) ...
+Selecting previously unselected package libssh2-1t64:amd64.
+Preparing to unpack .../26-libssh2-1t64_1.11.1-1+deb13u2_amd64.deb ...
+Unpacking libssh2-1t64:amd64 (1.11.1-1+deb13u2) ...
+Selecting previously unselected package libcurl3t64-gnutls:amd64.
+Preparing to unpack .../27-libcurl3t64-gnutls_8.14.1-2+deb13u7_amd64.deb ...
+Unpacking libcurl3t64-gnutls:amd64 (8.14.1-2+deb13u7) ...
+Selecting previously unselected package liberror-perl.
+Preparing to unpack .../28-liberror-perl_0.17030-1_all.deb ...
+Unpacking liberror-perl (0.17030-1) ...
+Selecting previously unselected package git-man.
+Preparing to unpack .../29-git-man_1%3a2.47.3-0+deb13u1_all.deb ...
+Unpacking git-man (1:2.47.3-0+deb13u1) ...
+Selecting previously unselected package git.
+Preparing to unpack .../30-git_1%3a2.47.3-0+deb13u1_amd64.deb ...
+Unpacking git (1:2.47.3-0+deb13u1) ...
+Setting up libexpat1:amd64 (2.9.0-1~deb13u1) ...
+Setting up libkeyutils1:amd64 (1.6.3-6) ...
+Setting up libgdbm-compat4t64:amd64 (1.24-2) ...
+Setting up libbrotli1:amd64 (1.1.0-2+deb13u1) ...
+Setting up libnghttp2-14:amd64 (1.64.0-1.1+deb13u1) ...
+Setting up libcom-err2:amd64 (1.47.2-3+b12) ...
+Setting up libkrb5support0:amd64 (1.21.3-5+deb13u1) ...
+Setting up libsasl2-modules-db:amd64 (2.1.28+dfsg1-9) ...
+Setting up libp11-kit0:amd64 (0.25.5-3) ...
+Setting up libunistring5:amd64 (1.3-2) ...
+Setting up libk5crypto3:amd64 (1.21.3-5+deb13u1) ...
+Setting up libsasl2-2:amd64 (2.1.28+dfsg1-9) ...
+Setting up libnghttp3-9:amd64 (1.8.0-1) ...
+Setting up perl-modules-5.40 (5.40.1-6+deb13u1) ...
+Setting up libtasn1-6:amd64 (4.20.0-2+deb13u1) ...
+Setting up git-man (1:2.47.3-0+deb13u1) ...
+Setting up libngtcp2-16:amd64 (1.11.0-1+deb13u1) ...
+Setting up libkrb5-3:amd64 (1.21.3-5+deb13u1) ...
+Setting up libssh2-1t64:amd64 (1.11.1-1+deb13u2) ...
+Setting up libldap2:amd64 (2.6.10+dfsg-1) ...
+Setting up libidn2-0:amd64 (2.3.8-2) ...
+Setting up libperl5.40:amd64 (5.40.1-6+deb13u1) ...
+Setting up perl (5.40.1-6+deb13u1) ...
+Setting up libgssapi-krb5-2:amd64 (1.21.3-5+deb13u1) ...
+Setting up libgnutls30t64:amd64 (3.8.9-3+deb13u4) ...
+Setting up libpsl5t64:amd64 (0.21.2-1.1+b1) ...
+Setting up liberror-perl (0.17030-1) ...
+Setting up librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2+b5) ...
+Setting up libngtcp2-crypto-gnutls8:amd64 (1.11.0-1+deb13u1) ...
+Setting up libcurl3t64-gnutls:amd64 (8.14.1-2+deb13u7) ...
+Setting up git (1:2.47.3-0+deb13u1) ...
+Processing triggers for libc-bin (2.41-12+deb13u4) ...
+[91museradd warning: nexiqon's uid 10001 is greater than SYS_UID_MAX 999
+[0m ---> Removed intermediate container 07501dfd316f
+ ---> c9a2df221b9d
+Step 12/19 : WORKDIR /app
+ ---> Running in c586a2c7cd82
+ ---> Removed intermediate container c586a2c7cd82
+ ---> 2e22003536ee
+Step 13/19 : COPY --from=build /app/.venv /app/.venv
+ ---> fa66a82cdf55
+Step 14/19 : COPY deploy/groups.yaml /app/deploy/groups.yaml
+ ---> 4c52d62c07d9
+Step 15/19 : ENV PATH=/app/.venv/bin:$PATH     PYTHONUNBUFFERED=1     NEXIQON_GROUP=control-core
+ ---> Running in 7521a9e781be
+ ---> Removed intermediate container 7521a9e781be
+ ---> 932b1959084e
+Step 16/19 : USER 10001
+ ---> Running in a005a00e8c26
+ ---> Removed intermediate container a005a00e8c26
+ ---> 3aef2d68ceb0
+Step 17/19 : EXPOSE 8000
+ ---> Running in 19b1a3a43273
+ ---> Removed intermediate container 19b1a3a43273
+ ---> 0b6dd36b18dd
+Step 18/19 : HEALTHCHECK --interval=10s --timeout=3s --retries=5   CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"]
+ ---> Running in 762cdf6fc6fb
+ ---> Removed intermediate container 762cdf6fc6fb
+ ---> d4fa80342f12
+Step 19/19 : ENTRYPOINT ["sh", "-c", "exec nexiqon-run --group \"$NEXIQON_GROUP\" --groups-file /app/deploy/groups.yaml"]
+ ---> Running in ed8939333f3e
+ ---> Removed intermediate container ed8939333f3e
+ ---> 441947d60813
+Successfully built 441947d60813
+Successfully tagged nexiqon/platform:phase2-qa

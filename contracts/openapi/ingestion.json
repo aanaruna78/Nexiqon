@@ -518,6 +518,10 @@
             "title": "Id",
             "type": "string"
           },
+          "incomplete": {
+            "title": "Incomplete",
+            "type": "boolean"
+          },
           "kind": {
             "title": "Kind",
             "type": "string"
@@ -602,6 +606,7 @@
           "quarantined",
           "deleted",
           "truncated",
+          "incomplete",
           "warnings",
           "error",
           "created_at",

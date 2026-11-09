@@ -1,0 +1,4 @@
+guide.md status: ready scanner: clamav error: None
+eicar.txt status: quarantined scanner: clamav error: malware_detected
+quarantined index outline: 404
+test collection deleted; tenant retained: phase2-qa-847c5474

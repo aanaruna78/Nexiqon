@@ -104,12 +104,14 @@ class WebCrawler:
                 res = await ctx.http.get(f"{origin}/robots.txt")
                 if res.status == 200:
                     parser.parse(res.content.decode(errors="replace").splitlines())  # type: ignore[union-attr]
-                elif 400 <= res.status < 500:
+                elif res.status in (404, 410):
                     parser = None  # no robots.txt: everything allowed
-                else:
-                    parser.disallow_all = True  # type: ignore[union-attr]  # server error: be conservative
-            except Exception:
+                else:  # server error or refusal: be conservative and skip the site this run
+                    parser.disallow_all = True  # type: ignore[union-attr]
+                    ctx.mark_incomplete(f"{origin}/robots.txt", f"HTTP {res.status}")
+            except Exception as exc:
                 parser.disallow_all = True  # type: ignore[union-attr]
+                ctx.mark_incomplete(f"{origin}/robots.txt", str(exc))
             robots_cache[origin] = parser
         robots = robots_cache[origin]
         return robots is None or robots.can_fetch(ctx.user_agent, url)
@@ -117,8 +119,11 @@ class WebCrawler:
     async def _sitemap(self, ctx: Context, url: str, depth: int = 0) -> list[str]:
         try:
             res = await ctx.http.get(url)
+            if res.status != 200:
+                raise ValueError(f"HTTP {res.status}")
             root = ET.fromstring(res.content)  # noqa: S314 - see module import note
-        except Exception:
+        except Exception as exc:  # a bad sitemap is skipped, and the run is incomplete
+            ctx.mark_incomplete(url, f"sitemap unavailable: {exc}")
             return []
         locs = [el.text.strip() for el in root.iter() if el.tag.endswith("loc") and el.text]
         if root.tag.endswith("sitemapindex") and depth < 2:
@@ -157,11 +162,14 @@ class WebCrawler:
                 continue
             try:
                 res = await ctx.http.get(url)
-            except Exception as exc:
-                ctx.warn(url, str(exc))
+            except Exception as exc:  # one bad page must not stop the crawl
+                ctx.mark_incomplete(url, str(exc))
+                continue
+            if res.status in (404, 410):
+                ctx.warn(url, f"HTTP {res.status}")  # authoritative: the page is gone
                 continue
             if res.status != 200:
-                ctx.warn(url, f"HTTP {res.status}")
+                ctx.mark_incomplete(url, f"HTTP {res.status}")  # transient or refused
                 continue
             media = res.headers.get("content-type", "").split(";")[0].strip().lower()
             if _matches(url, include, exclude):
@@ -236,7 +244,8 @@ class S3Connector:
     async def _client(self, ctx: Context, config: Mapping[str, Any]) -> Any:
         from nexiqon_core.adapters.s3 import S3Client
 
-        await ctx.check_host(str(config["endpoint"]))
+        # Connect only to the address the safety check approved (no second DNS lookup: QA2-02).
+        address = await ctx.check_host(str(config["endpoint"]))
         creds = ctx.credentials(str(config["credentials_ref"]))
         return S3Client(
             str(config["endpoint"]),
@@ -244,6 +253,7 @@ class S3Connector:
             creds["access_key"],
             creds["secret_key"],
             transport=ctx.transport,
+            pinned_address=address,
         )
 
     async def discover(self, ctx: Context, config: Mapping[str, Any]) -> AsyncIterator[Item]:

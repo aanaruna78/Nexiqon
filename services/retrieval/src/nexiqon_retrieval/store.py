@@ -13,6 +13,12 @@ from typing import Protocol
 CLASSIFICATIONS = ("public", "internal", "confidential", "restricted")
 
 
+def strictest(*levels: str) -> str:
+    """The most sensitive of the given classifications (unknown labels count as restricted)."""
+    rank = {c: i for i, c in enumerate(CLASSIFICATIONS)}
+    return max(levels, key=lambda c: rank.get(c, len(CLASSIFICATIONS))) if levels else "internal"
+
+
 @dataclass(frozen=True)
 class Filters:
     collection_ids: list[uuid.UUID]
@@ -36,6 +42,7 @@ class Hit:
     page_end: int | None
     source_uri: str | None
     score: float  # cosine similarity (vector) or ts_rank_cd (keyword)
+    classification: str = "internal"  # from the index, never from the request
 
 
 @dataclass
@@ -53,6 +60,7 @@ class Node:
     page_end: int | None
     source_uri: str | None
     collection_id: uuid.UUID
+    classification: str = "internal"
 
 
 class VectorStore(Protocol):

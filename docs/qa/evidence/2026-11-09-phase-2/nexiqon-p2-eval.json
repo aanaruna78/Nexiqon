@@ -1,0 +1,59 @@
+{
+  "small_to_big": {
+    "k": 5,
+    "cases": 29,
+    "recall": 1.0,
+    "mrr": 0.9655,
+    "evidence": 1.0,
+    "p50_ms": 14.57,
+    "p95_ms": 29.28,
+    "by_language": {
+      "ar": {
+        "cases": 3,
+        "recall": 1.0,
+        "evidence": 1.0
+      },
+      "en": {
+        "cases": 23,
+        "recall": 1.0,
+        "evidence": 1.0
+      },
+      "es": {
+        "cases": 3,
+        "recall": 1.0,
+        "evidence": 1.0
+      }
+    },
+    "misses": []
+  },
+  "flat": {
+    "k": 5,
+    "cases": 29,
+    "recall": 1.0,
+    "mrr": 0.9655,
+    "evidence": 0.931,
+    "p50_ms": 7.47,
+    "p95_ms": 12.41,
+    "by_language": {
+      "ar": {
+        "cases": 3,
+        "recall": 1.0,
+        "evidence": 1.0
+      },
+      "en": {
+        "cases": 23,
+        "recall": 1.0,
+        "evidence": 0.913
+      },
+      "es": {
+        "cases": 3,
+        "recall": 1.0,
+        "evidence": 1.0
+      }
+    },
+    "misses": [
+      "evidence: Which identity providers work with single sign-on?",
+      "evidence: The desktop app sync is paused, what should I check?"
+    ]
+  }
+}

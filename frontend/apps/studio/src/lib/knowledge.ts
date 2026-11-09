@@ -67,6 +67,7 @@ export interface Run {
   quarantined: number;
   deleted: number;
   truncated: boolean;
+  incomplete: boolean;
   warnings: { uri: string; message: string }[];
   error: string | null;
   created_at: string;
@@ -113,6 +114,8 @@ export interface Passage {
   token_count: number;
   score: number;
   chunk_ids: string[];
+  classification: Classification;
+  truncated: boolean;
 }
 
 export interface SearchResponse {

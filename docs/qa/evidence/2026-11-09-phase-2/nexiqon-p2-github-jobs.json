@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Authorization policies (OPA unit tests)",
+    "conclusion": "success"
+  },
+  {
+    "name": "Security (secrets, dependencies, filesystem)",
+    "conclusion": "success"
+  },
+  {
+    "name": "Frontend (lint, types, tests, build)",
+    "conclusion": "success"
+  },
+  {
+    "name": "Python (lint, types, architecture, contracts, tests)",
+    "conclusion": "success"
+  },
+  {
+    "name": "Contracts (breaking changes vs base)",
+    "conclusion": "skipped"
+  },
+  {
+    "name": "Container image (build, smoke test, scan)",
+    "conclusion": "success"
+  }
+]

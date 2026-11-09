@@ -313,6 +313,7 @@ function PassageCard({ passage: p, index, query, onOpen }: { passage: Passage; i
             <h3 className="truncate text-sm font-medium">{p.citation}</h3>
             <p className="text-xs text-muted-foreground">
               {t(`kinds.${p.kind}`)} · {t("tokens", { count: p.token_count })}
+              {p.truncated ? ` · ${t("shortened")}` : ""}
             </p>
           </div>
         </div>

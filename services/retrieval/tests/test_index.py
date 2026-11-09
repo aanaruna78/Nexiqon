@@ -45,6 +45,7 @@ class Setup:
     a: dict[str, str]
     b: dict[str, str]
     member: dict[str, str]
+    staff: dict[str, str]  # a member of the documents' access group
 
 
 @pytest.fixture
@@ -72,6 +73,17 @@ def setup(retrieval_db: PgUrls) -> Iterator[Setup]:
             {header: svc.for_tenant(tenants.a.context.tenant_id)},
             {header: svc.for_tenant(tenants.b.context.tenant_id)},
             tenants.a.headers,
+            {
+                header: tenants.issuer.issue(
+                    TenantContext(
+                        tenants.a.context.tenant_id,
+                        "u-staff",
+                        "user",
+                        frozenset({"member"}),
+                        frozenset({"staff"}),
+                    )
+                )
+            },
         )
 
 
@@ -136,7 +148,7 @@ def test_put_replace_outline_and_stats(setup: Setup) -> None:
         "chunks": 2,
         "replaced": 0,
     }
-    outline = client.get(f"/v1/index/documents/{document}/outline", headers=h).json()
+    outline = client.get(f"/v1/index/documents/{document}/outline", headers=setup.staff).json()
     assert [n["path"] for n in outline["nodes"]] == ["d", "d.c0001", "d.s0002", "d.s0002.c0001"]
     r2 = client.put(f"/v1/index/documents/{document}", json=doc(collection, 2), headers=h)
     assert r2.json()["replaced"] == 4
@@ -146,8 +158,15 @@ def test_put_replace_outline_and_stats(setup: Setup) -> None:
         ).status_code
         == 409
     )
-    stats = client.get(f"/v1/index/collections/{collection}/stats", headers=h).json()
+    stats = client.get(f"/v1/index/collections/{collection}/stats", headers=setup.staff).json()
     assert (stats["documents"], stats["sections"], stats["chunks"]) == (1, 1, 2)
+    # Outside the access group, the document's titles, headings and counts stay hidden (QA2-04).
+    assert (
+        client.get(f"/v1/index/documents/{document}/outline", headers=setup.member).status_code
+        == 404
+    )
+    hidden = client.get(f"/v1/index/collections/{collection}/stats", headers=setup.member).json()
+    assert (hidden["documents"], hidden["chunks"]) == (0, 0)
     # Tenant B sees and deletes nothing of tenant A's.
     assert client.get(f"/v1/index/documents/{document}/outline", headers=setup.b).status_code == 404
     assert client.delete(f"/v1/index/collections/{collection}", headers=setup.b).json() == {
@@ -198,7 +217,10 @@ def test_only_the_service_identity_writes(setup: Setup) -> None:
         ).status_code
         == 200
     )
-    assert client.get(f"/v1/index/documents/{document}/outline", headers=mh).status_code == 200
+    assert (
+        client.get(f"/v1/index/documents/{document}/outline", headers=setup.staff).status_code
+        == 200
+    )
 
 
 def test_tenant_deletion(setup: Setup, retrieval_db: PgUrls) -> None:

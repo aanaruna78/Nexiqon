@@ -1,0 +1,140 @@
+[2m2026-11-09T05:06:37.566770Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mcontrol[0m [36mservice[0m=[35mconfig[0m [36mversion[0m=[35m0.1.0[0m
+[2m2026-11-09T05:06:37.566956Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mdata[0m [36mservice[0m=[35mretrieval[0m [36mversion[0m=[35m0.1.0[0m
+[2m2026-11-09T05:06:37.567022Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mdata[0m [36mservice[0m=[35mingestion[0m [36mversion[0m=[35m0.1.0[0m
+2026-11-09T05:06:37.712218Z  WARN temporalio_sdk_core::worker: Temporal Server 1.16.0 or newer is required to guarantee that the latest heartbeat details are preserved when an activity fails; the server did not advertise the activity_failure_include_heartbeat capability, so heartbeat details may be lost on failure
+second sync: completed warnings: [{'uri': 'https://docs.example.com/a', 'message': 'HTTP 503'}] deleted: 1 remaining: ['https://docs.example.com/']
+F[2m2026-11-09T05:06:38.404501Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mingestion[0m
+[2m2026-11-09T05:06:38.410404Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mretrieval[0m
+[2m2026-11-09T05:06:38.413858Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mconfig[0m
+checked address: 93.184.216.34; actual loopback requests: ['GET /docs?list-type=2&prefix= HTTP/1.1'] items: 0
+F
+=================================== FAILURES ===================================
+________ test_transient_crawl_failure_must_not_delete_indexed_documents ________
+
+stack = Stack(tenants=TwoTenants(settings=ContextTokenSettings(issuer='nexiqon-identity', audience='nexiqon-services', algorit...iqon_core.blobs.MemoryBlobStore object at 0x749fb5d2a060>, app=<fastapi.applications.FastAPI object at 0x749fb5d28140>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x749fb6eb6360>
+
+    async def test_transient_crawl_failure_must_not_delete_indexed_documents(stack, monkeypatch):
+        s = stack
+        s.web.pages = {
+            "/": ("text/html", '<h1>Home</h1><p>Welcome.</p><a href="/a">Guide</a>'),
+            "/a": ("text/html", "<h1>Guide</h1><p>Keep this document.</p>"),
+        }
+        c = await s.collection()
+        src = await s.ok(
+            "POST",
+            f"/v1/collections/{c['id']}/sources",
+            201,
+            json={
+                "name": "qa-web",
+                "connector": "web",
+                "config": {"start_urls": ["https://docs.example.com/"]},
+            },
+        )
+        first = await s.wait(await s.ok("POST", f"/v1/sources/{src['id']}/sync", 202))
+        assert first["processed"] == 2
+        original = type(s.web).__call__
+    
+        def unavailable(self, request):
+            if request.url.path == "/a":
+                return httpx.Response(503, text="temporarily unavailable")
+            return original(self, request)
+    
+        monkeypatch.setattr(type(s.web), "__call__", unavailable)
+        second = await s.wait(await s.ok("POST", f"/v1/sources/{src['id']}/sync", 202))
+        docs = await s.ok("GET", f"/v1/collections/{c['id']}/documents")
+        print(
+            "second sync:",
+            second["status"],
+            "warnings:",
+            second["warnings"],
+            "deleted:",
+            second["deleted"],
+            "remaining:",
+            [d["uri"] for d in docs],
+        )
+>       assert second["deleted"] == 0, (
+            "A temporary HTTP 503 must not delete a previously indexed document"
+        )
+E       AssertionError: A temporary HTTP 503 must not delete a previously indexed document
+E       assert 1 == 0
+
+docs/qa/reproductions/phase2_ingestion_cases.py:56: AssertionError
+________________ test_s3_dns_rebinding_must_not_reach_loopback _________________
+
+tmp_path = PosixPath('/tmp/pytest-of-arun/pytest-8/test_s3_dns_rebinding_must_not0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x749fb6ee0140>
+
+    async def test_s3_dns_rebinding_must_not_reach_loopback(tmp_path, monkeypatch):
+        hits = []
+    
+        async def local_server(reader, writer):
+            headers = await reader.readuntil(b"\r\n\r\n")
+            hits.append(headers.splitlines()[0].decode())
+            body = b"<ListBucketResult><IsTruncated>false</IsTruncated></ListBucketResult>"
+            writer.write(
+                b"HTTP/1.1 200 OK\r\nContent-Length: "
+                + str(len(body)).encode()
+                + b"\r\nConnection: close\r\n\r\n"
+                + body
+            )
+            await writer.drain()
+            writer.close()
+            await writer.wait_closed()
+    
+        server = await asyncio.start_server(local_server, "127.0.0.1", 0)
+        port = server.sockets[0].getsockname()[1]
+        original = socket.getaddrinfo
+    
+        def rebinding(host, port, *args, **kwargs):
+            normalized = host.decode() if isinstance(host, bytes) else host
+            return original(
+                "127.0.0.1" if normalized == "s3.qa.example" else host, port, *args, **kwargs
+            )
+    
+        monkeypatch.setattr(socket, "getaddrinfo", rebinding)
+    
+        async def public_check(host, port):
+            return ["93.184.216.34"]
+    
+        fetch = SafeFetcher(FetchPolicy(allowed_ports=[port]), resolver=public_check)
+        tenant = uuid.uuid4()
+        ctx = Context(
+            tenant_id=tenant,
+            http=fetch,
+            blobs=MemoryBlobStore(),
+            scratch=tmp_path,
+            credentials={f"{tenant}/qa": {"access_key": "qa", "secret_key": "qa"}},
+            max_items=10,
+            max_bytes=10000,
+        )
+        try:
+            items = [
+                i
+                async for i in S3Connector().discover(
+                    ctx,
+                    {
+                        "endpoint": f"http://s3.qa.example:{port}",
+                        "bucket": "docs",
+                        "credentials_ref": "qa",
+                    },
+                )
+            ]
+            print(
+                "checked address: 93.184.216.34; actual loopback requests:", hits, "items:", len(items)
+            )
+>           assert not hits, "S3 connected to loopback after its safety check approved a public address"
+E           AssertionError: S3 connected to loopback after its safety check approved a public address
+E           assert not ['GET /docs?list-type=2&prefix= HTTP/1.1']
+
+docs/qa/reproductions/phase2_ingestion_cases.py:120: AssertionError
+=============================== warnings summary ===============================
+docs/qa/reproductions/phase2_ingestion_cases.py::test_transient_crawl_failure_must_not_delete_indexed_documents
+  /home/arun/Documents/Nexiqon/Nexiqon/libs/nexiqon-core/src/nexiqon_core/pytest_plugin.py:52: DeprecationWarning: testcontainers.postgres is deprecated, use testcontainers.community.postgres instead
+    from testcontainers.postgres import PostgresContainer
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED docs/qa/reproductions/phase2_ingestion_cases.py::test_transient_crawl_failure_must_not_delete_indexed_documents
+FAILED docs/qa/reproductions/phase2_ingestion_cases.py::test_s3_dns_rebinding_must_not_reach_loopback
+2 failed, 1 warning in 3.90s

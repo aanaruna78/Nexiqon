@@ -465,6 +465,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Incomplete */
+            incomplete: boolean;
             /** Kind */
             kind: string;
             /** Processed */

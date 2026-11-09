@@ -3,9 +3,9 @@ repos:
     rev: v5.0.0
     hooks:
       - id: end-of-file-fixer
-        exclude: \.svg$|^docs/qa/evidence/
+        exclude: \.svg$|^docs/qa/(evidence|reproductions)/
       - id: trailing-whitespace
-        exclude: ^docs/qa/evidence/  # QA evidence stays byte-for-byte
+        exclude: ^docs/qa/(evidence|reproductions)/  # QA files stay byte-for-byte
       - id: check-yaml
         args: [--allow-multiple-documents]
         exclude: ^templates/

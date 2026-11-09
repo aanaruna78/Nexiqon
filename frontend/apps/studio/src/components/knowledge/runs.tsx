@@ -98,6 +98,7 @@ export function RunHistory({ runs, sourceName }: { runs: Run[]; sourceName: (id:
                   </p>
                 ) : null}
                 {run.truncated ? <p className="mt-1 text-xs text-muted-foreground">{t("truncated")}</p> : null}
+                {run.incomplete ? <p className="mt-1 text-xs text-amber-800 dark:text-amber-200" data-testid="run-incomplete">{t("incomplete")}</p> : null}
                 {run.warnings.length ? <p className="mt-1 text-xs text-muted-foreground">{t("warnings", { count: run.warnings.length })}</p> : null}
               </TableCell>
               <TableCell className="hidden text-muted-foreground md:table-cell">{format.relativeTime(new Date(run.created_at), now)}</TableCell>

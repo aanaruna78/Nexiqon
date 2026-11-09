@@ -325,3 +325,79 @@ async def test_killed_worker_resumes(stack: Stack) -> None:
     assert done["processed"] == 1
     doc = await s.ok("GET", f"/v1/documents/{up['document']['id']}")
     assert doc["status"] == "ready"
+
+
+# ---------------------------------------------------------------- QA 2026-11-09 regressions
+
+
+async def test_qa2_03_transient_crawl_failures_never_delete(stack: Stack) -> None:
+    s = stack
+    s.web.pages = {
+        "/": ("text/html", '<main><h1>Home</h1><p>Start.</p><a href="/a">A</a></main>'),
+        "/a": ("text/html", "<main><h1>A</h1><p>Keep this page.</p></main>"),
+    }
+    c = await s.collection()
+    src = await s.ok(
+        "POST",
+        f"/v1/collections/{c['id']}/sources",
+        201,
+        json={
+            "name": "site",
+            "connector": "web",
+            "config": {"start_urls": ["https://docs.example.com/"]},
+        },
+    )
+    assert (await s.wait(await s.ok("POST", f"/v1/sources/{src['id']}/sync", 202)))[
+        "processed"
+    ] == 2
+    for status in (503, 429, 403):  # outage, rate limit, refusal: none proves removal
+        s.web.fail["/a"] = status
+        run = await s.wait(await s.ok("POST", f"/v1/sources/{src['id']}/sync", 202))
+        assert (run["status"], run["incomplete"], run["deleted"]) == ("completed", True, 0), status
+        assert run["warnings"][0]["message"] == f"HTTP {status}"
+        assert len(await s.ok("GET", f"/v1/collections/{c['id']}/documents")) == 2
+    s.web.fail = {
+        "/robots.txt": 500
+    }  # robots.txt unavailable: the site is skipped, nothing deleted
+    run = await s.wait(await s.ok("POST", f"/v1/sources/{src['id']}/sync", 202))
+    assert (run["incomplete"], run["deleted"]) == (True, 0)
+    s.web.fail = {}
+    del s.web.pages["/a"]  # still linked, but now 404: authoritative removal
+    run = await s.wait(await s.ok("POST", f"/v1/sources/{src['id']}/sync", 202))
+    assert (run["incomplete"], run["deleted"]) == (False, 1)
+
+
+async def test_qa2_04_collections_with_access_groups_are_hidden_from_other_members(
+    stack: Stack,
+) -> None:
+    from nexiqon_core.tenancy import CONTEXT_HEADER, TenantContext
+
+    s = stack
+    c = await s.collection(name="legal", acl_groups=["legal"])
+    up = await s.upload(c["id"], "deal.md", b"# Secret acquisition\n\nTerms.", "text/markdown")
+    await s.wait(await s.ok("GET", f"/v1/runs/{up['run_id']}"))
+    tenant = s.tenants.a.context.tenant_id
+
+    def as_(roles: set[str], groups: set[str]) -> dict[str, str]:
+        ctx = TenantContext(tenant, "u-1", "user", frozenset(roles), frozenset(groups))
+        return {CONTEXT_HEADER: s.tenants.issuer.issue(ctx)}
+
+    outsider = as_({"member"}, {"engineering"})
+    for path in (
+        f"/v1/collections/{c['id']}",
+        f"/v1/collections/{c['id']}/documents",
+        f"/v1/collections/{c['id']}/sources",
+        f"/v1/collections/{c['id']}/runs",
+        f"/v1/documents/{up['document']['id']}",
+        f"/v1/runs/{up['run_id']}",
+    ):
+        assert (await s.api.get(path, headers=outsider)).status_code == 404, path
+    assert (await s.api.get("/v1/collections", headers=outsider)).json() == []
+    insider = as_({"member"}, {"legal"})
+    assert (
+        await s.api.get(f"/v1/documents/{up['document']['id']}", headers=insider)
+    ).status_code == 200
+    editor = as_({"editor"}, set())
+    assert [x["name"] for x in (await s.api.get("/v1/collections", headers=editor)).json()] == [
+        "legal"
+    ]
