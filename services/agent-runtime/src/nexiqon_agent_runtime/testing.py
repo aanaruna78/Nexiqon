@@ -37,6 +37,9 @@ class FakeServices:
         self.tools: dict[str, dict[str, Any]] = {}
         self.tool_args: dict[str, Any] = {}
         self.tool_result: dict[str, Any] = {"plan": "Team", "status": "active"}
+        # Red-team (AG-03): an "obedient" model. When it sees ``attack`` anywhere in what it is
+        # sent (outside the system prompt) it writes ``obeyed`` ({system} = the system prompt).
+        self.attacks: list[tuple[str, str]] = []
 
     def chats(self, kind: str | None = None) -> list[dict[str, Any]]:
         return [
@@ -48,6 +51,8 @@ class FakeServices:
         body = json.loads(request.content) if request.content else {}
         if host == "model-gateway" and path == "/v1/chat":
             return self._chat(body)
+        if host == "model-gateway" and path == "/v1/chat/stream":
+            return self._chat_stream(body)
         if host == "retrieval" and path == "/v1/search":
             self.calls.append(("search", body))
             return httpx.Response(
@@ -120,6 +125,22 @@ class FakeServices:
             )
         return httpx.Response(404, json={"detail": "no fake"})
 
+    def _chat_stream(self, body: dict[str, Any]) -> httpx.Response:
+        """The same reply as ``_chat``, as server-sent events of a few characters each."""
+        reply = self._chat({**body, "_stream": True}).json()
+        text = reply["content"]
+        events = [
+            f"event: delta\ndata: {json.dumps({'text': text[i : i + 4]})}"
+            for i in range(0, len(text), 4)
+        ]
+        done = {"done": True, "route": reply["route"], "usage": reply["usage"], "cost_usd": "0"}
+        events.append(f"event: done\ndata: {json.dumps(done)}")
+        return httpx.Response(
+            200,
+            content=("\n\n".join(events) + "\n\n").encode(),
+            headers={"content-type": "text/event-stream"},
+        )
+
     def _chat(self, body: dict[str, Any]) -> httpx.Response:
         messages = body["messages"]
         system = next((m["content"] for m in messages if m["role"] == "system"), "")
@@ -140,6 +161,10 @@ class FakeServices:
             kind, content = "summary", "Customer wants help; documentation did not cover it."
         else:
             kind, content = "smalltalk", "Hello! How can I help?"
+        seen = "\n".join(m["content"] or "" for m in messages if m["role"] != "system")
+        for attack, obeyed in self.attacks:
+            if kind in ("answer", "smalltalk") and attack in seen:
+                content = obeyed.replace("{system}", system)
         self.calls.append(("chat", {**body, "_kind": kind}))
         return httpx.Response(
             200,

@@ -464,3 +464,15 @@ def test_list_profiles_marks_floor_blocked_ones(make_client: ClientFactory) -> N
         "standard",
         "dev-offline",
     }
+
+
+def test_pack_guardrails_survive_the_packs_agent_defaults(make_client: ClientFactory) -> None:
+    """agent_defaults.guardrails is merged into the pack's guardrails, not swapped for them."""
+    t = TwoTenants.create()
+    c = make_client(t)
+    bootstrap(c, t.a)
+    cfg = ok(c.get("/v1/resolve/agents/support", headers=t.a.headers))["config"]
+    assert cfg["guardrails"]["blocked_topics"] == ["legal advice", "competitors' pricing"]
+    assert cfg["guardrails"]["min_evidence_score"] == 0.6
+    assert cfg["guardrails"]["max_answer_tokens"] == 600  # the agent's own value still wins
+    assert cfg["escalation"]["after_failed_turns"] == 2

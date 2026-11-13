@@ -128,3 +128,12 @@ test_tool_gateway_identity_reads_config_only if {
 	not authz.allow with input as {"actor": svc, "action": "tool.invoke.read", "resource": {"type": "tool"}}
 	not authz.allow with input as {"actor": svc, "action": "config.tool.write", "resource": {"type": "tool"}}
 }
+
+test_widget_reads_channel_settings_and_channel_service_reads_agents_only if {
+	widget := {"tenant_id": "t-a", "id": "k-1", "type": "widget", "roles": ["end_user"], "groups": []}
+	authz.allow with input as {"actor": widget, "action": "channel.settings.read", "resource": {"type": "agent"}}
+	svc := {"tenant_id": "t-a", "id": "service:channel", "type": "service", "roles": ["service:channel"], "groups": []}
+	authz.allow with input as {"actor": svc, "action": "config.agent.read", "resource": {"type": "agent"}}
+	not authz.allow with input as {"actor": svc, "action": "config.tool.read", "resource": {"type": "tool"}}
+	not authz.allow with input as {"actor": svc, "action": "agent.query.run", "resource": {"type": "agent"}}
+}

@@ -6,14 +6,16 @@ model bake-off (M-07) like every adapter.
 
 from __future__ import annotations
 
+import json
 import uuid
+from collections.abc import AsyncIterator
 from typing import Any
 
 import httpx
 
-from nexiqon_model_gateway.adapters.http import post_json
+from nexiqon_model_gateway.adapters.http import post_json, stream_sse
 from nexiqon_model_gateway.providers import ProviderError
-from nexiqon_model_gateway.types import ChatCall, ChatOutput, Message, ToolCall, Usage
+from nexiqon_model_gateway.types import ChatCall, ChatChunk, ChatOutput, Message, ToolCall, Usage
 
 GEMINI_BASE = "https://generativelanguage.googleapis.com"
 
@@ -43,7 +45,7 @@ class Gemini:
         self._key = api_key
         self._client = client
 
-    async def chat(self, call: ChatCall) -> ChatOutput:
+    def _request(self, call: ChatCall) -> tuple[str, dict[str, Any], dict[str, str]]:
         if not self._key:
             raise ProviderError(self.name, "no API key configured")
         system = "\n\n".join(m.content or "" for m in call.messages if m.role == "system")
@@ -70,7 +72,11 @@ class Gemini:
             ]
         base = (call.base_url or GEMINI_BASE).rstrip("/")
         url = f"{base}/v1beta/models/{call.model}:generateContent"
-        data = await post_json(self._client, self.name, url, body, {"x-goog-api-key": self._key})
+        return url, body, {"x-goog-api-key": self._key}
+
+    async def chat(self, call: ChatCall) -> ChatOutput:
+        url, body, headers = self._request(call)
+        data = await post_json(self._client, self.name, url, body, headers)
         try:
             candidate = data["candidates"][0]
             parts = candidate.get("content", {}).get("parts", [])
@@ -100,3 +106,32 @@ class Gemini:
             )
         except (KeyError, IndexError, TypeError) as exc:
             raise ProviderError(self.name, f"unexpected response shape: {exc}") from exc
+
+    async def chat_stream(self, call: ChatCall) -> AsyncIterator[ChatChunk]:
+        url, body, headers = self._request(call)
+        url = url.replace(":generateContent", ":streamGenerateContent") + "?alt=sse"
+        usage = Usage()
+        finish: str | None = None
+        async for data in stream_sse(self._client, self.name, url, body, headers):
+            try:
+                event = json.loads(data)
+            except ValueError:
+                continue
+            for candidate in event.get("candidates") or []:
+                for part in (candidate.get("content") or {}).get("parts") or []:
+                    if part.get("text"):
+                        yield ChatChunk(text=part["text"])
+                finish = candidate.get("finishReason") or finish
+            if event.get("usageMetadata"):
+                meta = event["usageMetadata"]
+                usage = Usage(
+                    input_tokens=meta.get("promptTokenCount", 0),
+                    output_tokens=meta.get("candidatesTokenCount", 0),
+                )
+        yield ChatChunk(
+            usage=usage,
+            finish_reason={"STOP": "stop", "MAX_TOKENS": "length"}.get(
+                finish or "STOP", (finish or "stop").lower()
+            ),
+            model=call.model,
+        )

@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 import json
+from collections.abc import AsyncIterator
 from typing import Any
 
 import httpx
 
-from nexiqon_model_gateway.adapters.http import post_json
+from nexiqon_model_gateway.adapters.http import post_json, stream_sse
 from nexiqon_model_gateway.providers import ProviderError
 from nexiqon_model_gateway.types import (
     ChatCall,
+    ChatChunk,
     ChatOutput,
     EmbedCall,
     EmbedOutput,
@@ -60,7 +62,7 @@ class OpenAICompatible:
     def _headers(self) -> dict[str, str]:
         return {"Authorization": f"Bearer {self._key}"} if self._key else {}
 
-    async def chat(self, call: ChatCall) -> ChatOutput:
+    def _request(self, call: ChatCall) -> tuple[str, dict[str, Any], dict[str, str]]:
         body: dict[str, Any] = {
             "model": call.model,
             "messages": [_message(m) for m in call.messages],
@@ -93,13 +95,11 @@ class OpenAICompatible:
             else:
                 # Weaker local models: vLLM constrained decoding guarantees schema-valid JSON.
                 body["guided_json"] = call.response_schema
-        data = await post_json(
-            self._client,
-            self.name,
-            f"{self._base(call.base_url)}/chat/completions",
-            body,
-            self._headers(),
-        )
+        return f"{self._base(call.base_url)}/chat/completions", body, self._headers()
+
+    async def chat(self, call: ChatCall) -> ChatOutput:
+        url, body, headers = self._request(call)
+        data = await post_json(self._client, self.name, url, body, headers)
         try:
             choice = data["choices"][0]
             message = choice["message"]
@@ -124,6 +124,32 @@ class OpenAICompatible:
             )
         except (KeyError, IndexError, TypeError, ValueError) as exc:
             raise ProviderError(self.name, f"unexpected chat response shape: {exc}") from exc
+
+    async def chat_stream(self, call: ChatCall) -> AsyncIterator[ChatChunk]:
+        url, body, headers = self._request(call)
+        body["stream"] = True
+        body["stream_options"] = {"include_usage": True}
+        usage = Usage()
+        finish: str | None = None
+        async for data in stream_sse(self._client, self.name, url, body, headers):
+            if data == "[DONE]":
+                break
+            try:
+                event = json.loads(data)
+            except ValueError:
+                continue
+            if event.get("usage"):
+                u = event["usage"]
+                usage = Usage(
+                    input_tokens=u.get("prompt_tokens", 0),
+                    output_tokens=u.get("completion_tokens", 0),
+                )
+            for choice in event.get("choices") or []:
+                text = (choice.get("delta") or {}).get("content")
+                if text:
+                    yield ChatChunk(text=text)
+                finish = choice.get("finish_reason") or finish
+        yield ChatChunk(usage=usage, finish_reason=finish or "stop", model=call.model)
 
     async def embed(self, call: EmbedCall) -> EmbedOutput:
         inputs = call.inputs

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from typing import Any
 
 import httpx
@@ -29,3 +30,27 @@ async def post_json(
     except ValueError as exc:
         raise ProviderError(provider, "invalid JSON from provider", retryable=True) from exc
     return data
+
+
+async def stream_sse(
+    client: httpx.AsyncClient,
+    provider: str,
+    url: str,
+    body: dict[str, Any],
+    headers: dict[str, str],
+) -> AsyncIterator[str]:
+    """POST and yield each server-sent event's ``data`` payload (without the ``data:`` prefix)."""
+    try:
+        async with client.stream(
+            "POST", url, json=body, headers={**headers, "accept": "text/event-stream"}
+        ) as response:
+            if response.status_code >= 400:
+                text = (await response.aread()).decode(errors="replace")
+                raise classify_http_error(provider, response.status_code, text)
+            async for line in response.aiter_lines():
+                if line.startswith("data:"):
+                    yield line[5:].strip()
+    except httpx.TimeoutException as exc:
+        raise ProviderError(provider, "timeout", retryable=True) from exc
+    except httpx.HTTPError as exc:
+        raise ProviderError(provider, f"connection error: {exc}", retryable=True) from exc

@@ -127,4 +127,5 @@ def create_app(
         else None
     )
     app.state.retention_profiles = retention_profiles
+    app.state.streams = set()  # streamed turns still being stored
     return app

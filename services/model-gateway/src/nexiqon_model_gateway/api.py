@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
+import json
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Query, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
 from nexiqon_core.authz import Resource, check_permission
-from nexiqon_core.errors import BadRequest, ServiceUnavailable, Unauthorized
+from nexiqon_core.errors import BadRequest, NexiqonError, ServiceUnavailable, Unauthorized
 from nexiqon_core.tenancy import TenantContext, require_current_context
 from nexiqon_model_gateway.gateway import Caller, ChatRequest, Gateway, Result
 from nexiqon_model_gateway.models import UsageRecord
@@ -136,6 +139,43 @@ async def chat(body: ChatIn, request: Request, ctx: Ctx) -> ChatOut:
         route=_route(result),
         usage=result.usage,
         cost_usd=str(result.cost_usd),
+    )
+
+
+@tenant_router.post("/chat/stream")
+async def chat_stream(body: ChatIn, request: Request, ctx: Ctx) -> StreamingResponse:
+    """Streamed chat as server-sent events: ``delta`` chunks, then ``done`` (route, usage, cost)
+    or ``error``. Every check of /v1/chat applies before the first byte."""
+    caller = await _caller(request, ctx, body.profile, body.classification, body.conversation_id)
+    gateway = _gateway(request)
+    stream = gateway.chat_stream(
+        caller,
+        ChatRequest(
+            messages=body.messages,
+            tools=body.tools,
+            response_schema=body.response_schema,
+            max_tokens=body.max_tokens,
+            temperature=body.temperature,
+        ),
+        body.profile,
+    )
+    first = await anext(stream)  # routing, floors and budgets fail here, as a normal HTTP error
+
+    async def events() -> AsyncIterator[bytes]:
+        event: dict[str, Any] | None = first
+        try:
+            while event is not None:
+                kind = "done" if event.get("done") else "delta"
+                payload = {k: v for k, v in event.items() if k != "done"}
+                yield f"event: {kind}\ndata: {json.dumps(payload)}\n\n".encode()
+                event = await anext(stream, None)
+        except NexiqonError as exc:
+            yield f"event: error\ndata: {json.dumps({'code': exc.code, 'detail': exc.detail})}\n\n".encode()
+
+    return StreamingResponse(
+        events(),
+        media_type="text/event-stream",
+        headers={"cache-control": "no-cache", "x-accel-buffering": "no"},
     )
 
 

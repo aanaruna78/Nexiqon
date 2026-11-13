@@ -41,6 +41,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/agents/{agent}/runs/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stream Agent
+         * @description The same turn as ``/runs`` as server-sent events (CH-01): ``run``, ``status``, ``sources``,
+         *     ``tool``, ``delta`` (answer text as it is written), then ``result`` (the RunOut, with the
+         *     checked answer and citations, which replaces the streamed text).
+         */
+        post: operations["stream_agent_v1_agents__agent__runs_stream_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/context": {
         parameters: {
             query?: never;
@@ -155,6 +177,11 @@ export interface components {
         };
         /** RunIn */
         RunIn: {
+            /**
+             * Handoff
+             * @default false
+             */
+            handoff: boolean;
             /** History */
             history?: components["schemas"]["Message"][];
             /** Input */
@@ -306,6 +333,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RunOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_agent_v1_agents__agent__runs_stream_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agent: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": unknown;
                 };
             };
             /** @description Validation Error */

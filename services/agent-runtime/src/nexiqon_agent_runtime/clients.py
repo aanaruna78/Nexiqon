@@ -4,8 +4,10 @@ configuration and collection names are read with agent-runtime's own service ide
 
 from __future__ import annotations
 
+import json
 import time
 import uuid
+from collections.abc import AsyncIterator
 from typing import Any, Protocol
 
 import httpx
@@ -90,6 +92,49 @@ class Models(Http):
         _raise(r, "model")
         result: dict[str, Any] = r.json()
         return result
+
+    async def chat_stream(
+        self,
+        token: str,
+        *,
+        profile: str,
+        classification: str,
+        messages: list[dict[str, str]],
+        max_tokens: int,
+        conversation_id: str | None = None,
+    ) -> AsyncIterator[dict[str, Any]]:
+        """Yields ``{"text": ...}`` pieces, then one ``{"done": True, "route": ..., "usage": ...}``."""
+        if self.base is None:
+            raise ServiceUnavailable("Service URL for /v1/chat/stream is not configured")
+        body = {
+            "profile": profile,
+            "messages": messages,
+            "classification": classification,
+            "max_tokens": max_tokens,
+            "conversation_id": conversation_id,
+        }
+        try:
+            async with self.client.stream(
+                "POST",
+                f"{self.base}/v1/chat/stream",
+                json=body,
+                headers={CONTEXT_HEADER: token},
+            ) as r:
+                if r.status_code >= 400:
+                    await r.aread()
+                    _raise(r, "model")
+                event = "message"
+                async for line in r.aiter_lines():
+                    if line.startswith("event:"):
+                        event = line[6:].strip()
+                    elif line.startswith("data:"):
+                        data = json.loads(line[5:].strip())
+                        if event == "error":
+                            raise DownstreamError(f"model: {data.get('detail', 'stream failed')}")
+                        yield data
+                        event = "message"
+        except httpx.HTTPError as exc:
+            raise ServiceUnavailable(f"/v1/chat/stream: {exc}") from exc
 
 
 class Retrieval(Http):

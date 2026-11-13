@@ -6,9 +6,12 @@ the whole platform can run end to end without API keys or GPUs.
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+
 from nexiqon_core.offline_models import EMBED_MODEL, extractive_answer, hash_embed, lexical_scores
 from nexiqon_model_gateway.types import (
     ChatCall,
+    ChatChunk,
     ChatOutput,
     EmbedCall,
     EmbedOutput,
@@ -34,6 +37,13 @@ class Offline:
             usage=Usage(input_tokens=_tokens(prompt), output_tokens=_tokens(answer)),
             model=call.model,
         )
+
+    async def chat_stream(self, call: ChatCall) -> AsyncIterator[ChatChunk]:
+        out = await self.chat(call)
+        words = (out.content or "").split(" ")
+        for i, word in enumerate(words):
+            yield ChatChunk(text=word if i == 0 else " " + word)
+        yield ChatChunk(usage=out.usage, finish_reason="stop", model=call.model)
 
     async def embed(self, call: EmbedCall) -> EmbedOutput:
         return EmbedOutput(

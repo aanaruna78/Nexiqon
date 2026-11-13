@@ -18,11 +18,14 @@ from nexiqon_core.testing import make_keypair
 
 CONFIG = Path(__file__).resolve().parents[2] / "deploy" / "compose" / "config"
 OUT = CONFIG / "dev-secrets.yaml"
-SERVICE_IDENTITIES = [
-    "ingestion",
-    "agent-runtime",
-    "tool-gateway",
-]  # services that sign their own tenant-scoped tokens
+# Services that sign their own tenant-scoped tokens -> the settings key their private key goes
+# under. Channel shares a process with agent-runtime in the grouped topology, so it has its own key.
+SERVICE_IDENTITIES = {
+    "ingestion": "service_identity",
+    "agent-runtime": "service_identity",
+    "tool-gateway": "service_identity",
+    "channel": "channel_identity",
+}
 
 
 def _write(path: Path, data: dict[str, object]) -> None:
@@ -46,14 +49,14 @@ def service_keys(force: bool) -> None:
     public_keys: dict[str, str] = dict(tokens.get("public_keys", {}))
     mapping: dict[str, str] = dict(tokens.get("service_keys", {}))
     changed = False
-    for service in SERVICE_IDENTITIES:
+    for service, settings_key in SERVICE_IDENTITIES.items():
         kid = f"svc-{service}-dev-1"
         secret_file = CONFIG / f"dev-secrets-{service}.yaml"
         if not force and secret_file.exists() and kid in public_keys:
             continue
         private_pem, public_pem = make_keypair()
         public_keys[kid], mapping[kid] = public_pem, service
-        _write(secret_file, {"service_identity": {"key_id": kid, "private_key": private_pem}})
+        _write(secret_file, {settings_key: {"key_id": kid, "private_key": private_pem}})
         changed = True
     if changed:
         _write(

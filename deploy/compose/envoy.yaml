@@ -82,15 +82,31 @@ static_resources:
                           route: { cluster: knowledge }
                         - match: { prefix: /retrieval/ }
                           route: { cluster: knowledge }
+                        # Answers can take a while and stream (SSE): no 15 s default timeout.
                         - match: { prefix: /agent-runtime/ }
-                          route: { cluster: agent }
+                          route: { cluster: agent, timeout: 180s }
+                        # The widget calls these two from customers' websites (CORS). Which
+                        # origins a widget key may use is checked by identity (ext_authz).
                         - match: { prefix: /conversation/ }
-                          route: { cluster: agent }
+                          route: { cluster: agent, timeout: 180s }
+                          typed_per_filter_config: &widget_cors
+                            envoy.filters.http.cors:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
+                              allow_origin_string_match: [{ safe_regex: { regex: "https?://.+" } }]
+                              allow_methods: "GET, POST, DELETE, OPTIONS"
+                              allow_headers: "authorization, content-type, x-nexiqon-visitor, x-nexiqon-tenant"
+                              max_age: "600"
+                              allow_credentials: false
                         - match: { prefix: /channel/ }
                           route: { cluster: agent }
+                          typed_per_filter_config: *widget_cors
                         - match: { prefix: /tool-gateway/ }
                           route: { cluster: tool-gateway }
                 http_filters:
+                  # First, so CORS preflights are answered before authentication.
+                  - name: envoy.filters.http.cors
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.Cors
                   - name: envoy.filters.http.header_mutation
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.header_mutation.v3.HeaderMutation
@@ -114,6 +130,7 @@ static_resources:
                               - exact: authorization
                               - exact: x-nexiqon-tenant
                               - exact: origin
+                              - exact: x-nexiqon-visitor
                         authorization_response:
                           allowed_upstream_headers:
                             patterns:

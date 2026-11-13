@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import uuid
+from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
@@ -59,6 +60,7 @@ class Engine:
         self.models = models
         self.retrieval = retrieval
         self.tools = tools
+        self._background: set[asyncio.Task[None]] = set()  # streamed turns still running
 
     async def _thread(self, ctx: TenantContext, thread_id: str, agent: str) -> Thread:
         async with self.db.session(ctx) as s:
@@ -90,13 +92,18 @@ class Engine:
         resume: Any = None,
         history: list[dict[str, str]] | None = None,
         locale: str = "en",
+        handoff: bool = False,
+        emit: Callable[[dict[str, Any]], None] | None = None,
     ) -> TurnResult:
         resolved = await self.reads.agent(ctx.tenant_id, agent_name)
         spec = validate_graph(resolved["graph"])
         thread = await self._thread(ctx, thread_id, agent_name)
         if thread.status == "awaiting_approval" and resume is None:
             raise Conflict("Waiting for an approval decision on this conversation")
-        resuming = thread.status in ("awaiting_input", "awaiting_approval")
+        # Asking for a person starts a new turn even while a clarifying question is open.
+        resuming = thread.status == "awaiting_approval" or (
+            thread.status == "awaiting_input" and not handoff
+        )
         if resuming and resume is None:
             resume = text  # the user's reply answers the clarifying question
         if not resuming and text is None:
@@ -117,6 +124,8 @@ class Engine:
             s.add(run_row)
             await s.flush()
             run_id = run_row.id
+        if emit is not None:
+            emit({"type": "run", "run_id": str(run_id), "thread_id": thread_id})
         context = RunContext(
             token=token,
             thread_id=thread_id,
@@ -126,6 +135,7 @@ class Engine:
             retrieval=self.retrieval,
             tools=self.tools,
             run_id=str(run_id),
+            emit=emit,
         )
         app = compile_graph(spec, context, TenantCheckpointer(self.db, ctx))
         config = {
@@ -136,7 +146,10 @@ class Engine:
             Command(resume=resume)
             if resuming
             else fresh_turn(
-                text or "", list(history or [])[-self.settings.history_messages :], locale
+                text or "",
+                list(history or [])[-self.settings.history_messages :],
+                locale,
+                handoff,
             )
         )
         result = TurnResult(
@@ -194,3 +207,38 @@ class Engine:
             row.finished_at = datetime.now(UTC)
             stored.status = new_status
         return result
+
+    async def stream(
+        self,
+        ctx: TenantContext,
+        token: str,
+        agent_name: str,
+        thread_id: str,
+        **kwargs: Any,
+    ) -> AsyncIterator[dict[str, Any]]:
+        """The same turn as ``run``, as events: run, status, sources, tool, delta, then result.
+
+        Problems found before the run starts (unknown agent, someone else's thread, a pending
+        approval) are raised from the first iteration so the caller can answer with an HTTP error.
+        The turn finishes and is recorded even if the caller goes away mid-stream."""
+        queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
+
+        async def work() -> None:
+            try:
+                result = await self.run(
+                    ctx, token, agent_name, thread_id, emit=queue.put_nowait, **kwargs
+                )
+                queue.put_nowait({"type": "result", "result": result})
+            except Exception as exc:
+                queue.put_nowait({"type": "error", "error": exc})
+
+        task = asyncio.create_task(work())
+        self._background.add(task)
+        task.add_done_callback(self._background.discard)
+        while True:
+            item = await queue.get()
+            if item["type"] == "error":
+                raise item["error"]
+            yield item
+            if item["type"] == "result":
+                return

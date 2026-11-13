@@ -32,6 +32,8 @@ class FakeProviders:
         if host in self.fail:
             return httpx.Response(self.fail[host], json={"error": {"message": "provider says no"}})
         body = json.loads(request.content)
+        if body.get("stream"):
+            return self._stream(path, body)
         if path.endswith("/chat/completions"):
             last = body["messages"][-1]["content"]
             return httpx.Response(
@@ -78,3 +80,34 @@ class FakeProviders:
                 },
             )
         return httpx.Response(404, json={"error": "unknown fake route"})
+
+    def _stream(self, path: str, body: dict[str, Any]) -> httpx.Response:
+        """Server-sent events in 3-character pieces (so redaction placeholders get split)."""
+        last = body["messages"][-1]["content"]
+        text = f"You said: {last}" if path.endswith("/chat/completions") else f"Backup says: {last}"
+        pieces = [text[i : i + 3] for i in range(0, len(text), 3)]
+        events: list[dict[str, Any]]
+        if path.endswith("/chat/completions"):
+            events = [
+                {"choices": [{"delta": {"content": p}, "finish_reason": None}]} for p in pieces
+            ]
+            events.append({"choices": [{"delta": {}, "finish_reason": "stop"}]})
+            events.append({"choices": [], "usage": {"prompt_tokens": 100, "completion_tokens": 50}})
+            lines = [f"data: {json.dumps(e)}" for e in events] + ["data: [DONE]"]
+        else:
+            events = [{"type": "message_start", "message": {"usage": {"input_tokens": 80}}}]
+            events += [
+                {"type": "content_block_delta", "delta": {"type": "text_delta", "text": p}}
+                for p in pieces
+            ]
+            events.append(
+                {
+                    "type": "message_delta",
+                    "delta": {"stop_reason": "end_turn"},
+                    "usage": {"output_tokens": 20},
+                }
+            )
+            lines = [f"event: {e['type']}\ndata: {json.dumps(e)}" for e in events]
+        return httpx.Response(
+            200, content="\n\n".join(lines).encode(), headers={"content-type": "text/event-stream"}
+        )

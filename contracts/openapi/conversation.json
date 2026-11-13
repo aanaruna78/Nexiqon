@@ -728,6 +728,50 @@
         ]
       }
     },
+    "/v1/conversations/{conversation_id}/handoff": {
+      "post": {
+        "description": "The user asks for a person (CV-02, widget handoff button): the assistant writes a summary\nand, when the pack names a handoff tool, offers to send it to the team.",
+        "operationId": "ask_for_person_v1_conversations__conversation_id__handoff_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TurnOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ask For Person",
+        "tags": [
+          "conversation"
+        ]
+      }
+    },
     "/v1/conversations/{conversation_id}/messages": {
       "post": {
         "description": "Send a message; the reply carries the answer contract (citations, abstained, route...).",
@@ -777,6 +821,56 @@
           }
         },
         "summary": "Post Message",
+        "tags": [
+          "conversation"
+        ]
+      }
+    },
+    "/v1/conversations/{conversation_id}/messages/stream": {
+      "post": {
+        "description": "Send a message and receive the reply as server-sent events (CH-01): the agent's\n``run``, ``status``, ``sources``, ``tool`` and ``delta`` events, then ``message`` with the\nstored turn (same shape as the non-streaming reply). The reply is stored even if the\nclient disconnects mid-stream.",
+        "operationId": "stream_message_v1_conversations__conversation_id__messages_stream_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stream Message",
         "tags": [
           "conversation"
         ]

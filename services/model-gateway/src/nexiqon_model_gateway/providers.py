@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from typing import Protocol
 
 from nexiqon_model_gateway.types import (
     ChatCall,
+    ChatChunk,
     ChatOutput,
     EmbedCall,
     EmbedOutput,
@@ -30,6 +32,8 @@ class ChatProvider(Protocol):
     name: str
 
     async def chat(self, call: ChatCall) -> ChatOutput: ...
+
+    def chat_stream(self, call: ChatCall) -> AsyncIterator[ChatChunk]: ...
 
 
 class EmbeddingProvider(Protocol):

@@ -16,6 +16,12 @@ from typing import Any
 from langgraph.types import interrupt
 
 from nexiqon_agent_runtime.clients import Models, Retrieval, Tools
+from nexiqon_agent_runtime.guards import (
+    blocked_topic,
+    check_output,
+    flags_instructions,
+    neutralise,
+)
 from nexiqon_agent_runtime.prompts import fixed, render
 from nexiqon_agent_runtime.spec import NodeSpec
 from nexiqon_agent_runtime.state import AgentState
@@ -84,6 +90,12 @@ class RunContext:
     tools: Tools
     run_id: str
     extra: dict[str, Any] = field(default_factory=dict)
+    # Streaming (CH-01): progress events for the caller; None for a plain request/response run.
+    emit: Callable[[dict[str, Any]], None] | None = None
+
+    def send(self, kind: str, **data: Any) -> None:
+        if self.emit is not None:
+            self.emit({"type": kind, **data})
 
     @property
     def config(self) -> dict[str, Any]:
@@ -96,6 +108,10 @@ class RunContext:
     @property
     def model_profile(self) -> str:
         return str(self.config.get("model_profile") or "cloud-frontier")
+
+    @property
+    def escalation(self) -> dict[str, Any]:
+        return dict(self.config.get("escalation") or {})
 
     @property
     def retrieval_profile(self) -> str:
@@ -171,8 +187,28 @@ def _parse_json(text: str | None) -> dict[str, Any] | None:
 def route(node: NodeSpec, run: RunContext) -> Node:
     async def fn(state: AgentState) -> dict[str, Any]:
         started = time.perf_counter()
+        run.send("status", stage="understanding")
         intents = list(run.pack.get("intents") or [])
         question = state.get("question", "")
+        asked = "\n".join(t for t in (question, state.get("reply") or "") if t)
+        topics = (run.config.get("guardrails") or {}).get("blocked_topics") or []
+        topic = blocked_topic(asked, topics)
+        if topic:  # AG-03: a fixed refusal, no model sees the request
+            return {
+                "intent": None,
+                "route": "smalltalk",
+                "blocked": topic,
+                "outcome": "smalltalk",
+                "steps": _step(state, node, started, "smalltalk", method="guard", blocked=topic),
+            }
+        injection = flags_instructions(asked) or None
+        if state.get("handoff_requested"):
+            return {
+                "intent": None,
+                "route": "handoff",
+                "outcome": "handoff",
+                "steps": _step(state, node, started, "handoff", method="request"),
+            }
         # After a clarifying question the reply alone often names the intent best; the merged
         # text (question + reply) still goes to the model and to retrieval.
         name, score = max(
@@ -228,7 +264,9 @@ def route(node: NodeSpec, run: RunContext) -> Node:
             "intent": name,
             "route": route_,
             "outcome": route_,
-            "steps": _step(state, node, started, route_, intent=name, method=method),
+            "steps": _step(
+                state, node, started, route_, intent=name, method=method, injection=injection
+            ),
         }
 
     return fn
@@ -251,6 +289,7 @@ def _route_label(intent: dict[str, Any], run: RunContext) -> str:
 def retrieve(node: NodeSpec, run: RunContext) -> Node:
     async def fn(state: AgentState) -> dict[str, Any]:
         started = time.perf_counter()
+        run.send("status", stage="searching")
         if not run.collection_ids:
             return {
                 "passages": [],
@@ -283,6 +322,13 @@ def retrieve(node: NodeSpec, run: RunContext) -> Node:
             "document_id",
         )
         passages = [{k: p.get(k) for k in keep} for p in found.get("passages", [])]
+        run.send(
+            "sources",
+            sources=[
+                {"citation": p.get("citation"), "title": p.get("title"), "uri": p.get("source_uri")}
+                for p in passages
+            ],
+        )
         return {
             "passages": passages,
             "abstain": bool(found.get("abstain", True)),
@@ -353,6 +399,7 @@ def call_tool(node: NodeSpec, run: RunContext) -> Node:
         name = _tool_name(node, run, state)
         approval = state.get("approval") or {}
         agent = str(run.agent.get("agent") or "")
+        run.send("tool", name=name, status="running")
         if not name:
             result: dict[str, Any] = {
                 "ok": False,
@@ -394,6 +441,7 @@ def call_tool(node: NodeSpec, run: RunContext) -> Node:
                     idempotency_key=f"{run.run_id}:{node.id}",
                     conversation_id=run.thread_id,
                 )
+        run.send("tool", name=name, status="ok" if result.get("ok") else "failed")
         return {
             "tool": {"name": name, **result},
             "outcome": None,
@@ -424,7 +472,9 @@ def validate_evidence(node: NodeSpec, run: RunContext) -> Node:
             evidence_ok = state.get("evidence", 0.0) >= float(floor)
         ok = bool(tool.get("ok")) or evidence_ok
         outcome = "sufficient" if ok else "insufficient"
+        failed = 0 if ok else int(state.get("failed_turns", 0)) + 1
         return {
+            "failed_turns": failed,
             "outcome": outcome,
             "steps": _step(state, node, started, outcome, evidence=state.get("evidence")),
         }
@@ -439,10 +489,23 @@ def clarify(node: NodeSpec, run: RunContext) -> Node:
     async def fn(state: AgentState) -> dict[str, Any]:
         started = time.perf_counter()
         attempts = int(state.get("clarify_attempts", 0)) + 1
-        if attempts > int(node.config.get("max_attempts", 1)):
+        limit = run.escalation.get("after_failed_turns")
+        too_many = (
+            limit is not None
+            and run.escalation.get("on_low_evidence", True)
+            and int(state.get("failed_turns", 0)) >= int(limit)
+        )
+        if attempts > int(node.config.get("max_attempts", 1)) or too_many:
             return {
                 "outcome": "unresolved",
-                "steps": _step(state, node, started, "unresolved", attempts=attempts - 1),
+                "steps": _step(
+                    state,
+                    node,
+                    started,
+                    "unresolved",
+                    attempts=attempts - 1,
+                    failed_turns=state.get("failed_turns") if too_many else None,
+                ),
             }
         locale = state.get("locale", "en")
         instruction = render(
@@ -580,9 +643,65 @@ def approve_wait(node: NodeSpec, run: RunContext) -> Node:
 # --------------------------------------------------------------------------- respond
 
 
-def _sources_prompt(question: str, sources: list[dict[str, Any]]) -> str:
-    blocks = [f"[{i}] {s['citation']}\n{s['text']}" for i, s in enumerate(sources, start=1)]
-    return "Sources:\n\n" + "\n\n".join(blocks) + f"\n\nQuestion: {question}"
+def _sources_prompt(question: str, sources: list[dict[str, Any]]) -> tuple[str, int]:
+    """Numbered sources for the model; instruction-like lines inside them are removed (AG-03)."""
+    blocks, hits = [], 0
+    for i, s in enumerate(sources, start=1):
+        text, found = neutralise(str(s["text"]))
+        hits += found
+        blocks.append(f"[{i}] {s['citation']}\n{text}")
+    return "Sources:\n\n" + "\n\n".join(blocks) + f"\n\nQuestion: {question}", hits
+
+
+async def _generate(
+    run: RunContext,
+    *,
+    classification: str,
+    messages: list[dict[str, str]],
+    max_tokens: int,
+) -> tuple[str, Any]:
+    """The answer text and the model route; streamed piece by piece when the caller streams."""
+    if run.emit is None:
+        reply = await run.models.chat(
+            run.token,
+            profile=run.model_profile,
+            classification=classification,
+            messages=messages,
+            max_tokens=max_tokens,
+            conversation_id=run.thread_id,
+        )
+        return str(reply.get("content") or "").strip(), reply.get("route")
+    run.send("status", stage="writing")
+    parts: list[str] = []
+    route_: Any = None
+    async for piece in run.models.chat_stream(
+        run.token,
+        profile=run.model_profile,
+        classification=classification,
+        messages=messages,
+        max_tokens=max_tokens,
+        conversation_id=run.thread_id,
+    ):
+        if piece.get("done"):
+            route_ = piece.get("route")
+        elif piece.get("text"):
+            parts.append(str(piece["text"]))
+            run.send("delta", text=piece["text"])
+    return "".join(parts).strip(), route_
+
+
+def _guarded(
+    text: str, system: str, sources: list[dict[str, Any]], locale: str
+) -> tuple[str | None, list[str]]:
+    """Output guard (AG-03). None means the answer must be withheld."""
+    checked = check_output(
+        text,
+        allowed_urls=[str(s.get("source_uri") or "") for s in sources],
+        system_prompt=system,
+    )
+    if checked.leaked:
+        return None, [*checked.removed, "system_prompt"]
+    return checked.text, checked.removed
 
 
 def respond(node: NodeSpec, run: RunContext) -> Node:
@@ -596,7 +715,17 @@ def respond(node: NodeSpec, run: RunContext) -> Node:
             m for m in state.get("history", [])[-6:] if m.get("role") in ("user", "assistant")
         ]
         answer: dict[str, Any]
-        if state.get("declined"):
+        guard: list[str] = []
+        neutralised = 0
+        failed = int(state.get("failed_turns", 0))
+        if state.get("blocked"):
+            answer = {
+                "text": fixed("blocked", locale),
+                "citations": [],
+                "abstained": True,
+                "kind": "blocked",
+            }
+        elif state.get("declined"):
             answer = {
                 "text": fixed("declined", locale),
                 "citations": [],
@@ -604,9 +733,8 @@ def respond(node: NodeSpec, run: RunContext) -> Node:
                 "kind": "declined",
             }
         elif state.get("route") == "smalltalk":
-            reply = await run.models.chat(
-                run.token,
-                profile=run.model_profile,
+            text, model = await _generate(
+                run,
                 classification="internal",
                 messages=[
                     {"role": "system", "content": system},
@@ -614,14 +742,14 @@ def respond(node: NodeSpec, run: RunContext) -> Node:
                     {"role": "user", "content": question},
                 ],
                 max_tokens=min(max_tokens, 200),
-                conversation_id=run.thread_id,
             )
+            safe, guard = _guarded(text, system, [], locale)
             answer = {
-                "text": str(reply.get("content") or "").strip(),
+                "text": safe if safe is not None else fixed("withheld", locale),
                 "citations": [],
-                "abstained": False,
-                "kind": "smalltalk",
-                "model": reply.get("route"),
+                "abstained": safe is None,
+                "kind": "smalltalk" if safe is not None else "withheld",
+                "model": model,
             }
         else:
             sources: list[dict[str, Any]] = list(state.get("passages") or [])
@@ -645,23 +773,32 @@ def respond(node: NodeSpec, run: RunContext) -> Node:
                 }
             else:
                 label = strictest(*(str(s.get("classification") or "internal") for s in sources))
-                reply = await run.models.chat(
-                    run.token,
-                    profile=run.model_profile,
+                prompt, neutralised = _sources_prompt(question, sources)
+                text, model = await _generate(
+                    run,
                     classification=label,
                     messages=[
                         {"role": "system", "content": system},
                         *history,
-                        {"role": "user", "content": _sources_prompt(question, sources)},
+                        {"role": "user", "content": prompt},
                     ],
                     max_tokens=max_tokens,
-                    conversation_id=run.thread_id,
                 )
-                text = str(reply.get("content") or "").strip()
-                answer = await _verified(run, text, sources)
-                answer["model"] = reply.get("route")
+                safe, guard = _guarded(text, system, sources, locale)
+                if safe is None:
+                    answer = {
+                        "text": fixed("withheld", locale),
+                        "citations": [],
+                        "abstained": True,
+                        "kind": "withheld",
+                    }
+                else:
+                    answer = await _verified(run, safe, sources)
+                answer["model"] = model
+            failed = failed + 1 if answer.get("abstained") else 0
         return {
             "answer": answer,
+            "failed_turns": failed,
             "outcome": "done",
             "steps": _step(
                 state,
@@ -671,6 +808,8 @@ def respond(node: NodeSpec, run: RunContext) -> Node:
                 kind=answer.get("kind"),
                 citations=len(answer.get("citations", [])),
                 abstained=answer.get("abstained"),
+                guard=guard or None,
+                neutralised=neutralised or None,
             ),
         }
 
@@ -716,13 +855,43 @@ async def _verified(run: RunContext, text: str, sources: list[dict[str, Any]]) -
     }
 
 
-# --------------------------------------------------------------------------- escalate
+# --------------------------------------------------------------------------- escalate (CV-02)
+
+SUMMARY_FIELDS = ("summary", "description", "details", "body", "message", "text", "content")
+TITLE_FIELDS = ("subject", "title", "topic", "name")
+
+
+def handoff_arguments(schema: dict[str, Any], summary: str, question: str) -> dict[str, Any]:
+    """Fill the pack's handoff tool from the summary by field role, never by a model's guess."""
+    props = schema.get("properties") or {}
+    out: dict[str, Any] = {}
+    title = (question.strip().splitlines() or ["Conversation handed over"])[0][:120]
+    for name in props:
+        if name.lower() in SUMMARY_FIELDS:
+            out[name] = summary[:4000]
+        elif name.lower() in TITLE_FIELDS:
+            out[name] = title if len(title) >= 3 else "Conversation handed over"
+    return out
 
 
 def escalate(node: NodeSpec, run: RunContext) -> Node:
     async def fn(state: AgentState) -> dict[str, Any]:
         started = time.perf_counter()
         locale = state.get("locale", "en")
+        reason = "user_request" if state.get("route") == "handoff" else "unresolved"
+        if reason == "unresolved" and run.escalation.get("on_low_evidence") is False:
+            answer = {
+                "text": fixed("unavailable", locale),
+                "citations": [],
+                "abstained": True,
+                "kind": "unavailable",
+            }
+            return {
+                "answer": answer,
+                "outcome": "done",
+                "steps": _step(state, node, started, "done", reason=reason, escalated=False),
+            }
+        run.send("status", stage="handing_over")
         transcript = "\n".join(
             f"{m.get('role')}: {m.get('content')}"
             for m in [
@@ -752,19 +921,109 @@ def escalate(node: NodeSpec, run: RunContext) -> Node:
                 conversation_id=run.thread_id,
             )
             summary = str(reply.get("content") or "").strip() or summary
-        reason = "user_request" if state.get("route") == "handoff" else "unresolved"
-        handoff = {"reason": reason, "summary": summary, "intent": state.get("intent")}
+        handoff: dict[str, Any] = {
+            "reason": reason,
+            "summary": summary,
+            "intent": state.get("intent"),
+        }
         answer = {
             "text": fixed("handoff", locale),
             "citations": [],
             "abstained": True,
             "kind": "handoff",
         }
+        tool_name = run.escalation.get("handoff_tool")
+        described = await run.tools.describe(run.token, str(tool_name)) if tool_name else None
+        if described is not None:
+            arguments = handoff_arguments(
+                described.get("input_schema") or {}, summary, state.get("question", "")
+            )
+            if described.get("needs_confirmation"):
+                confirmation = await run.tools.request_confirmation(
+                    run.token,
+                    str(tool_name),
+                    agent=str(run.agent.get("agent") or ""),
+                    arguments=arguments,
+                    conversation_id=run.thread_id,
+                )
+                if confirmation.get("id"):
+                    pending = {
+                        "kind": "approval",
+                        "purpose": "handoff",
+                        "approval_id": confirmation["id"],
+                        "tool": tool_name,
+                        "arguments": arguments,
+                        "summary": summary,
+                        "prompt": fixed("handoff_confirm", locale, summary=summary),
+                    }
+                    return {
+                        "handoff": handoff,
+                        "pending": pending,
+                        "outcome": "ask",
+                        "steps": _step(state, node, started, "ask", reason=reason),
+                    }
+                handoff["error"] = confirmation.get("error")
+            else:
+                handoff["record"] = await _record_handoff(run, str(tool_name), arguments, None)
         return {
             "handoff": handoff,
             "answer": answer,
+            "failed_turns": 0,
             "outcome": "done",
             "steps": _step(state, node, started, "done", reason=reason),
+        }
+
+    return fn
+
+
+async def _record_handoff(
+    run: RunContext, tool: str, arguments: dict[str, Any], approval_id: str | None
+) -> dict[str, Any]:
+    run.send("tool", name=tool, status="running")
+    result = await run.tools.invoke(
+        run.token,
+        tool,
+        agent=str(run.agent.get("agent") or ""),
+        arguments=arguments,
+        idempotency_key=f"{run.run_id}:handoff",
+        approval_id=approval_id,
+        conversation_id=run.thread_id,
+    )
+    run.send("tool", name=tool, status="ok" if result.get("ok") else "failed")
+    return {"tool": tool, "ok": bool(result.get("ok")), "result": result.get("result")}
+
+
+def escalate_wait(node: NodeSpec, run: RunContext) -> Node:
+    async def fn(state: AgentState) -> dict[str, Any]:
+        pending = state.get("pending") or {}
+        decision = interrupt(pending)
+        started = time.perf_counter()
+        locale = state.get("locale", "en")
+        approved = bool(decision.get("approved")) if isinstance(decision, dict) else bool(decision)
+        handoff = dict(state.get("handoff") or {})
+        recorded = await run.tools.decide(run.token, str(pending["approval_id"]), approved)
+        if approved and recorded.get("status") == "approved":
+            handoff["record"] = await _record_handoff(
+                run,
+                str(pending["tool"]),
+                dict(pending.get("arguments") or {}),
+                str(pending["approval_id"]),
+            )
+        outcome = "approved" if approved else "declined"
+        # Declined: nothing is sent and the conversation stays with the assistant.
+        answer = {
+            "text": fixed("handoff" if approved else "declined", locale),
+            "citations": [],
+            "abstained": True,
+            "kind": "handoff" if approved else "declined",
+        }
+        return {
+            "handoff": handoff if approved else None,
+            "answer": answer,
+            "pending": None,
+            "failed_turns": 0,
+            "outcome": "done",
+            "steps": _step(state, NodeSpec(id=node.id, type="escalate"), started, outcome),
         }
 
     return fn
@@ -783,4 +1042,5 @@ FACTORIES: dict[str, Callable[[NodeSpec, RunContext], Node]] = {
 WAITS: dict[str, Callable[[NodeSpec, RunContext], Node]] = {
     "clarify": clarify_wait,
     "approve": approve_wait,
+    "escalate": escalate_wait,
 }

@@ -29,6 +29,21 @@ FIXED: dict[str, dict[str, str]] = {
         "ar": "هل أتابع: {action}؟",
         "es": "¿Procedo con: {action}?",
     },
+    "blocked": {
+        "en": "I can't help with that topic here. Is there something else I can help with?",
+        "ar": "لا يمكنني المساعدة في هذا الموضوع هنا. هل هناك شيء آخر يمكنني المساعدة فيه؟",
+        "es": "No puedo ayudar con ese tema aquí. ¿Hay algo más en lo que pueda ayudarte?",
+    },
+    "withheld": {
+        "en": "I can't share that answer. Please rephrase your question or ask to talk to a person.",
+        "ar": "لا يمكنني مشاركة هذه الإجابة. أعد صياغة سؤالك أو اطلب التحدث إلى شخص.",
+        "es": "No puedo compartir esa respuesta. Reformula tu pregunta o pide hablar con una persona.",
+    },
+    "handoff_confirm": {
+        "en": 'I can pass this to our team with this summary: "{summary}" Shall I send it?',
+        "ar": 'يمكنني إحالة هذا إلى فريقنا مع هذا الملخص: "{summary}" هل أرسله؟',
+        "es": 'Puedo pasar esto a nuestro equipo con este resumen: "{summary}" ¿Lo envío?',
+    },
     "unavailable": {
         "en": "I can't do that right now. Please try again later or ask to talk to a person.",
         "ar": "لا يمكنني القيام بذلك الآن. حاول لاحقًا أو اطلب التحدث إلى شخص.",

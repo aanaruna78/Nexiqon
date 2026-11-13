@@ -32,7 +32,11 @@ def compile_graph(spec: GraphSpec, run: RunContext, checkpointer: BaseCheckpoint
     for n in spec.nodes:
         outcomes = NODE_TYPES[n.type]
         edges = {e.when: e.to for e in spec.edges if e.from_ == n.id}
-        if outcomes == frozenset():
+        if n.type == "escalate":
+            # Asks the user to confirm the handoff record when the pack's tool needs it.
+            graph.add_conditional_edges(n.id, _outcome, {"ask": wait_id(n.id), "done": END})
+            graph.add_edge(wait_id(n.id), END)
+        elif outcomes == frozenset():
             graph.add_edge(n.id, END)
         elif outcomes is None:
             graph.add_edge(n.id, edges[None])

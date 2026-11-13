@@ -73,8 +73,16 @@ class Env:
     clerk: FakeIdp
     verifier: ContextTokenVerifier
 
-    def context(self, idp_token: str, tenant: str | None = None, origin: str | None = None) -> str:
+    def context(
+        self,
+        idp_token: str,
+        tenant: str | None = None,
+        origin: str | None = None,
+        visitor: str | None = None,
+    ) -> str:
         headers = {"Authorization": f"Bearer {idp_token}"}
+        if visitor:
+            headers["X-Nexiqon-Visitor"] = visitor
         if tenant:
             headers["X-Nexiqon-Tenant"] = tenant
         if origin:

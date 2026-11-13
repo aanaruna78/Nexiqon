@@ -409,10 +409,15 @@ class Store:
             Layer("tenant", tenant.get("agent_defaults", {})),
             Layer(
                 f"pack:{pack_ref['name']}@{pack_v.version}",
-                {
-                    **{k: pack[k] for k in ("guardrails", "escalation") if k in pack},
-                    **pack.get("agent_defaults", {}),
-                },
+                # Deep merge: agent_defaults.guardrails must not drop the pack's own guardrails.
+                merge_layers(
+                    [
+                        Layer(
+                            "pack", {k: pack[k] for k in ("guardrails", "escalation") if k in pack}
+                        ),
+                        Layer("pack", pack.get("agent_defaults", {})),
+                    ]
+                ).values,
             ),
             Layer(
                 f"agent:{name}@{agent_v.version}",

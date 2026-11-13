@@ -100,6 +100,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/conversations/{conversation_id}/handoff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask For Person
+         * @description The user asks for a person (CV-02, widget handoff button): the assistant writes a summary
+         *     and, when the pack names a handoff tool, offers to send it to the team.
+         */
+        post: operations["ask_for_person_v1_conversations__conversation_id__handoff_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/conversations/{conversation_id}/messages": {
         parameters: {
             query?: never;
@@ -114,6 +135,29 @@ export interface paths {
          * @description Send a message; the reply carries the answer contract (citations, abstained, route...).
          */
         post: operations["post_message_v1_conversations__conversation_id__messages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/conversations/{conversation_id}/messages/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stream Message
+         * @description Send a message and receive the reply as server-sent events (CH-01): the agent's
+         *     ``run``, ``status``, ``sources``, ``tool`` and ``delta`` events, then ``message`` with the
+         *     stored turn (same shape as the non-streaming reply). The reply is stored even if the
+         *     client disconnects mid-stream.
+         */
+        post: operations["stream_message_v1_conversations__conversation_id__messages_stream_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -508,6 +552,37 @@ export interface operations {
             };
         };
     };
+    ask_for_person_v1_conversations__conversation_id__handoff_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TurnOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     post_message_v1_conversations__conversation_id__messages_post: {
         parameters: {
             query?: never;
@@ -530,6 +605,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TurnOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_message_v1_conversations__conversation_id__messages_stream_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": unknown;
                 };
             };
             /** @description Validation Error */

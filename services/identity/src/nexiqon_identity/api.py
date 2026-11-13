@@ -91,9 +91,10 @@ async def ext_authz(
     authorization: Annotated[str | None, Header()] = None,
     tenant: Annotated[str | None, Header(alias=TENANT_HEADER)] = None,
     origin: Annotated[str | None, Header()] = None,
+    visitor: Annotated[str | None, Header(alias="x-nexiqon-visitor")] = None,
 ) -> Response:
     """Envoy ext_authz check: 200 + X-Nexiqon-Context, or 401/403. Not routed by the gateway."""
-    token = await _access(request).context_for(authorization, tenant, origin)
+    token = await _access(request).context_for(authorization, tenant, origin, visitor)
     return Response(status_code=200, headers={CONTEXT_HEADER: token})
 
 

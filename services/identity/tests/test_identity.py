@@ -280,8 +280,18 @@ def test_key_role_and_origin_rules(env: Env) -> None:
         json={"name": "w", "kind": "widget", "allowed_origins": ["https://docs.a.test"]},
         headers=h(owner),
     ).json()["secret"]
-    ctx = env.ctx(env.context(widget, origin="https://docs.a.test"))
+    visitor = "v" * 30
+    ctx = env.ctx(env.context(widget, origin="https://docs.a.test", visitor=visitor))
     assert (ctx.actor_type, ctx.roles) == ("widget", frozenset({"end_user"}))
+    # Each website visitor is a separate actor, so visitors never share conversations.
+    other = env.ctx(env.context(widget, origin="https://docs.a.test", visitor="w" * 30))
+    assert ctx.actor_id.endswith(visitor)
+    assert other.actor_id != ctx.actor_id
+    no_visitor = env.client.post(
+        "/internal/ext-authz/x",
+        headers={"Authorization": f"Bearer {widget}", "Origin": "https://docs.a.test"},
+    )
+    assert no_visitor.status_code == 401
     r = env.client.post(
         "/internal/ext-authz/x",
         headers={"Authorization": f"Bearer {widget}", "Origin": "https://evil.test"},

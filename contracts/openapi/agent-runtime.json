@@ -83,6 +83,11 @@
       },
       "RunIn": {
         "properties": {
+          "handoff": {
+            "default": false,
+            "title": "Handoff",
+            "type": "boolean"
+          },
           "history": {
             "items": {
               "$ref": "#/components/schemas/Message"
@@ -447,6 +452,56 @@
           }
         },
         "summary": "Run Agent",
+        "tags": [
+          "agent-runtime"
+        ]
+      }
+    },
+    "/v1/agents/{agent}/runs/stream": {
+      "post": {
+        "description": "The same turn as ``/runs`` as server-sent events (CH-01): ``run``, ``status``, ``sources``,\n``tool``, ``delta`` (answer text as it is written), then ``result`` (the RunOut, with the\nchecked answer and citations, which replaces the streamed text).",
+        "operationId": "stream_agent_v1_agents__agent__runs_stream_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agent",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+              "title": "Agent",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stream Agent",
         "tags": [
           "agent-runtime"
         ]

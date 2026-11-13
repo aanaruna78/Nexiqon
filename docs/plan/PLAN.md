@@ -25,6 +25,7 @@ Related: [ARCHITECTURE.md](ARCHITECTURE.md) · [BACKLOG.md](BACKLOG.md) · [UX.m
 | P2 · slice 4 | `phase-2/knowledge-ui` | ST-04 (Knowledge UI), ST-05 (Playground with grounded answers and source preview), offline dev provider; UX-08 sessions and M-07 bake-off (needs real models) open |
 | P3 · slice 1 | `phase-3/agent-runtime` | AG-01 (graph compiler + node library), AG-02 (tenant checkpointer, interrupts/resume, capability-aware routing), CV-01 (conversations, answer contract, feedback, retention); ADR 0018 |
 | P3 · slice 2 | `phase-3/tool-gateway` | T-01 (gateway checks, egress, idempotency, circuit/rate limits, minimisation, audit events), T-02 (secrets port, OpenBao), T-03 (declarative REST, OpenAPI import, human approval), T-04 (demo APIs, two datasets), T-05 (abuse/fuzz suite); agent-runtime calls tools with confirmations; ADR 0019 |
+| P3 · slice 3 | `phase-3/channels-streaming` | CH-01 (SSE streaming through model-gateway, agent-runtime and conversation; channel port with widget and API channels), CV-02 (pack escalation rules, failed-turn count, confirmed handoff record through tool-gateway, handoff button), W-00 (widget: streaming, citations, approvals, handoff, theme colour, per-visitor ids), AG-03 (input, source and output guards; red-team set); ADR 0020 |
 
 ## 1. Decisions
 

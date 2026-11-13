@@ -51,6 +51,7 @@ role_permissions := {
 		"tool.definitions.read",
 		"tool.invoke.read",
 		"tool.invoke.write",
+		"channel.settings.read",
 	],
 	"service": ["**"],
 	# Per-service identities (ADR 0017): tokens signed with a service's own key carry only this role.
@@ -65,6 +66,8 @@ role_permissions := {
 		"config.agent.read",
 		"ingestion.collections.read",
 	],
+	# Reads the agent's pack (widget title, greeting, colour) to answer channel settings requests.
+	"service:channel": ["config.agent.read"],
 	# Reads tool definitions and agents' tool allowlists; invocations run as the calling user.
 	"service:tool-gateway": [
 		"config.tool.read",
@@ -110,6 +113,7 @@ widget_actions := {
 	"tool.definitions.read",
 	"tool.invoke.read",
 	"tool.invoke.write",
+	"channel.settings.read",
 }
 
 resource_tenant := object.get(input.resource, "tenant_id", input.actor.tenant_id)

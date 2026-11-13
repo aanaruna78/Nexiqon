@@ -189,7 +189,7 @@ services:
     environment:
       <<: *app-env
       NEXIQON_GROUP: agent
-      NEXIQON_CONFIG_FILES: /app/config/dev.yaml,/app/config/dev-secrets.yaml,/app/config/dev-service-keys.yaml,/app/config/dev-secrets-agent-runtime.yaml
+      NEXIQON_CONFIG_FILES: /app/config/dev.yaml,/app/config/dev-secrets.yaml,/app/config/dev-service-keys.yaml,/app/config/dev-secrets-agent-runtime.yaml,/app/config/dev-secrets-channel.yaml
     ports: ["8104:8000"]
   tool-gateway:
     <<: *app

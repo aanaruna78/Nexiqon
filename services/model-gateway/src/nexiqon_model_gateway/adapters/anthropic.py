@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import json
+from collections.abc import AsyncIterator
 from typing import Any
 
 import httpx
 
-from nexiqon_model_gateway.adapters.http import post_json
+from nexiqon_model_gateway.adapters.http import post_json, stream_sse
 from nexiqon_model_gateway.providers import ProviderError
-from nexiqon_model_gateway.types import ChatCall, ChatOutput, Message, ToolCall, Usage
+from nexiqon_model_gateway.types import ChatCall, ChatChunk, ChatOutput, Message, ToolCall, Usage
 
 ANTHROPIC_BASE = "https://api.anthropic.com"
 API_VERSION = "2023-06-01"
@@ -36,7 +37,7 @@ class Anthropic:
         self._key = api_key
         self._client = client
 
-    async def chat(self, call: ChatCall) -> ChatOutput:
+    def _request(self, call: ChatCall) -> tuple[str, dict[str, Any], dict[str, str]]:
         if not self._key:
             raise ProviderError(self.name, "no API key configured")
         system = "\n\n".join(m.content or "" for m in call.messages if m.role == "system")
@@ -71,7 +72,11 @@ class Anthropic:
             body["tools"] = tools
         base = (call.base_url or ANTHROPIC_BASE).rstrip("/")
         headers = {"x-api-key": self._key, "anthropic-version": API_VERSION}
-        data = await post_json(self._client, self.name, f"{base}/v1/messages", body, headers)
+        return f"{base}/v1/messages", body, headers
+
+    async def chat(self, call: ChatCall) -> ChatOutput:
+        url, body, headers = self._request(call)
+        data = await post_json(self._client, self.name, url, body, headers)
         try:
             text = (
                 "".join(b.get("text", "") for b in data["content"] if b["type"] == "text") or None
@@ -106,3 +111,33 @@ class Anthropic:
             )
         except (KeyError, TypeError) as exc:
             raise ProviderError(self.name, f"unexpected response shape: {exc}") from exc
+
+    async def chat_stream(self, call: ChatCall) -> AsyncIterator[ChatChunk]:
+        url, body, headers = self._request(call)
+        body["stream"] = True
+        input_tokens = output_tokens = 0
+        finish: str | None = None
+        async for data in stream_sse(self._client, self.name, url, body, headers):
+            try:
+                event = json.loads(data)
+            except ValueError:
+                continue
+            kind = event.get("type")
+            if kind == "message_start":
+                input_tokens = int(
+                    ((event.get("message") or {}).get("usage") or {}).get("input_tokens", 0)
+                )
+            elif (
+                kind == "content_block_delta"
+                and (event.get("delta") or {}).get("type") == "text_delta"
+            ):
+                yield ChatChunk(text=event["delta"].get("text", ""))
+            elif kind == "message_delta":
+                output_tokens = int((event.get("usage") or {}).get("output_tokens", output_tokens))
+                stop = (event.get("delta") or {}).get("stop_reason") or "end_turn"
+                finish = {"end_turn": "stop", "max_tokens": "length"}.get(stop, stop)
+        yield ChatChunk(
+            usage=Usage(input_tokens=input_tokens, output_tokens=output_tokens),
+            finish_reason=finish or "stop",
+            model=call.model,
+        )

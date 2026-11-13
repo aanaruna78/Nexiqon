@@ -7,6 +7,8 @@ Conversations between people and assistants. Plane: **data**; runs in the `agent
 | `POST /v1/conversations` | anyone allowed to message (`conversation.messages.create`) |
 | `POST /v1/conversations/{id}/messages` | the conversation's owner. The reply carries the answer contract: text, verified citations, abstained, kind, intent, route, run id |
 | `POST /v1/conversations/{id}/approval {approved}` | owner, when an action waits for confirmation |
+| `POST /v1/conversations/{id}/messages/stream` | owner. Server-sent events: the agent's `run`, `status`, `sources`, `tool` and `delta` events, then `message` with the stored turn. Stored even if the client disconnects |
+| `POST /v1/conversations/{id}/handoff` | owner: asks for a person. The assistant writes a summary and, if the pack names a handoff tool, offers to send it to the team (CV-02) |
 | `GET /v1/conversations[/{id}]` | owners see their own; staff (members and up) see all |
 | `POST /v1/messages/{id}/feedback` | owner, on assistant messages |
 

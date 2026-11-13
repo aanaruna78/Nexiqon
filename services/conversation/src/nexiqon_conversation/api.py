@@ -6,12 +6,16 @@ every permission and access rule applies to them), store the reply with its answ
 
 from __future__ import annotations
 
+import asyncio
+import json
 import uuid
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any, Literal
 
 import httpx
 from fastapi import APIRouter, Depends, Request, Response
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
@@ -40,6 +44,11 @@ FALLBACK = {
     "en": "Sorry, something went wrong on our side. Please try again in a moment.",
     "ar": "عذرًا، حدث خطأ من جانبنا. يرجى المحاولة بعد قليل.",
     "es": "Lo sentimos, algo falló por nuestra parte. Inténtalo de nuevo en un momento.",
+}
+ASK_FOR_PERSON = {
+    "en": "I'd like to talk to a person.",
+    "ar": "أود التحدث إلى شخص.",
+    "es": "Me gustaría hablar con una persona.",
 }
 
 
@@ -238,6 +247,12 @@ async def _agent(
         )
     except httpx.HTTPError as exc:
         raise ServiceUnavailable("The assistant is unreachable") from exc
+    _agent_errors(r, c)
+    result: dict[str, Any] = r.json()
+    return result
+
+
+def _agent_errors(r: httpx.Response, c: Conversation) -> None:
     if r.status_code in (401, 403):
         raise Forbidden("You may not talk to this assistant")
     if r.status_code == 404:
@@ -252,8 +267,6 @@ async def _agent(
                 else r.text
             )[:300]
         )
-    result: dict[str, Any] = r.json()
-    return result
 
 
 async def _retention_days(request: Request, ctx: TenantContext, profile: str | None) -> int:
@@ -268,13 +281,10 @@ async def _retention_days(request: Request, ctx: TenantContext, profile: str | N
     return int(spec.get("conversations_days") or default)
 
 
-async def _turn(
-    request: Request,
-    ctx: TenantContext,
-    c: Conversation,
-    user_text: str | None,
-    payload: dict[str, Any],
-) -> TurnOut:
+async def _begin(
+    request: Request, ctx: TenantContext, c: Conversation, user_text: str | None
+) -> tuple[Message | None, list[dict[str, str]]]:
+    """Store the user's message; returns it and the history to send to the agent."""
     db = _db(request)
     now = datetime.now(UTC)
     user_msg: Message | None = None
@@ -303,21 +313,52 @@ async def _turn(
         stored.last_message_at = now
         if stored.title is None and user_text:
             stored.title = user_text[:120]
-    if c.status == "escalated":  # a person has the conversation now; the assistant stays quiet
-        return TurnOut(
-            conversation=_c(await _load(request, ctx, c.id)),
-            user_message=_m(user_msg) if user_msg else None,
-            reply=None,
-        )
     history = [
         {"role": m.role, "content": m.content}
         for m in reversed(history_rows)
         if m.role in ("user", "assistant")
     ]
+    return user_msg, history
+
+
+async def _quiet(
+    request: Request, ctx: TenantContext, c: Conversation, user_msg: Message | None
+) -> TurnOut:
+    """A person has the conversation now; the assistant stays quiet."""
+    return TurnOut(
+        conversation=_c(await _load(request, ctx, c.id)),
+        user_message=_m(user_msg) if user_msg else None,
+        reply=None,
+    )
+
+
+async def _turn(
+    request: Request,
+    ctx: TenantContext,
+    c: Conversation,
+    user_text: str | None,
+    payload: dict[str, Any],
+) -> TurnOut:
+    user_msg, history = await _begin(request, ctx, c, user_text)
+    if c.status == "escalated":
+        return await _quiet(request, ctx, c, user_msg)
     try:
         result = await _agent(request, ctx, c, {**payload, "history": history})
     except AgentFailed as exc:
         result = {"status": "failed", "error": exc.detail}
+    return await _finish(request, ctx, c, user_msg, result)
+
+
+async def _finish(
+    request: Request,
+    ctx: TenantContext,
+    c: Conversation,
+    user_msg: Message | None,
+    result: dict[str, Any],
+) -> TurnOut:
+    """Store the assistant's reply (answer contract), conversation state and events."""
+    db = _db(request)
+    now = datetime.now(UTC)
     status = result.get("status")
     interrupt = result.get("interrupt") or {}
     if status == "completed":
@@ -431,6 +472,121 @@ async def approve(
     if c.status != "awaiting_approval":
         raise BadRequest("Nothing is waiting for approval")
     return await _turn(request, ctx, c, None, {"resume": {"approved": body.approved}})
+
+
+def _sse(kind: str, data: Any) -> bytes:
+    return f"event: {kind}\ndata: {json.dumps(data, default=str)}\n\n".encode()
+
+
+@tenant_router.post(
+    "/conversations/{conversation_id}/messages/stream",
+    response_class=StreamingResponse,
+    responses={200: {"content": {"text/event-stream": {}}}},
+)
+async def stream_message(
+    conversation_id: uuid.UUID, body: MessageIn, request: Request, ctx: Ctx
+) -> StreamingResponse:
+    """Send a message and receive the reply as server-sent events (CH-01): the agent's
+    ``run``, ``status``, ``sources``, ``tool`` and ``delta`` events, then ``message`` with the
+    stored turn (same shape as the non-streaming reply). The reply is stored even if the
+    client disconnects mid-stream."""
+    await check_permission(
+        request,
+        "conversation.messages.create",
+        Resource(type="conversation", id=str(conversation_id)),
+    )
+    c = await _load(request, ctx, conversation_id, write=True)
+    if c.status == "awaiting_approval":
+        raise Conflict("Please approve or decline the pending action first")
+    headers = {"cache-control": "no-store", "x-accel-buffering": "no"}
+    user_msg, history = await _begin(request, ctx, c, body.content)
+    if c.status == "escalated":
+        quiet = await _quiet(request, ctx, c, user_msg)
+
+        async def only() -> AsyncIterator[bytes]:
+            yield _sse("message", quiet.model_dump(mode="json"))
+
+        return StreamingResponse(only(), media_type="text/event-stream", headers=headers)
+    client: httpx.AsyncClient = request.app.state.agent_client
+    base = request.app.state.agent_url
+    if base is None:
+        raise ServiceUnavailable("Agent runtime URL is not configured")
+    upstream = client.build_request(
+        "POST",
+        f"{base}/v1/agents/{c.agent}/runs/stream",
+        json={
+            "thread_id": str(c.id),
+            "locale": c.locale,
+            "input": body.content,
+            "history": history,
+        },
+        headers={CONTEXT_HEADER: str(request.state.context_token)},
+    )
+    try:
+        r = await client.send(upstream, stream=True)
+    except httpx.HTTPError as exc:
+        raise ServiceUnavailable("The assistant is unreachable") from exc
+    if r.status_code >= 400:
+        await r.aread()
+        await r.aclose()
+        _agent_errors(r, c)
+    queue: asyncio.Queue[bytes | None] = asyncio.Queue()
+
+    async def relay() -> None:
+        result: dict[str, Any] = {"status": "failed", "error": "The answer stream ended early"}
+        try:
+            event = "message"
+            async for line in r.aiter_lines():
+                if line.startswith("event:"):
+                    event = line[6:].strip()
+                elif line.startswith("data:"):
+                    data = json.loads(line[5:].strip())
+                    if event == "result":
+                        result = data
+                    elif event == "error":
+                        result = {"status": "failed", "error": data.get("detail")}
+                    else:
+                        queue.put_nowait(_sse(event, data))
+        except (httpx.HTTPError, ValueError):
+            pass
+        finally:
+            await r.aclose()
+        try:
+            turn = await _finish(request, ctx, c, user_msg, result)
+            queue.put_nowait(_sse("message", turn.model_dump(mode="json")))
+        except NexiqonError as exc:
+            queue.put_nowait(_sse("error", {"code": exc.code, "detail": exc.detail}))
+        finally:
+            queue.put_nowait(None)
+
+    task = asyncio.create_task(relay())
+    running: set[asyncio.Task[None]] = request.app.state.streams
+    running.add(task)
+    task.add_done_callback(running.discard)
+
+    async def events() -> AsyncIterator[bytes]:
+        while (item := await queue.get()) is not None:
+            yield item
+
+    return StreamingResponse(events(), media_type="text/event-stream", headers=headers)
+
+
+@tenant_router.post("/conversations/{conversation_id}/handoff", response_model=TurnOut)
+async def ask_for_person(conversation_id: uuid.UUID, request: Request, ctx: Ctx) -> TurnOut:
+    """The user asks for a person (CV-02, widget handoff button): the assistant writes a summary
+    and, when the pack names a handoff tool, offers to send it to the team."""
+    await check_permission(
+        request,
+        "conversation.messages.create",
+        Resource(type="conversation", id=str(conversation_id)),
+    )
+    c = await _load(request, ctx, conversation_id, write=True)
+    if c.status == "escalated":
+        raise Conflict("A person already has this conversation")
+    if c.status == "awaiting_approval":
+        raise Conflict("Please approve or decline the pending action first")
+    text = ASK_FOR_PERSON.get(c.locale, ASK_FOR_PERSON["en"])
+    return await _turn(request, ctx, c, text, {"input": text, "handoff": True})
 
 
 # ===================================================================== feedback

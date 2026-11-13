@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from collections.abc import Awaitable
+from collections.abc import AsyncIterator, Awaitable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -26,7 +26,7 @@ from nexiqon_core.tenancy import TenantContext
 from nexiqon_model_gateway.adapters.registry import Providers
 from nexiqon_model_gateway.models import Outbox, UsageRecord
 from nexiqon_model_gateway.pricing import PriceBook
-from nexiqon_model_gateway.providers import ProviderError
+from nexiqon_model_gateway.providers import ChatProvider, ProviderError
 from nexiqon_model_gateway.redaction import Redactor
 from nexiqon_model_gateway.resolver import ProfileRejected, ProfileResolver
 from nexiqon_model_gateway.settings import Classification, ServiceSettings
@@ -287,6 +287,123 @@ class Gateway:
                 return await self._chat_once(caller, backup, request)
             except ProviderError as exc2:
                 raise ProviderFailed(_public_message(exc2)) from exc2
+
+    def _prepare_chat(
+        self, target: Target, request: ChatRequest
+    ) -> tuple[ChatProvider, ChatCall, Redactor | None]:
+        chat = target.spec["chat"]
+        capabilities = target.spec.get("capabilities") or {}
+        if request.tools and capabilities.get("tool_calling") is False:
+            raise BadRequest(f"Model profile {target.name!r} does not support tool calling")
+        provider = self.providers.chat(chat["provider"])
+        redactor = Redactor() if target.redacts else None
+        messages = (
+            [_redact_message(m, redactor) for m in request.messages]
+            if redactor
+            else request.messages
+        )
+        ceiling = chat.get("max_output_tokens")
+        max_tokens = request.max_tokens or ceiling or 1024
+        if ceiling:
+            max_tokens = min(max_tokens, int(ceiling))
+        call = ChatCall(
+            model=chat["model"],
+            base_url=chat.get("base_url"),
+            messages=messages,
+            tools=request.tools,
+            response_schema=request.response_schema,
+            json_schema_supported=capabilities.get("json_schema_output", True),
+            max_tokens=max_tokens,
+            temperature=request.temperature
+            if request.temperature is not None
+            else chat.get("temperature"),
+        )
+        return provider, call, redactor
+
+    async def chat_stream(
+        self, caller: Caller, request: ChatRequest, profile: str | None = None
+    ) -> AsyncIterator[dict[str, Any]]:
+        """Stream an answer: ``{"text": ...}`` chunks, then ``{"done": True, ...}`` with route,
+        usage and cost. Same routing, floors, budgets and redaction as chat; the fallback profile is
+        used only if the provider fails before the first chunk."""
+        if request.tools or request.response_schema is not None:
+            raise BadRequest("Streaming is for plain text answers (no tools or JSON output)")
+        target = await self.route(caller, profile or self.settings.default_profile)
+        await self._check_budget(caller, target)
+        sent = False
+        try:
+            async for event in self._stream_once(caller, target, request):
+                sent = sent or bool(event.get("text"))
+                yield event
+            return
+        except ProviderError as exc:
+            fallback = target.spec.get("fallback_profile")
+            if sent or not (exc.retryable and fallback):
+                raise ProviderFailed(_public_message(exc)) from exc
+            log.warning("model_fallback", profile=target.name, fallback=fallback, error=str(exc))
+            backup = Target(fallback, await self._profile(caller, fallback), target.requested, True)
+            self._check(backup, caller.classification)
+            await self._check_budget(caller, backup)
+        try:
+            async for event in self._stream_once(caller, backup, request):
+                yield event
+        except ProviderError as exc2:
+            raise ProviderFailed(_public_message(exc2)) from exc2
+
+    async def _stream_once(
+        self, caller: Caller, target: Target, request: ChatRequest
+    ) -> AsyncIterator[dict[str, Any]]:
+        provider, call, redactor = self._prepare_chat(target, request)
+        started = time.perf_counter()
+        usage = Usage()
+        pending = ""  # text held back while a redaction placeholder may still be incomplete
+        deadline = self._deadline(target)
+        stream = provider.chat_stream(call)
+        while True:
+            try:
+                async with asyncio.timeout(deadline):  # deadline between chunks
+                    chunk = await anext(stream)
+            except StopAsyncIteration:
+                break
+            except TimeoutError as exc:
+                raise ProviderError(
+                    provider.name, f"no data within {deadline:g}s", retryable=True
+                ) from exc
+            if chunk.usage is not None:
+                usage = chunk.usage
+            if not chunk.text:
+                continue
+            if redactor is None:
+                yield {"text": chunk.text}
+                continue
+            pending += chunk.text
+            cut = pending.rfind("[")
+            if cut != -1 and "]" not in pending[cut:]:
+                ready, pending = pending[:cut], pending[cut:]
+            else:
+                ready, pending = pending, ""
+            if ready:
+                yield {"text": redactor.restore(ready)}
+        if pending:
+            yield {"text": redactor.restore(pending) if redactor else pending}
+        model = target.spec["chat"]["model"]
+        cost = await self._record(
+            caller, "chat", target, provider.name, model, usage, redactor is not None, started
+        )
+        yield {
+            "done": True,
+            "usage": usage.model_dump(),
+            "cost_usd": str(cost),
+            "route": {
+                "requested_profile": target.requested,
+                "profile": target.name,
+                "routed": target.name != target.requested and not target.fallback,
+                "fallback_used": target.fallback,
+                "provider": provider.name,
+                "model": model,
+                "redacted": redactor is not None,
+            },
+        }
 
     async def _chat_once(
         self, caller: Caller, target: Target, request: ChatRequest

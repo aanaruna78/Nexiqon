@@ -55,6 +55,15 @@ class ChatOutput(BaseModel):
     model: str
 
 
+class ChatChunk(BaseModel):
+    """One piece of a streamed answer; the last chunk carries usage and the finish reason."""
+
+    text: str = ""
+    usage: Usage | None = None
+    finish_reason: str | None = None
+    model: str | None = None
+
+
 class EmbedCall(BaseModel):
     model: str
     base_url: str | None = None

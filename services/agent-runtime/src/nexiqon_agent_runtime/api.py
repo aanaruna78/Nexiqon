@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import json
 import uuid
+from collections.abc import AsyncIterator
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
@@ -14,7 +17,7 @@ from nexiqon_agent_runtime.engine import STAFF_ROLES, Engine
 from nexiqon_agent_runtime.models import Run
 from nexiqon_agent_runtime.spec import GraphError, validate_graph
 from nexiqon_core.authz import Resource, check_permission
-from nexiqon_core.errors import NotFound, ServiceUnavailable
+from nexiqon_core.errors import NexiqonError, NotFound, ServiceUnavailable
 from nexiqon_core.tenancy import TenantContext, require_current_context
 
 public_router = APIRouter(tags=["agent-runtime"])
@@ -56,6 +59,7 @@ class RunIn(BaseModel):
     resume: Any = None  # answer to a clarifying question, or {"approved": bool}
     history: list[Message] = Field(default_factory=list, max_length=50)
     locale: str = Field(default="en", pattern=r"^[a-z]{2}(-[A-Z]{2})?$")
+    handoff: bool = False  # the user asked for a person (widget button): skip intent routing
 
 
 class RunOut(BaseModel):
@@ -87,8 +91,58 @@ async def run_agent(
         resume=body.resume,
         history=[m.model_dump() for m in body.history],
         locale=body.locale.split("-")[0],
+        handoff=body.handoff,
     )
     return RunOut(**result.__dict__)
+
+
+def sse(kind: str, data: Any) -> bytes:
+    return f"event: {kind}\ndata: {json.dumps(data, default=str)}\n\n".encode()
+
+
+@tenant_router.post(
+    "/agents/{agent}/runs/stream",
+    response_class=StreamingResponse,
+    responses={200: {"content": {"text/event-stream": {}}}},
+)
+async def stream_agent(
+    agent: Annotated[str, Field(pattern=NAME)], body: RunIn, request: Request, ctx: Ctx
+) -> StreamingResponse:
+    """The same turn as ``/runs`` as server-sent events (CH-01): ``run``, ``status``, ``sources``,
+    ``tool``, ``delta`` (answer text as it is written), then ``result`` (the RunOut, with the
+    checked answer and citations, which replaces the streamed text)."""
+    await check_permission(request, "agent.query.run", Resource(type="agent", id=agent))
+    events = _engine(request).stream(
+        ctx,
+        str(request.state.context_token),
+        agent,
+        body.thread_id,
+        text=body.input,
+        resume=body.resume,
+        history=[m.model_dump() for m in body.history],
+        locale=body.locale.split("-")[0],
+        handoff=body.handoff,
+    )
+    first = await anext(events)  # refusals surface as ordinary HTTP errors
+
+    async def body_() -> AsyncIterator[bytes]:
+        event: dict[str, Any] | None = first
+        try:
+            while event is not None:
+                kind = str(event["type"])
+                if kind == "result":
+                    yield sse(kind, RunOut(**event["result"].__dict__).model_dump(mode="json"))
+                    return
+                yield sse(kind, {k: v for k, v in event.items() if k != "type"})
+                event = await anext(events, None)
+        except NexiqonError as exc:
+            yield sse("error", {"code": exc.code, "detail": exc.detail})
+
+    return StreamingResponse(
+        body_(),
+        media_type="text/event-stream",
+        headers={"cache-control": "no-store", "x-accel-buffering": "no"},
+    )
 
 
 class RunTrace(BaseModel):
