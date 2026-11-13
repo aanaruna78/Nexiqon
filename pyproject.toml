@@ -5,7 +5,8 @@ members = ["libs/*", "services/*"]
 [tool.uv]
 # Transitive pins: only versions released at least two weeks before they were adopted.
 constraint-dependencies = [
-  "soupsieve<4",
+  # 4.0.1 is <2 weeks old: deliberate exception, it fixes CVE-2026-126190 (HTML from crawled sites).
+  "soupsieve==4.0.1",
   "langgraph-checkpoint<=4.3.0",
   "langchain-core<=1.7.0",
   "langgraph-sdk<=0.4.9",
