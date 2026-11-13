@@ -1,5 +1,5 @@
-import { ComingSoon } from "@/components/coming-soon";
+import { AssistantList } from "@/components/assistants/assistant-list";
 
 export default function Page() {
-  return <ComingSoon section="assistants" />;
+  return <AssistantList />;
 }

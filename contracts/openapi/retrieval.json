@@ -236,6 +236,16 @@
               }
             ],
             "title": "Top K"
+          },
+          "view_as": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ViewAs"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -944,6 +954,16 @@
               }
             ],
             "title": "Top K"
+          },
+          "view_as": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ViewAs"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -973,6 +993,17 @@
           "evidence_score": {
             "title": "Evidence Score",
             "type": "number"
+          },
+          "hidden": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden"
           },
           "passages": {
             "items": {
@@ -1086,6 +1117,32 @@
           "abstain"
         ],
         "title": "VerificationOut",
+        "type": "object"
+      },
+      "ViewAs": {
+        "description": "Preview what someone else would retrieve (ST-08): their access groups and actor type.",
+        "properties": {
+          "actor_type": {
+            "default": "user",
+            "enum": [
+              "user",
+              "widget",
+              "api_key"
+            ],
+            "title": "Actor Type",
+            "type": "string"
+          },
+          "groups": {
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Groups",
+            "type": "array"
+          }
+        },
+        "title": "ViewAs",
         "type": "object"
       }
     }

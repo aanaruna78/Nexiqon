@@ -313,3 +313,34 @@ def test_qa2_06_context_cap_holds_for_the_first_passage(stack: SearchStack) -> N
         assert sum(p.token_count for p in r.passages) <= cap
         assert r.passages[0].truncated is True
         assert r.passages[0].text.endswith("\u2026")
+
+
+def test_view_as_previews_another_persons_access_and_counts_what_they_miss(
+    stack: SearchStack,
+) -> None:
+    """ST-08: an admin previews as a group or a widget; it can only narrow what they see."""
+    stack.index(GUIDE, "upload://ops-guide.md")
+    stack.index(SECRET, "upload://payroll.md", acl=["payroll"], classification="confidential")
+    query = "payroll backups encrypted with a separate key"
+    admin = stack.headers({"admin"})
+    outsider = stack.search(query, headers=admin, view_as={"groups": ["engineering"]})
+    assert all("payroll" not in p["source_uri"] for p in outsider["passages"])
+    assert outsider["hidden"] >= 1
+    insider = stack.search(query, headers=admin, view_as={"groups": ["payroll"]})
+    assert insider["passages"][0]["source_uri"] == "upload://payroll.md"
+    widget = stack.search(
+        query, headers=admin, view_as={"groups": ["payroll"], "actor_type": "widget"}
+    )
+    assert all(p["classification"] in ("public", "internal") for p in widget["passages"])
+    assert stack.search(query, headers=admin)["hidden"] is None
+    # Someone who does not see everything cannot claim other people's groups.
+    member = stack.client.post(
+        "/v1/search",
+        json={
+            "query": query,
+            "collection_ids": [str(stack.collection)],
+            "view_as": {"groups": ["payroll"]},
+        },
+        headers=stack.headers({"member"}, {"engineering"}),
+    )
+    assert member.status_code == 403

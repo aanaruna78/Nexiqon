@@ -229,6 +229,10 @@ export interface components {
             steps: {
                 [key: string]: unknown;
             }[];
+            /** Usage */
+            usage?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** RunTrace */
         RunTrace: {

@@ -23,6 +23,20 @@ async function openPalette(page: Page) {
   }).toPass({ timeout: 10_000 });
 }
 
+const PACK = "ops-desk";
+const OPENAPI = `openapi: 3.0.3
+info: { title: Status API, version: "1.0" }
+servers: [{ url: "https://status.example.com" }]
+paths:
+  /orders/{order_id}/status:
+    get:
+      operationId: getOrderStatus
+      summary: Look up an order's status
+      parameters:
+        - { name: order_id, in: path, required: true, schema: { type: string } }
+      responses: { "200": { description: ok } }
+`;
+
 const GUIDE = `# Operations Guide
 
 ## Backups
@@ -211,6 +225,121 @@ test.describe.serial("Studio", () => {
     await expect(page.getByText("Weak evidence").or(page.getByText("No passages"))).toBeVisible();
   });
 
+  test("domain packs: create from the template, edit and release", async () => {
+    await page.goto("/domain-packs");
+    await a11y(page, "packs");
+    await page.getByTestId("new-pack").click();
+    await page.getByLabel("Title").fill("Ops desk");
+    await page.getByTestId("create-pack").click();
+    await page.waitForURL(new RegExp(`/domain-packs/${PACK}$`));
+    await a11y(page, "pack overview");
+    await page.getByTestId("pack-tab-intents").click();
+    await page.getByLabel("Examples").first().fill("How long are backups kept?");
+    await page.getByLabel("Examples").first().press("Enter");
+    await a11y(page, "pack intents");
+    // The offline development models score lower than real ones (ADR 0020).
+    await page.getByTestId("pack-tab-safety").click();
+    await page.getByLabel("Minimum evidence (0–1)").fill("0.15");
+    await page.getByTestId("pack-tab-widget").click();
+    await page.getByLabel("Greeting").fill("Hi! Ask me about operations.");
+    await a11y(page, "pack widget");
+    await page.getByTestId("save-pack").click();
+    await expect(page.getByText("Draft v1 saved")).toBeVisible(); // a new pack is still draft v1
+    await page.getByTestId("pack-tab-workflow").click();
+    await page.getByTestId("validate-graph").click();
+    await expect(page.getByText("The workflow is valid.")).toBeVisible();
+    await a11y(page, "pack workflow");
+    await page.getByTestId("pack-tab-versions").click();
+    await expect(page.getByText("Nothing to compare yet")).toBeVisible();
+    await page.getByTestId("release").click();
+    await expect(page.getByTestId("live-version")).toHaveText("Version 1");
+    await a11y(page, "pack versions");
+    await page.getByTestId("pack-tab-yaml").click();
+    await page.getByTestId("export-pack").click();
+    await expect(page.getByTestId("pack-yaml")).toContainText("Hi! Ask me about operations.");
+  });
+
+  test("assistants: create, test with streaming and inspect an answer", async () => {
+    await page.goto("/assistants");
+    await page.getByTestId("new-assistant").click();
+    await page.getByLabel("Name people see").fill("Ops Helper");
+    await page.getByLabel("product-docs").check();
+    await pick(page, "Model profile", /dev-offline/);
+    await pick(page, "Retrieval profile", /dev-offline/);
+    await a11y(page, "new assistant");
+    await page.getByTestId("create-assistant").click();
+    await page.waitForURL(/\/assistants\/ops-helper\?tab=test/);
+    await page.getByTestId("test-input").fill("How long is each backup kept?");
+    await page.getByTestId("test-send").click();
+    const log = page.getByTestId("test-chat-log");
+    await expect(log).toContainText("35 days");
+    await expect(log).toContainText("Grounded");
+    await a11y(page, "test chat");
+    await log.getByTestId("inspect").last().click();
+    const inspector = page.getByTestId("inspector");
+    await expect(inspector.getByTestId("why")).toContainText("verified citation");
+    await expect(inspector.getByTestId("inspector-sources")).toContainText("Backups");
+    await expect(inspector.getByTestId("inspector-facts")).toContainText("Completed");
+    await a11y(page, "answer inspector");
+    await page.keyboard.press("Escape");
+  });
+
+  test("assistants: access preview shows what a website visitor can retrieve", async () => {
+    await page.getByTestId("tab-access").click();
+    await page.getByLabel("A website visitor (widget)").check();
+    await page.getByTestId("view-as-query").fill("backups");
+    await page.getByTestId("view-as-run").click();
+    await expect(page.getByTestId("view-as-summary")).toContainText(/visible/);
+    await a11y(page, "access preview");
+  });
+
+  test("assistants: change, review the diff, release and roll back", async () => {
+    await page.getByTestId("tab-setup").click();
+    await page.getByRole("combobox", { name: "Tone", exact: true }).click();
+    await page.getByRole("option", { name: "Formal" }).click();
+    await page.getByTestId("save-assistant").click();
+    await page.waitForURL(/tab=versions/);
+    await expect(page.getByTestId("diff")).toContainText("Added");
+    await expect(page.getByTestId("diff")).toContainText('"tone":"formal"');
+    await a11y(page, "assistant versions");
+    await page.getByTestId("release").click();
+    await expect(page.getByTestId("live-version")).toHaveText("Version 2");
+    await page.getByTestId("rollback").click();
+    await expect(page.getByTestId("live-version")).toHaveText("Version 1");
+    await page.getByTestId("tab-workflow").click();
+    await expect(page.getByRole("img", { name: /Workflow with 6 steps/ })).toBeVisible();
+  });
+
+  test("actions: import an API from OpenAPI and dry-run it", async () => {
+    await page.goto("/actions?tab=connect");
+    await page.getByTestId("openapi-spec").fill(OPENAPI);
+    await page.getByTestId("openapi-read").click();
+    await expect(page.getByText("Reads data")).toBeVisible();
+    await a11y(page, "openapi import");
+    await page.getByTestId("openapi-add").click();
+    await expect(page.getByText(/1 tool added/)).toBeVisible();
+    await page.getByTestId("actions-tab-tools").click();
+    const list = page.getByTestId("tool-list");
+    await expect(list).toContainText("get-order-status");
+    await a11y(page, "tools");
+    await page.getByTestId("try-get-order-status").click();
+    await page.getByLabel("Arguments (JSON)").fill('{"order_id": "A-17"}');
+    await page.getByTestId("dry-run-go").click();
+    await expect(page.getByTestId("dry-run-request")).toContainText("https://status.example.com/orders/A-17/status");
+    await a11y(page, "dry run");
+    await page.keyboard.press("Escape");
+    await page.getByTestId("actions-tab-approvals").click();
+    await page.getByTestId("actions-tab-calls").click();
+    await a11y(page, "call log");
+  });
+
+  test("models: plain-language trade-offs and where data goes", async () => {
+    await page.goto("/settings/models");
+    await expect(page.getByTestId("data-flow")).toContainText("Restricted");
+    await expect(page.getByTestId("profiles")).toContainText("dev-offline");
+    await a11y(page, "models");
+  });
+
   test("knowledge: delete shows the impact first", async () => {
     await page.goto("/knowledge");
     await page.getByTestId("collection-product-docs").click();
@@ -232,14 +361,15 @@ test.describe.serial("Studio", () => {
   });
 
   test("planned sections have designed placeholders, not dead ends", async () => {
-    await page.goto("/assistants");
-    await expect(page.getByRole("heading", { name: "Assistants is coming" })).toBeVisible();
+    await page.goto("/conversations");
+    await expect(page.getByRole("heading", { name: "Conversations is coming" })).toBeVisible();
     await a11y(page, "coming soon");
   });
 
   test("sidebar explains each section in a tooltip and shows planned ones as Soon", async () => {
     await page.goto("/");
-    await expect(page.getByRole("link", { name: /Assistants/ }).first()).toContainText("Soon");
+    await expect(page.getByRole("link", { name: /Conversations/ }).first()).toContainText("Soon");
+    await expect(page.getByRole("link", { name: /Assistants/ }).first()).not.toContainText("Soon");
     await expect(page.getByRole("link", { name: /Knowledge/ }).first()).not.toContainText("Soon");
     await page.getByRole("link", { name: /API keys/ }).first().hover();
     await expect(page.getByRole("tooltip")).toContainText("Keys for your backend and website widget");
@@ -269,6 +399,11 @@ test.describe.serial("Studio", () => {
     await a11y(page, "knowledge (ar)");
     await page.goto("/playground");
     await a11y(page, "playground (ar)");
+    await page.goto("/assistants");
+    await expect(page.getByRole("heading", { name: "المساعدون" })).toBeVisible();
+    await a11y(page, "assistants (ar)");
+    await page.goto(`/domain-packs/${PACK}?tab=widget`);
+    await a11y(page, "pack widget (ar)");
     await openPalette(page);
     await page.keyboard.type("English");
     await page.keyboard.press("Enter");

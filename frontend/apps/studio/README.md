@@ -1,36 +1,23 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# @nexiqon/studio
 
-## Getting Started
+The admin app for building and running assistants (Next.js, React Query, next-intl in English and
+Arabic). The browser talks only to Studio's backend-for-frontend (`/api/nx/...`), which attaches
+the signed-in user's token. Tokens never reach the browser (ADR 0016).
 
-First, run the development server:
+| Section | What it does |
+|---|---|
+| **Assistants** (ST-06) | Create an assistant from a Domain Pack. Tabs: **Setup** (identity, knowledge, models, tool allowlist, guardrails and handover), **Test** (streamed chat against the version live in dev), **Access preview**, **Versions** (readable diff against what is live, release, one-click rollback, release history) and **Workflow**. |
+| **Answer Inspector** (ST-07) | From any test reply: a plain-language "why", sources with relevance scores (cited ones marked), tool calls, model, tokens, cost, time per step, and the path through the workflow. |
+| **Access preview** (ST-08) | Exactly what a person in chosen access groups, or a website visitor, can retrieve, and how many passages you can see are hidden from them (a count only). Available to people who manage knowledge, since it can only narrow what they already see. |
+| **Actions** (ST-09) | Tools with risk badges, allowed hosts, credential status and which assistants use them. Also: a dry-run console that shows the exact request without sending it, OpenAPI import, write-only credentials, and the approvals and call logs. |
+| **Domain Packs** (ST-10) | Create a pack from a template, copy one or import YAML. Edit vocabulary, intents and examples, prompts, guardrails, handover, and widget copy (with a live preview). Validate the workflow, export YAML, and release with a diff. |
+| **Workflow viewer** (ST-11) | A read-only picture of the declarative graph. In the Inspector it highlights the path a run took. |
+| **Models & data policy** (ST-12) | Each model profile in plain terms (data location, quality, cost, personal data and training), which assistants use it, and where data of each classification goes. |
+
+Also: Knowledge, Playground, Members, API keys, Configuration, Audit and Organization.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm dev            # http://localhost:3100, against the dev gateway
+pnpm test           # unit and component tests (Vitest, axe)
+pnpm e2e            # end to end against the full stack, see e2e/README.md
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

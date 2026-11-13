@@ -1,6 +1,6 @@
 import "../src/nexiqon-chat";
 import { ChatClient, parseSSE, visitorId } from "../src/client";
-import { inkOn, type NexiqonChat } from "../src/nexiqon-chat";
+import { readableTheme, type NexiqonChat } from "../src/nexiqon-chat";
 
 const SETTINGS = {
   agent: "support",
@@ -122,7 +122,8 @@ describe("<nexiqon-chat>", () => {
     expect(root(el).querySelector("h2")!.textContent).toBe("Help");
     expect(root(el).textContent).toContain("Hi! Ask me anything.");
     expect(root(el).querySelector(".chips button")!.textContent).toBe("How do I get started?");
-    expect(el.style.getPropertyValue("--nx-accent")).toBe("#0E8A7E");
+    expect(el.style.getPropertyValue("--nx-on-accent")).toBe("#ffffff");
+    expect(el.style.getPropertyValue("--nx-accent")).not.toBe("");
     expect(seen).toEqual([true]);
   });
 
@@ -217,8 +218,12 @@ describe("<nexiqon-chat>", () => {
     expect(root(el).querySelector('[role="alert"]')!.textContent).toContain("Try again");
   });
 
-  it("picks readable text for the theme colour", () => {
-    expect(inkOn("#0E8A7E")).toBe("#ffffff");
-    expect(inkOn("#FFD54F")).toBe("#12233f");
+  it("keeps text on the theme colour readable (WCAG AA)", () => {
+    expect(readableTheme("#0b6f66")).toEqual({ accent: "#0b6f66", ink: "#ffffff" });
+    expect(readableTheme("#FFD54F")).toEqual({ accent: "#FFD54F", ink: "#12233f" });
+    const adjusted = readableTheme("#0E8A7E")!; // 4.2:1 with white, 3.7:1 with ink: darkened
+    expect(adjusted.ink).toBe("#ffffff");
+    expect(adjusted.accent).not.toBe("#0E8A7E");
+    expect(readableTheme("nope")).toBeNull();
   });
 });

@@ -271,3 +271,17 @@ def test_the_handoff_button_skips_intent_guessing_even_mid_question(stack: Stack
     assert path(r) == ["route:handoff", "escalate:done"]
     assert r["steps"][0]["method"] == "request"
     assert r["handoff"]["reason"] == "user_request"
+
+
+def test_runs_record_usage_and_scored_sources_for_the_inspector(stack: Stack) -> None:
+    r = stack.run(tid(), "How do I invite a teammate?")
+    assert r["usage"]["model_calls"] == 1
+    assert r["usage"]["input_tokens"] == 10
+    assert r["usage"]["model"] == "fake-model"
+    trace = ok(stack.client.get(f"/v1/runs/{r['run_id']}", headers=stack.headers()))
+    assert trace["result"]["usage"]["output_tokens"] == 5
+    retrieve = next(s for s in trace["steps"] if s["type"] == "retrieve")
+    assert retrieve["sources"][0]["score"] == 0.9
+    assert retrieve["sources"][0]["citation"].startswith("Admin Guide")
+    streamed = events(stream(stack, tid(), "How do I invite a teammate?"))
+    assert streamed[-1][1]["usage"]["model_calls"] == 1

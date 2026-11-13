@@ -1,5 +1,5 @@
-import { ComingSoon } from "@/components/coming-soon";
+import { PackList } from "@/components/packs/pack-list";
 
 export default function Page() {
-  return <ComingSoon section="domainPacks" />;
+  return <PackList />;
 }

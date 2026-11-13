@@ -263,6 +263,7 @@ export interface components {
             small_to_big?: boolean | null;
             /** Top K */
             top_k?: number | null;
+            view_as?: components["schemas"]["ViewAs"] | null;
         };
         /** CitationIn */
         CitationIn: {
@@ -504,6 +505,7 @@ export interface components {
             small_to_big?: boolean | null;
             /** Top K */
             top_k?: number | null;
+            view_as?: components["schemas"]["ViewAs"] | null;
         };
         /** SearchOut */
         SearchOut: {
@@ -513,6 +515,8 @@ export interface components {
             embedding_model: string | null;
             /** Evidence Score */
             evidence_score: number;
+            /** Hidden */
+            hidden?: number | null;
             /** Passages */
             passages: components["schemas"]["PassageOut"][];
             /** Reranked */
@@ -549,6 +553,20 @@ export interface components {
             removed: components["schemas"]["RemovedOut"][];
             /** Supported Sentences */
             supported_sentences: number;
+        };
+        /**
+         * ViewAs
+         * @description Preview what someone else would retrieve (ST-08): their access groups and actor type.
+         */
+        ViewAs: {
+            /**
+             * Actor Type
+             * @default user
+             * @enum {string}
+             */
+            actor_type: "user" | "widget" | "api_key";
+            /** Groups */
+            groups?: string[];
         };
     };
     responses: never;

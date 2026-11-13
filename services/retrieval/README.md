@@ -43,3 +43,9 @@ use `python -m tools.eval.retrieval_eval --tenant <slug> --model-profile <profil
 | `POST /v1/search`, `POST /v1/citations/verify` | `retrieval.search.run` / `.verify` (members, end users, widgets) |
 | `PUT/DELETE /v1/index/...` | `retrieval.index.write` (service only) |
 | `GET /v1/index/documents/{id}/outline`, `.../collections/{id}/stats` | `retrieval.index.read` |
+
+**Access preview (ST-08).** `POST /v1/search` and `/v1/answer` accept `view_as: {groups, actor_type}`.
+Results are then filtered as that person or website visitor would see them, and `hidden` counts the
+passages the caller sees that they would not (a count only, never the content). Only knowledge
+managers (`acl_bypass_roles`) may use it: they already see everything, so a preview can only narrow.
+

@@ -16,7 +16,7 @@ from sqlalchemy import delete, func, insert, select
 
 from nexiqon_core.authz import Resource, check_permission, require_permission
 from nexiqon_core.db import TenantSessionFactory
-from nexiqon_core.errors import Conflict, NotFound, ServiceUnavailable
+from nexiqon_core.errors import Conflict, Forbidden, NotFound, ServiceUnavailable
 from nexiqon_core.profiles import ProfileResolver
 from nexiqon_core.tenancy import TenantContext, require_current_context
 from nexiqon_retrieval.adapters.pgvector import visibility
@@ -305,10 +305,32 @@ async def stats(collection_id: uuid.UUID, request: Request, ctx: Ctx) -> Collect
 # ===================================================================== search (RT-02, RT-07)
 
 
-def _filters(request: Request, ctx: TenantContext, collection_ids: list[uuid.UUID]) -> Filters:
+class ViewAs(BaseModel):
+    """Preview what someone else would retrieve (ST-08): their access groups and actor type."""
+
+    groups: list[Annotated[str, Field(max_length=200)]] = Field(
+        default_factory=list, max_length=100
+    )
+    actor_type: Literal["user", "widget", "api_key"] = "user"
+
+
+def _filters(
+    request: Request,
+    ctx: TenantContext,
+    collection_ids: list[uuid.UUID],
+    view_as: ViewAs | None = None,
+) -> Filters:
     settings = request.app.state.settings
-    groups = None if ctx.has_role(*settings.acl_bypass_roles) else sorted(ctx.groups)
-    ceiling = settings.max_classification.get(ctx.actor_type)
+    if view_as is not None:
+        # Only content managers, who already see everything, may preview: it can only narrow.
+        if not ctx.has_role(*settings.acl_bypass_roles):
+            raise Forbidden("Only people who manage knowledge can preview as someone else")
+        groups: list[str] | None = sorted(set(view_as.groups))
+        actor_type: str = view_as.actor_type
+    else:
+        groups = None if ctx.has_role(*settings.acl_bypass_roles) else sorted(ctx.groups)
+        actor_type = ctx.actor_type
+    ceiling = settings.max_classification.get(actor_type)
     allowed = (
         list(CLASSIFICATIONS[: CLASSIFICATIONS.index(ceiling) + 1])
         if ceiling in CLASSIFICATIONS
@@ -334,6 +356,7 @@ class SearchIn(BaseModel):
     # Overrides for evaluation and the Playground; agents use their profile.
     small_to_big: bool | None = None
     rerank: bool | None = None
+    view_as: ViewAs | None = None
 
 
 class PassageOut(BaseModel):
@@ -362,6 +385,9 @@ class SearchOut(BaseModel):
     embedding_model: str | None
     reranked: bool
     timings_ms: dict[str, float]
+    # With ``view_as``: how many of the passages you would see are hidden from that person
+    # (a count only; their content is never shown).
+    hidden: int | None = None
 
 
 @tenant_router.post("/search", response_model=SearchOut)
@@ -375,21 +401,31 @@ async def search(body: SearchIn, request: Request, ctx: Ctx) -> SearchOut:
         str(ctx.tenant_id), token, body.retrieval_profile or settings.default_retrieval_profile
     )
     searcher: Searcher = request.app.state.searcher
-    result = await searcher.search(
-        ctx.tenant_id,
-        token,
-        SearchRequest(
+
+    def request_for(filters: Filters) -> SearchRequest:
+        return SearchRequest(
             query=body.query,
-            filters=_filters(request, ctx, body.collection_ids),
+            filters=filters,
             profile=profile,
             model_profile=body.model_profile or settings.default_model_profile,
             classification=body.classification,
             top_k=body.top_k,
             small_to_big=body.small_to_big,
             rerank=body.rerank,
-        ),
+        )
+
+    result = await searcher.search(
+        ctx.tenant_id, token, request_for(_filters(request, ctx, body.collection_ids, body.view_as))
     )
+    hidden = None
+    if body.view_as is not None:
+        own = await searcher.search(
+            ctx.tenant_id, token, request_for(_filters(request, ctx, body.collection_ids))
+        )
+        theirs = {p.id for p in result.passages}
+        hidden = sum(1 for p in own.passages if p.id not in theirs)
     return SearchOut(
+        hidden=hidden,
         passages=[
             PassageOut(**{k: v for k, v in p.__dict__.items() if k != "matched_chunk_ids"})
             for p in result.passages
@@ -519,7 +555,7 @@ async def grounded_answer(body: AnswerRequest, request: Request, ctx: Ctx) -> An
         token,
         SearchRequest(
             query=body.query,
-            filters=_filters(request, ctx, body.collection_ids),
+            filters=_filters(request, ctx, body.collection_ids, body.view_as),
             profile=profile,
             model_profile=body.model_profile or settings.default_model_profile,
             classification=body.classification,

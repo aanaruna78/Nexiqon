@@ -42,6 +42,7 @@ class TurnResult:
     steps: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None
     retention_profile: str | None = None
+    usage: dict[str, Any] | None = None  # model calls, tokens, cost and model (Answer Inspector)
 
 
 class Engine:
@@ -180,6 +181,7 @@ class Engine:
         result.handoff = state.get("handoff") if state else None
         result.intent, result.route = state.get("intent"), state.get("route")
         result.steps = list(state.get("steps") or []) if state else []
+        result.usage = context.extra.get("usage")
         new_status = (
             (
                 "awaiting_input"
@@ -203,6 +205,7 @@ class Engine:
                 "handoff": result.handoff,
                 "intent": result.intent,
                 "route": result.route,
+                "usage": result.usage,
             }
             row.finished_at = datetime.now(UTC)
             stored.status = new_status

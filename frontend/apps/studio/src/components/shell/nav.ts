@@ -5,6 +5,7 @@ import {
   Bot,
   ChartLine,
   ClipboardCheck,
+  Cpu,
   FlaskConical,
   House,
   KeyRound,
@@ -36,10 +37,10 @@ export const NAV: NavGroup[] = [
     key: "build",
     items: [
       { key: "home", href: "/", icon: House, tone: "teal" },
-      { key: "assistants", href: "/assistants", icon: Bot, tone: "violet", phase: "Phase 3" },
+      { key: "assistants", href: "/assistants", icon: Bot, tone: "violet" },
       { key: "knowledge", href: "/knowledge", icon: BookOpenText, tone: "sky" },
       { key: "playground", href: "/playground", icon: FlaskConical, tone: "amber" },
-      { key: "domainPacks", href: "/domain-packs", icon: Package, tone: "teal", phase: "Phase 3" },
+      { key: "domainPacks", href: "/domain-packs", icon: Package, tone: "teal" },
     ],
   },
   {
@@ -48,7 +49,7 @@ export const NAV: NavGroup[] = [
       { key: "conversations", href: "/conversations", icon: MessagesSquare, tone: "sky", phase: "Phase 4" },
       { key: "insights", href: "/insights", icon: ChartLine, tone: "violet", phase: "Phase 4" },
       { key: "evaluations", href: "/evaluations", icon: ClipboardCheck, tone: "amber", phase: "Phase 4" },
-      { key: "actions", href: "/actions", icon: Blocks, tone: "rose", phase: "Phase 3" },
+      { key: "actions", href: "/actions", icon: Blocks, tone: "rose" },
     ],
   },
   {
@@ -56,6 +57,7 @@ export const NAV: NavGroup[] = [
     items: [
       { key: "members", href: "/settings/members", icon: Users, tone: "violet" },
       { key: "apiKeys", href: "/settings/api-keys", icon: KeyRound, tone: "amber" },
+      { key: "models", href: "/settings/models", icon: Cpu, tone: "sky" },
       { key: "configuration", href: "/settings/configuration", icon: Settings2, tone: "teal" },
       { key: "audit", href: "/settings/audit", icon: ScrollText, tone: "sky" },
       { key: "organization", href: "/settings/organization", icon: ShieldCheck, tone: "navy" },

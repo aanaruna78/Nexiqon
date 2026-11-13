@@ -99,18 +99,42 @@ const STRINGS = {
 } as const;
 type Strings = { [K in keyof (typeof STRINGS)["en"]]: string };
 
-/** Readable text colour on a background colour (WCAG relative luminance). */
-export function inkOn(hex: string): string {
+const INK = "#12233f";
+
+function luminance(hex: string): number | null {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) return "#ffffff";
+  if (!m) return null;
   const n = parseInt(m[1], 16);
   const lin = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
   });
-  const lum = 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
-  const INK = 0.0165; // relative luminance of #12233f
-  return 1.05 / (lum + 0.05) >= (lum + 0.05) / (INK + 0.05) ? "#ffffff" : "#12233f";
+  return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
+}
+
+function ratio(a: number, b: number): number {
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
+/**
+ * A theme colour with readable text on it (WCAG AA, 4.5:1): white or dark ink, whichever passes;
+ * if neither does, the colour is darkened until white text passes (as Studio does for accents).
+ */
+export function readableTheme(hex: string): { accent: string; ink: string } | null {
+  const lum = luminance(hex);
+  if (lum === null) return null;
+  const inkLum = luminance(INK)!;
+  if (ratio(lum, 1) >= 4.5) return { accent: hex, ink: "#ffffff" };
+  if (ratio(lum, inkLum) >= 4.5) return { accent: hex, ink: INK };
+  const n = parseInt(hex.replace("#", ""), 16);
+  let rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  let out = hex;
+  for (let i = 0; i < 40; i++) {
+    rgb = rgb.map((c) => c * 0.92);
+    out = `#${rgb.map((c) => Math.round(c).toString(16).padStart(2, "0")).join("")}`;
+    if (ratio(luminance(out)!, 1) >= 4.5) break;
+  }
+  return { accent: out, ink: "#ffffff" };
 }
 
 function safeLink(uri: string | null | undefined): string | null {
@@ -382,10 +406,10 @@ export class NexiqonChat extends LitElement {
   }
 
   private applyTheme(): void {
-    const colour = this.accent || this.settings?.accent_color;
-    if (!colour || !/^#[0-9a-f]{6}$/i.test(colour)) return;
-    this.style.setProperty("--nx-accent", colour);
-    this.style.setProperty("--nx-on-accent", inkOn(colour));
+    const theme = readableTheme(this.accent || this.settings?.accent_color || "");
+    if (!theme) return;
+    this.style.setProperty("--nx-accent", theme.accent);
+    this.style.setProperty("--nx-on-accent", theme.ink);
   }
 
   private line(m: StoredMessage): Line {

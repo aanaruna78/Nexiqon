@@ -6,6 +6,7 @@ Pack and the agent configuration. Every node appends a step to the trace (Answer
 
 from __future__ import annotations
 
+import contextlib
 import json
 import re
 import time
@@ -96,6 +97,28 @@ class RunContext:
     def send(self, kind: str, **data: Any) -> None:
         if self.emit is not None:
             self.emit({"type": kind, **data})
+
+    def track(self, reply: dict[str, Any]) -> None:
+        """Add a model call's tokens and cost to the run's totals (Answer Inspector)."""
+        usage = reply.get("usage") or {}
+        total = self.extra.setdefault(
+            "usage", {"model_calls": 0, "input_tokens": 0, "output_tokens": 0, "cost_usd": 0.0}
+        )
+        total["model_calls"] += 1
+        total["input_tokens"] += int(usage.get("input_tokens") or 0)
+        total["output_tokens"] += int(usage.get("output_tokens") or 0)
+        with contextlib.suppress(TypeError, ValueError):
+            total["cost_usd"] = round(total["cost_usd"] + float(reply.get("cost_usd") or 0), 6)
+        route_ = reply.get("route") or {}
+        if route_.get("model"):
+            total["model"] = route_.get("model")
+            total["provider"] = route_.get("provider")
+            total["profile"] = route_.get("profile")
+
+    async def chat(self, **kwargs: Any) -> dict[str, Any]:
+        reply = await self.models.chat(self.token, conversation_id=self.thread_id, **kwargs)
+        self.track(reply)
+        return reply
 
     @property
     def config(self) -> dict[str, Any]:
@@ -227,8 +250,7 @@ def route(node: NodeSpec, run: RunContext) -> Node:
                 f"- {i['name']}: {i.get('description', '')} Examples: {'; '.join(map(str, i.get('examples') or []))}"
                 for i in intents
             )
-            reply = await run.models.chat(
-                run.token,
+            reply = await run.chat(
                 profile=run.model_profile,
                 classification="internal",
                 messages=[
@@ -248,7 +270,6 @@ def route(node: NodeSpec, run: RunContext) -> Node:
                     "required": ["intent"],
                     "additionalProperties": False,
                 },
-                conversation_id=run.thread_id,
             )
             parsed = _parse_json(reply.get("content"))
             chosen = parsed.get("intent") if parsed else None
@@ -341,6 +362,15 @@ def retrieve(node: NodeSpec, run: RunContext) -> Node:
                 None,
                 passages=len(passages),
                 evidence=found.get("evidence_score"),
+                sources=[
+                    {
+                        "citation": p.get("citation"),
+                        "score": p.get("score"),
+                        "classification": p.get("classification"),
+                        "document_id": p.get("document_id"),
+                    }
+                    for p in passages
+                ],
                 timings=found.get("timings_ms"),
             ),
         }
@@ -371,8 +401,7 @@ async def extract_arguments(
     if not props:
         return {}
     history = [m for m in state.get("history", [])[-4:] if m.get("role") in ("user", "assistant")]
-    reply = await run.models.chat(
-        run.token,
+    reply = await run.chat(
         profile=run.model_profile,
         classification="internal",
         messages=[
@@ -387,7 +416,6 @@ async def extract_arguments(
         ],
         max_tokens=300,
         response_schema=schema,
-        conversation_id=run.thread_id,
     )
     parsed = _parse_json(reply.get("content")) or {}
     return {k: v for k, v in parsed.items() if k in props}
@@ -515,8 +543,7 @@ def clarify(node: NodeSpec, run: RunContext) -> Node:
         )
         question = ""
         if instruction:
-            reply = await run.models.chat(
-                run.token,
+            reply = await run.chat(
                 profile=run.model_profile,
                 classification="internal",
                 messages=[
@@ -529,7 +556,6 @@ def clarify(node: NodeSpec, run: RunContext) -> Node:
                     {"role": "user", "content": instruction},
                 ],
                 max_tokens=80,
-                conversation_id=run.thread_id,
             )
             question = str(reply.get("content") or "").strip()
         if not question.endswith(("?", "؟")):
@@ -662,13 +688,11 @@ async def _generate(
 ) -> tuple[str, Any]:
     """The answer text and the model route; streamed piece by piece when the caller streams."""
     if run.emit is None:
-        reply = await run.models.chat(
-            run.token,
+        reply = await run.chat(
             profile=run.model_profile,
             classification=classification,
             messages=messages,
             max_tokens=max_tokens,
-            conversation_id=run.thread_id,
         )
         return str(reply.get("content") or "").strip(), reply.get("route")
     run.send("status", stage="writing")
@@ -684,6 +708,7 @@ async def _generate(
     ):
         if piece.get("done"):
             route_ = piece.get("route")
+            run.track(piece)
         elif piece.get("text"):
             parts.append(str(piece["text"]))
             run.send("delta", text=piece["text"])
@@ -906,8 +931,7 @@ def escalate(node: NodeSpec, run: RunContext) -> Node:
         )
         summary = transcript[-1500:]
         if prompt:
-            reply = await run.models.chat(
-                run.token,
+            reply = await run.chat(
                 profile=run.model_profile,
                 classification=strictest(
                     "internal",
@@ -918,7 +942,6 @@ def escalate(node: NodeSpec, run: RunContext) -> Node:
                 ),
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=250,
-                conversation_id=run.thread_id,
             )
             summary = str(reply.get("content") or "").strip() or summary
         handoff: dict[str, Any] = {

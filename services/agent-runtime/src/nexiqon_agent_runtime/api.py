@@ -73,6 +73,7 @@ class RunOut(BaseModel):
     steps: list[dict[str, Any]]
     error: str | None
     retention_profile: str | None
+    usage: dict[str, Any] | None = None
 
 
 @tenant_router.post("/agents/{agent}/runs", response_model=RunOut)
