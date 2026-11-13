@@ -89,7 +89,7 @@ class DatabaseSettings(BaseModel):
     url: SecretStr | None = None  # app role, e.g. postgresql+asyncpg://nexiqon_app:...@host/db
     migration_url: SecretStr | None = None  # schema owner, used only by migrations
     app_role: str = "nexiqon_app"
-    pool_size: int = 5
+    pool_size: int = 5  # 0 = no pooling (tests, short-lived jobs)
 
 
 class EventSettings(BaseModel):

@@ -249,3 +249,105 @@ def test_a_full_reply_to_a_clarifying_question_is_searched_on_its_own(stack: Sta
     assert [b for k, b in stack.fakes.calls if k == "search"][-1][
         "query"
     ] == "it is broken\nteammates"
+
+
+ACCOUNT = {
+    "name": "account-lookup",
+    "description": "Look up the account",
+    "risk_level": "read",
+    "needs_confirmation": False,
+    "input_schema": {"type": "object", "properties": {}},
+    "result_classification": "confidential",
+}
+REQUEST = {
+    "name": "submit-request",
+    "description": "Submit a request",
+    "risk_level": "write",
+    "needs_confirmation": True,
+    "input_schema": {
+        "type": "object",
+        "required": ["subject"],
+        "properties": {"subject": {"type": "string"}},
+    },
+}
+
+
+def _with_tools(stack: Stack) -> None:
+    from nexiqon_agent_runtime.clients import HttpTools
+
+    stack.fakes.tools = {"account-lookup": ACCOUNT, "submit-request": REQUEST}
+    stack.client.app.state.engine.tools = HttpTools(
+        "http://tool-gateway", stack.client.app.state.engine.models.client._transport
+    )  # type: ignore[attr-defined]
+
+
+def test_read_tool_results_ground_the_answer_at_their_sensitivity(stack: Stack) -> None:
+    _with_tools(stack)
+    stack.fakes.answer = "You are on the Team plan [1]."
+    r = stack.run(tid(), "What plan am I on?")
+    assert path(r) == ["route:action_read", "lookup:None", "validate:sufficient", "respond:done"]
+    invoke = next(b for k, b in stack.fakes.calls if k == "invoke")
+    assert (invoke["tool"], invoke["agent"], invoke["arguments"]) == (
+        "account-lookup",
+        "support",
+        {},
+    )
+    assert invoke["idempotency_key"].endswith(":lookup")
+    assert not stack.fakes.chats("extract")  # nothing to extract: identity comes from the token
+    answer = stack.fakes.chats("answer")[0]
+    assert answer["classification"] == "confidential"
+    assert "Tool: account-lookup" in answer["messages"][-1]["content"]
+    assert r["answer"]["citations"][0]["citation"] == "Tool: account-lookup"
+
+
+def test_write_tool_runs_exactly_what_the_user_confirmed(stack: Stack) -> None:
+    import yaml
+
+    _with_tools(stack)
+    pack = yaml.safe_load(PACK)
+    pack["metadata"]["name"] = "request-pack"
+    pack["spec"]["tools"].append(
+        {"name": "submit-request", "risk_level": "write", "confirmation": "always"}
+    )
+    pack["spec"]["intents"].append(
+        {
+            "name": "open_request",
+            "route": "action",
+            "tools": ["submit-request"],
+            "examples": ["please open a request for me"],
+        }
+    )
+    stack.deploy("domain_pack", "request-pack", yaml.safe_dump(pack))
+    stack.deploy(
+        "agent",
+        "requests",
+        {**AGENT, "pack": {"name": "request-pack"}, "tools": ["submit-request"]},
+    )
+    stack.fakes.tool_args = {"subject": "Login broken", "invented": "x"}
+    thread = tid()
+    first = stack.run(thread, "please open a request for me", agent="requests")
+    assert first["interrupt"]["approval_id"] == "11111111-1111-1111-1111-111111111111"
+    assert "submit-request" in first["interrupt"]["prompt"]
+    confirm = next(b for k, b in stack.fakes.calls if k == "confirm")
+    assert confirm["arguments"] == {
+        "subject": "Login broken"
+    }  # only schema fields survive extraction
+    stack.fakes.tool_args = {"subject": "Something the model changed its mind about"}
+    done = stack.run(thread, resume={"approved": True}, agent="requests")
+    assert (
+        "decide",
+        {"approval_id": "11111111-1111-1111-1111-111111111111", "approved": True},
+    ) in stack.fakes.calls
+    invoke = next(b for k, b in stack.fakes.calls if k == "invoke")
+    assert invoke["arguments"] == {
+        "subject": "Login broken"
+    }  # the confirmed call, not a re-extraction
+    assert invoke["approval_id"] == "11111111-1111-1111-1111-111111111111"
+    assert path(done)[-2:] == ["validate:sufficient", "respond:done"]
+
+    other = tid()
+    stack.run(other, "please open a request for me", agent="requests")
+    stack.fakes.calls.clear()
+    declined = stack.run(other, resume={"approved": False}, agent="requests")
+    assert declined["answer"]["kind"] == "declined"
+    assert [k for k, _ in stack.fakes.calls if k in ("decide", "invoke")] == ["decide"]

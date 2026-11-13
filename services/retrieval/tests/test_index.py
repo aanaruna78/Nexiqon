@@ -61,7 +61,9 @@ def setup(retrieval_db: PgUrls) -> Iterator[Setup]:
     )  # type: ignore[arg-type]
     app = create_app(
         ServiceSettings(
-            log_json=False, context_token=tokens, database=DatabaseSettings(url=retrieval_db.app)
+            log_json=False,
+            context_token=tokens,
+            database=DatabaseSettings(url=retrieval_db.app, pool_size=0),
         ),
         authorizer=StaticAuthorizer(ROLES),
     )

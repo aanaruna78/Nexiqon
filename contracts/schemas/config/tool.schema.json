@@ -19,7 +19,6 @@
     "kind": {
       "enum": [
         "rest",
-        "openapi",
         "approval"
       ]
     },
@@ -28,7 +27,8 @@
       "additionalProperties": false,
       "required": [
         "method",
-        "url_template"
+        "url_template",
+        "host_allowlist"
       ],
       "properties": {
         "method": {
@@ -42,14 +42,16 @@
         },
         "url_template": {
           "type": "string",
-          "pattern": "^https://"
+          "pattern": "^https?://",
+          "description": "Path placeholders {name} come from arguments; {caller.actor_id} and {caller.tenant_id} only from the verified caller. http:// is refused outside development."
         },
         "host_allowlist": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "minItems": 1
+          "minItems": 1,
+          "description": "Hosts this tool may reach; the URL's host must be one of them"
         },
         "headers": {
           "type": "object",
@@ -59,22 +61,34 @@
               "pattern": "(?i)(bearer|basic) "
             }
           }
-        }
-      }
-    },
-    "openapi": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "spec_ref",
-        "operation_id"
-      ],
-      "properties": {
-        "spec_ref": {
-          "type": "string"
         },
-        "operation_id": {
-          "type": "string"
+        "auth": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "scheme"
+          ],
+          "properties": {
+            "scheme": {
+              "enum": [
+                "bearer",
+                "header",
+                "basic"
+              ]
+            },
+            "header": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9-]{1,64}$",
+              "description": "Header name for scheme=header"
+            }
+          }
+        },
+        "query_params": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Arguments sent as query parameters even for POST/PUT/PATCH (others go in the JSON body)"
         }
       }
     },
@@ -86,8 +100,8 @@
     },
     "credential_ref": {
       "type": "string",
-      "pattern": "^secret://",
-      "description": "Reference resolved by tool-gateway's secrets port"
+      "pattern": "^secret://[a-z0-9][a-z0-9-]{1,62}$",
+      "description": "Name of a credential stored for this workspace (resolved only inside tool-gateway)"
     },
     "risk_level": {
       "enum": [
@@ -119,6 +133,36 @@
     },
     "idempotent": {
       "type": "boolean"
+    },
+    "result_classification": {
+      "enum": [
+        "public",
+        "internal",
+        "confidential",
+        "restricted"
+      ],
+      "description": "Sensitivity of results (decides which models may see them)"
+    },
+    "max_result_bytes": {
+      "type": "integer",
+      "minimum": 256,
+      "maximum": 65536
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "rest"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "request"
+        ]
+      }
+    }
+  ]
 }

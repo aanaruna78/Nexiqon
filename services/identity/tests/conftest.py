@@ -40,7 +40,7 @@ def env(identity_db: PgUrls) -> Iterator[Env]:
     token_settings = ContextTokenSettings(public_keys={"ctx-1": public_pem})
     settings = ServiceSettings(
         log_json=False,
-        database=DatabaseSettings(url=identity_db.app),
+        database=DatabaseSettings(url=identity_db.app, pool_size=0),
         context_token=token_settings,
         signing=SigningSettings(active_kid="ctx-1", private_keys={"ctx-1": private_pem}),
         idp_providers=[

@@ -25,6 +25,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.pool import NullPool
 
 from nexiqon_core.ids import uuid7
 from nexiqon_core.tenancy import TenantContext
@@ -135,6 +136,10 @@ async def set_variables(session: AsyncSession, **variables: str) -> None:
 
 
 def create_engine(url: str, *, echo: bool = False, pool_size: int = 5) -> AsyncEngine:
+    """``pool_size`` 0 disables pooling: each session opens and closes its own connection (tests
+    with in-process apps whose lifespan never runs, and short-lived jobs)."""
+    if pool_size <= 0:
+        return create_async_engine(url, echo=echo, poolclass=NullPool)
     return create_async_engine(url, echo=echo, pool_pre_ping=True, pool_size=pool_size)
 
 

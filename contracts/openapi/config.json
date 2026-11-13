@@ -21,6 +21,40 @@
         "title": "DeployIn",
         "type": "object"
       },
+      "DeployedObject": {
+        "properties": {
+          "environment": {
+            "title": "Environment",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "spec": {
+            "additionalProperties": true,
+            "title": "Spec",
+            "type": "object"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "environment",
+          "version",
+          "spec"
+        ],
+        "title": "DeployedObject",
+        "type": "object"
+      },
       "DraftIn": {
         "properties": {
           "notes": {
@@ -1332,6 +1366,68 @@
           }
         },
         "summary": "Resolve Agent",
+        "tags": [
+          "config"
+        ]
+      }
+    },
+    "/v1/resolve/objects/{kind}/{name}": {
+      "get": {
+        "description": "The version of an object deployed in an environment (e.g. tool definitions for tool-gateway).",
+        "operationId": "resolve_object_v1_resolve_objects__kind___name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "environment",
+            "required": false,
+            "schema": {
+              "default": "dev",
+              "title": "Environment",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeployedObject"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resolve Object",
         "tags": [
           "config"
         ]

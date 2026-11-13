@@ -152,14 +152,17 @@ def stack(search_db: PgUrls) -> Iterator[SearchStack]:
         "ingestion", tokens, ServiceIdentitySettings(key_id="svc", private_key=private)
     )  # type: ignore[arg-type]
     authorizer = StaticAuthorizer(ROLES)
-    db = DatabaseSettings(url=search_db.app)
+    db = DatabaseSettings(url=search_db.app, pool_size=0)  # in-process config app: no lifespan
     config_app = create_config_app(
         ConfigSettings(log_json=False, context_token=tokens, database=db), authorizer=authorizer
     )
     models = HashModelClient()
     app = create_app(
         ServiceSettings(
-            log_json=False, context_token=tokens, database=db, config_url="http://config"
+            log_json=False,
+            context_token=tokens,
+            database=DatabaseSettings(url=search_db.app),  # pooled: the latency gate measures it
+            config_url="http://config",
         ),
         authorizer=authorizer,
         models=models,

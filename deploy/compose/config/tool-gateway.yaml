@@ -1,0 +1,11 @@
+# tool-gateway on the local stack. Dev-only: the OpenBao dev root token, plain http and the compose
+# network are allowed so tools can reach the demo APIs (mock-apis). Production uses https only.
+secrets:
+  backend: openbao
+  address: http://openbao:8200
+  token: nexiqon-dev-root
+  mount: secret
+allow_insecure_http: true
+egress:
+  allowed_ports: [80, 443, 8080, 8443, 9000]
+  allowed_private_cidrs: ["172.16.0.0/12", "192.168.0.0/16"]

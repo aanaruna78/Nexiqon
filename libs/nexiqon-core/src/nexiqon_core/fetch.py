@@ -18,6 +18,7 @@ import ipaddress
 import socket
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
+from typing import Any
 from urllib.parse import urljoin
 
 import httpx
@@ -142,7 +143,37 @@ class SafeFetcher:
             return response
         raise FetchFailed("Too many redirects")
 
-    async def _send(self, parsed: httpx.URL, address: str, headers: dict[str, str]) -> FetchResult:
+    async def request(
+        self,
+        method: str,
+        url: str,
+        *,
+        headers: dict[str, str] | None = None,
+        content: bytes | None = None,
+        timeout_seconds: float | None = None,
+    ) -> FetchResult:
+        """One checked, pinned request without following redirects (tool calls: a redirect must not
+        move a write somewhere else). A 3xx is returned to the caller as-is."""
+        parsed, address = await self.check(url)
+        return await self._send(
+            parsed,
+            address,
+            headers or {},
+            method=method,
+            content=content,
+            timeout_seconds=timeout_seconds,
+        )
+
+    async def _send(
+        self,
+        parsed: httpx.URL,
+        address: str,
+        headers: dict[str, str],
+        *,
+        method: str = "GET",
+        content: bytes | None = None,
+        timeout_seconds: float | None = None,
+    ) -> FetchResult:
         pinned = parsed.copy_with(host=address)  # connect to the checked address only
         host_header = parsed.host if parsed.port is None else f"{parsed.host}:{parsed.port}"
         request_headers = {
@@ -151,9 +182,13 @@ class SafeFetcher:
             **headers,
             "host": host_header,
         }
-        extensions = {"sni_hostname": parsed.host} if parsed.scheme == "https" else {}
+        extensions: dict[str, Any] = (
+            {"sni_hostname": parsed.host} if parsed.scheme == "https" else {}
+        )
+        if timeout_seconds is not None:
+            extensions["timeout"] = httpx.Timeout(timeout_seconds).as_dict()
         request = self._client.build_request(
-            "GET", pinned, headers=request_headers, extensions=extensions
+            method, pinned, headers=request_headers, content=content, extensions=extensions
         )
         try:
             response = await self._client.send(request, stream=True)

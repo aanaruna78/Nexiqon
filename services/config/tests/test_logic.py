@@ -59,7 +59,7 @@ def test_pack_semantic_and_schema_errors(mutate: Any, message: str) -> None:
     assert any(message in p.message for p in problems), problems
 
 
-def test_tool_schema_rejects_raw_secrets_and_plain_http() -> None:
+def test_tool_schema_rejects_raw_secrets_and_bad_credential_refs() -> None:
     tool = {
         "description": "Look up an account",
         "kind": "rest",
@@ -75,10 +75,15 @@ def test_tool_schema_rejects_raw_secrets_and_plain_http() -> None:
     leaky = copy.deepcopy(tool)
     leaky["request"]["headers"] = {"Authorization": "Bearer sk-live-123"}
     assert kinds.validate("tool", leaky)
+    # Plain http passes the schema; tool-gateway refuses it outside development (allow_insecure_http).
     insecure = copy.deepcopy(tool)
     insecure["request"]["url_template"] = "http://api.example.com/a"
-    assert kinds.validate("tool", insecure)
+    assert kinds.validate("tool", insecure) == []
     assert kinds.validate("tool", {**tool, "credential_ref": "plaintext-password"})
+    assert kinds.validate("tool", {**tool, "credential_ref": "secret://../other-tenant"})
+    no_allowlist = copy.deepcopy(tool)
+    del no_allowlist["request"]["host_allowlist"]
+    assert kinds.validate("tool", no_allowlist)
 
 
 def test_merge_layers_with_provenance() -> None:

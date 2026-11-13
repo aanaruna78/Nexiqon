@@ -78,7 +78,7 @@ def make_client(config_db: PgUrls) -> Iterator[ClientFactory]:
         settings = ServiceSettings(
             log_json=False,
             context_token=tenants.settings,
-            database=DatabaseSettings(url=config_db.app),
+            database=DatabaseSettings(url=config_db.app, pool_size=0),
             snapshot_signing=SigningSettings(
                 active_kid="snap-1", private_keys={"snap-1": SIGNING_PRIVATE}
             ),

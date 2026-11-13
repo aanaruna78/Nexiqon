@@ -129,7 +129,7 @@ def build(
         service_keys={"svc-ar": "agent-runtime"},
     )
     authorizer = StaticAuthorizer(ROLES)
-    db = DatabaseSettings(url=agent_db.app)
+    db = DatabaseSettings(url=agent_db.app, pool_size=0)
     # Separate config apps for setup and for agent-runtime's in-process calls (separate loops).
     config_app = create_config_app(
         ConfigSettings(log_json=False, context_token=tokens, database=db), authorizer=authorizer

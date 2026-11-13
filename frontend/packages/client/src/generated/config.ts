@@ -284,6 +284,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/resolve/objects/{kind}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Resolve Object
+         * @description The version of an object deployed in an environment (e.g. tool definitions for tool-gateway).
+         */
+        get: operations["resolve_object_v1_resolve_objects__kind___name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/resolve/profiles/{kind}/{name}": {
         parameters: {
             query?: never;
@@ -358,6 +378,21 @@ export interface components {
              * @default
              */
             reason: string;
+            /** Version */
+            version: number;
+        };
+        /** DeployedObject */
+        DeployedObject: {
+            /** Environment */
+            environment: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Spec */
+            spec: {
+                [key: string]: unknown;
+            };
             /** Version */
             version: number;
         };
@@ -1071,6 +1106,40 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_object_v1_resolve_objects__kind___name__get: {
+        parameters: {
+            query?: {
+                environment?: string;
+            };
+            header?: never;
+            path: {
+                kind: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeployedObject"];
                 };
             };
             /** @description Validation Error */

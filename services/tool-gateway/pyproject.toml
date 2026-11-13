@@ -3,7 +3,7 @@ name = "nexiqon-tool-gateway"
 version = "0.1.0"
 description = "Policy-controlled tool execution with secrets, egress allowlist and approvals"
 requires-python = ">=3.12,<3.14"
-dependencies = ["nexiqon-core"]
+dependencies = ["nexiqon-core", "jsonschema>=4.23"]
 
 [tool.uv.sources]
 nexiqon-core = { workspace = true }

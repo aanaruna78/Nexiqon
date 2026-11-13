@@ -13,7 +13,15 @@ from sqlalchemy import text
 
 from nexiqon_agent_runtime import __version__
 from nexiqon_agent_runtime.api import public_router, tenant_router
-from nexiqon_agent_runtime.clients import Http, Models, NoTools, Retrieval, ServiceReads, Tools
+from nexiqon_agent_runtime.clients import (
+    Http,
+    HttpTools,
+    Models,
+    NoTools,
+    Retrieval,
+    ServiceReads,
+    Tools,
+)
 from nexiqon_agent_runtime.engine import Engine
 from nexiqon_agent_runtime.lifecycle import lifecycle
 from nexiqon_agent_runtime.settings import ServiceSettings
@@ -69,11 +77,9 @@ def create_app(
     reads = ServiceReads(
         config, ingestion, tokens, settings.agent_environment, settings.agent_cache_seconds
     )
-    runtime = (
-        Engine(settings, db, reads, models, retrieval, tools or NoTools())
-        if db is not None
-        else None
-    )
+    tool_url = _url(settings, settings.tool_gateway_url, "tool-gateway")
+    tool_port: Tools = tools or (HttpTools(tool_url, service_transport) if tool_url else NoTools())
+    runtime = Engine(settings, db, reads, models, retrieval, tool_port) if db is not None else None
 
     async def database_ready() -> bool:
         if engine is None:
@@ -87,6 +93,8 @@ def create_app(
         yield
         for client in (models, retrieval, config, ingestion):
             await client.aclose()
+        if isinstance(tool_port, Http):
+            await tool_port.aclose()
         if engine is not None:
             await engine.dispose()
 

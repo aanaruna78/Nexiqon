@@ -80,7 +80,7 @@ def make_stack(gateway_db: PgUrls) -> Iterator[StackFactory]:
         config_settings = ConfigSettings(
             log_json=False,
             context_token=tenants.settings,
-            database=DatabaseSettings(url=gateway_db.app),
+            database=DatabaseSettings(url=gateway_db.app, pool_size=0),
             deployment_floors=deployment_floors or [],
         )
         authorizer = StaticAuthorizer(ROLES)
@@ -91,7 +91,7 @@ def make_stack(gateway_db: PgUrls) -> Iterator[StackFactory]:
         settings = ServiceSettings(
             log_json=False,
             context_token=tenants.settings,
-            database=DatabaseSettings(url=gateway_db.app),
+            database=DatabaseSettings(url=gateway_db.app, pool_size=0),
             config_url="http://config",
             providers=CREDENTIALS,
             profile_cache_seconds=0,

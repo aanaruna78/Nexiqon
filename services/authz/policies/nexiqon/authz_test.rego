@@ -109,3 +109,22 @@ test_end_users_read_only_their_own_conversations if {
 	not authz.allow with input as {"actor": actor(["end_user"]), "action": "conversation.all.read", "resource": {"type": "conversation"}}
 	authz.allow with input as {"actor": actor(["member"]), "action": "conversation.all.read", "resource": {"type": "conversation"}}
 }
+
+test_tool_invocation_by_risk if {
+	widget := {"tenant_id": "t-a", "id": "k-1", "type": "widget", "roles": ["end_user"], "groups": []}
+	authz.allow with input as {"actor": widget, "action": "tool.invoke.read", "resource": {"type": "tool"}}
+	authz.allow with input as {"actor": widget, "action": "tool.invoke.write", "resource": {"type": "tool"}}
+	not authz.allow with input as {"actor": widget, "action": "tool.invoke.high", "resource": {"type": "tool"}}
+	not authz.allow with input as {"actor": actor(["editor"]), "action": "tool.invoke.high", "resource": {"type": "tool"}}
+	authz.allow with input as {"actor": actor(["admin"]), "action": "tool.invoke.high", "resource": {"type": "tool"}}
+	not authz.allow with input as {"actor": actor(["member"]), "action": "tool.credentials.write", "resource": {"type": "credential"}}
+	not authz.allow with input as {"actor": actor(["editor"]), "action": "tool.credentials.read", "resource": {"type": "credential"}}
+	not authz.allow with input as {"actor": widget, "action": "tool.approvals.decide", "resource": {"type": "approval"}}
+}
+
+test_tool_gateway_identity_reads_config_only if {
+	svc := {"tenant_id": "t-a", "id": "service:tool-gateway", "type": "service", "roles": ["service:tool-gateway"], "groups": []}
+	authz.allow with input as {"actor": svc, "action": "config.tool.read", "resource": {"type": "tool"}}
+	not authz.allow with input as {"actor": svc, "action": "tool.invoke.read", "resource": {"type": "tool"}}
+	not authz.allow with input as {"actor": svc, "action": "config.tool.write", "resource": {"type": "tool"}}
+}

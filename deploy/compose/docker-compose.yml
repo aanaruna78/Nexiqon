@@ -193,8 +193,22 @@ services:
     ports: ["8104:8000"]
   tool-gateway:
     <<: *app
-    environment: { <<: *app-env, NEXIQON_GROUP: tool-gateway }
+    environment:
+      <<: *app-env
+      NEXIQON_GROUP: tool-gateway
+      NEXIQON_CONFIG_FILES: /app/config/dev.yaml,/app/config/dev-secrets.yaml,/app/config/dev-service-keys.yaml,/app/config/dev-secrets-tool-gateway.yaml,/app/config/tool-gateway.yaml
     ports: ["8105:8000"]
+  mock-apis:
+    # Demo business APIs (account/plan lookup, support cases) for two tenants; development only.
+    image: nexiqon/platform:dev
+    profiles: [apps]
+    entrypoint: ["python", "-m", "uvicorn", "nexiqon_tool_gateway.mock_apis:app", "--host", "0.0.0.0", "--port", "9000"]
+    ports: ["9000:9000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/healthz', timeout=2)"]
+      interval: 10s
+    depends_on:
+      migrate: { condition: service_completed_successfully }
   model-gateway:
     <<: *app
     environment:

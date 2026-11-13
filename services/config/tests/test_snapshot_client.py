@@ -36,7 +36,7 @@ async def test_snapshot_pull_cache_and_fallback(config_db: PgUrls, tmp_path: Pat
         ServiceSettings(
             log_json=False,
             context_token=t.settings,
-            database=DatabaseSettings(url=config_db.app),
+            database=DatabaseSettings(url=config_db.app, pool_size=0),
             snapshot_signing=SigningSettings(active_kid="k1", private_keys={"k1": private}),
         ),
         authorizer=StaticAuthorizer({"admin": ["**"]}),

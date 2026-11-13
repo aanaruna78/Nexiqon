@@ -352,6 +352,33 @@ async def resolve_agent(
         return await store.resolve_agent(name, environment, channel=channel, agent_version=preview)
 
 
+class DeployedObject(BaseModel):
+    kind: str
+    name: str
+    environment: str
+    version: int
+    spec: dict[str, Any]
+
+
+@tenant_router.get("/resolve/objects/{kind}/{name}", response_model=DeployedObject)
+async def resolve_object(
+    kind: str, name: str, request: Request, ctx: Ctx, environment: str = "dev"
+) -> DeployedObject:
+    """The version of an object deployed in an environment (e.g. tool definitions for tool-gateway)."""
+    await _allow(request, f"config.{_kind(kind)}.read", kind, name)
+    if environment not in ENVIRONMENTS:
+        raise BadRequest(f"environment must be one of {ENVIRONMENTS}")
+    async with _db(request).session(ctx) as s:
+        version = await Store(s, ctx, request.app.state.settings)._deployed_version(
+            kind, name, environment
+        )
+    if version is None:
+        raise NotFound(f"{kind} {name!r} is not deployed in {environment}")
+    return DeployedObject(
+        kind=kind, name=name, environment=environment, version=version.version, spec=version.spec
+    )
+
+
 @tenant_router.get("/resolve/profiles/{kind}/{name}")
 async def resolve_profile(
     kind: str, name: str, request: Request, ctx: Ctx, environment: str = "dev"

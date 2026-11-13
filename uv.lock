@@ -1626,11 +1626,15 @@ name = "nexiqon-tool-gateway"
 version = "0.1.0"
 source = { editable = "services/tool-gateway" }
 dependencies = [
+    { name = "jsonschema" },
     { name = "nexiqon-core" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "nexiqon-core", editable = "libs/nexiqon-core" }]
+requires-dist = [
+    { name = "jsonschema", specifier = ">=4.23" },
+    { name = "nexiqon-core", editable = "libs/nexiqon-core" },
+]
 
 [[package]]
 name = "nexus-rpc"

@@ -106,7 +106,7 @@ async def stack(knowledge_db: PgUrls, tmp_path: Path) -> AsyncIterator[Stack]:
         service_keys={"svc-ingestion": "ingestion"},
     )
     authorizer = StaticAuthorizer(ROLES)
-    db = DatabaseSettings(url=knowledge_db.app)
+    db = DatabaseSettings(url=knowledge_db.app, pool_size=0)
     config_app = create_config_app(
         ConfigSettings(log_json=False, context_token=tokens, database=db), authorizer=authorizer
     )

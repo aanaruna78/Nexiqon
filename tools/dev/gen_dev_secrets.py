@@ -21,6 +21,7 @@ OUT = CONFIG / "dev-secrets.yaml"
 SERVICE_IDENTITIES = [
     "ingestion",
     "agent-runtime",
+    "tool-gateway",
 ]  # services that sign their own tenant-scoped tokens
 
 

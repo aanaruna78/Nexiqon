@@ -18,6 +18,7 @@ class AgentState(TypedDict, total=False):
     abstain: bool
     tool: dict[str, Any] | None
     pending: dict[str, Any] | None  # what the user is being asked (clarify / approval)
+    approval: dict[str, Any] | None  # a confirmed tool call: approval id, tool, exact arguments
     clarify_attempts: int
     declined: bool
     answer: dict[str, Any] | None
@@ -40,6 +41,7 @@ def fresh_turn(question: str, history: list[dict[str, str]], locale: str) -> Age
         abstain=True,
         tool=None,
         pending=None,
+        approval=None,
         clarify_attempts=0,
         declined=False,
         answer=None,

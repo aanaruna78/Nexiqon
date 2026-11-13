@@ -25,6 +25,10 @@ role_permissions := {
 		"conversation.**",
 		"evaluation.**",
 		"tool.definitions.read",
+		"tool.definitions.test",
+		"tool.invoke.*",
+		"tool.openapi.import",
+		"tool.approvals.decide",
 		"model.inference.run",
 	],
 	"member": [
@@ -34,6 +38,8 @@ role_permissions := {
 		"model.inference.run",
 		"config.profiles.resolve",
 		"retrieval.search.*",
+		"tool.invoke.read",
+		"tool.invoke.write",
 	],
 	"end_user": [
 		"agent.query.run",
@@ -42,6 +48,9 @@ role_permissions := {
 		"model.inference.run",
 		"config.profiles.resolve",
 		"retrieval.search.*",
+		"tool.definitions.read",
+		"tool.invoke.read",
+		"tool.invoke.write",
 	],
 	"service": ["**"],
 	# Per-service identities (ADR 0017): tokens signed with a service's own key carry only this role.
@@ -55,6 +64,11 @@ role_permissions := {
 	"service:agent-runtime": [
 		"config.agent.read",
 		"ingestion.collections.read",
+	],
+	# Reads tool definitions and agents' tool allowlists; invocations run as the calling user.
+	"service:tool-gateway": [
+		"config.tool.read",
+		"config.agent.read",
 	],
 }
 
@@ -71,6 +85,8 @@ owner_only := {
 admin_only := {
 	"audit.events.read",
 	"audit.chain.verify",
+	"tool.invoke.high",
+	"tool.credentials.read",
 }
 
 admin_roles := {"owner", "admin", "service"}
@@ -91,6 +107,9 @@ widget_actions := {
 	"retrieval.search.run",
 	"retrieval.search.verify",
 	"retrieval.search.answer",
+	"tool.definitions.read",
+	"tool.invoke.read",
+	"tool.invoke.write",
 }
 
 resource_tenant := object.get(input.resource, "tenant_id", input.actor.tenant_id)

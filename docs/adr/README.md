@@ -20,3 +20,4 @@
 | [0016](0016-studio-bff-auth-and-i18n.md) | Studio as a backend-for-frontend, OIDC sessions and i18n | Accepted |
 | [0017](0017-service-identities-and-the-knowledge-pipeline.md) | Per-service identities and the knowledge pipeline split | Accepted |
 | [0018](0018-agent-runtime-on-langgraph-with-tenant-checkpoints.md) | Agent runtime on LangGraph with tenant-scoped checkpoints | Accepted |
+| [0019](0019-tool-gateway.md) | Tool gateway, confirmations and the secrets port | Accepted |

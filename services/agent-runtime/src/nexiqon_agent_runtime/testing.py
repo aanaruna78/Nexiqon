@@ -33,6 +33,10 @@ class FakeServices:
         self.abstain = False
         self.collections = {"product-docs": str(uuid.uuid4())}
         self.answer = "Open Settings, then Members, and choose Invite [1]."
+        # Tool gateway: published tools (public definitions) and what the "model" extracts.
+        self.tools: dict[str, dict[str, Any]] = {}
+        self.tool_args: dict[str, Any] = {}
+        self.tool_result: dict[str, Any] = {"plan": "Team", "status": "active"}
 
     def chats(self, kind: str | None = None) -> list[dict[str, Any]]:
         return [
@@ -70,6 +74,8 @@ class FakeServices:
                     "abstain": not body["citations"],
                 },
             )
+        if host == "tool-gateway":
+            return self._tools(request.method, path, body)
         if host == "ingestion" and path == "/v1/collections":
             self.calls.append(("collections", {}))
             return httpx.Response(
@@ -77,11 +83,50 @@ class FakeServices:
             )
         return httpx.Response(404, json={"detail": f"no fake for {host}{path}"})
 
+    def _tools(self, method: str, path: str, body: dict[str, Any]) -> httpx.Response:
+        parts = path.strip("/").split("/")
+        if method == "GET" and parts[:2] == ["v1", "tools"]:
+            tool = self.tools.get(parts[2])
+            return (
+                httpx.Response(200, json=tool)
+                if tool
+                else httpx.Response(404, json={"detail": "not found"})
+            )
+        if parts[-1] == "approvals":
+            self.calls.append(("confirm", {"tool": parts[2], **body}))
+            return httpx.Response(
+                201,
+                json={
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "summary": f"{parts[2]} {body['arguments']}",
+                    "status": "pending",
+                },
+            )
+        if parts[-1] == "decision":
+            self.calls.append(("decide", {"approval_id": parts[2], **body}))
+            return httpx.Response(
+                200, json={"id": parts[2], "status": "approved" if body["approved"] else "declined"}
+            )
+        if parts[-1] == "invoke":
+            self.calls.append(("invoke", {"tool": parts[2], **body}))
+            return httpx.Response(
+                200,
+                json={
+                    "call_id": None,
+                    "ok": True,
+                    "result": self.tool_result,
+                    "classification": "confidential",
+                },
+            )
+        return httpx.Response(404, json={"detail": "no fake"})
+
     def _chat(self, body: dict[str, Any]) -> httpx.Response:
         messages = body["messages"]
         system = next((m["content"] for m in messages if m["role"] == "system"), "")
         last = messages[-1]["content"]
-        if system.startswith("Classify"):
+        if system.startswith("Extract the arguments"):
+            kind, content = "extract", json.dumps(self.tool_args)
+        elif system.startswith("Classify"):
             kind = "classify"
             intent = next(
                 (v for k, v in self.intents.items() if k.lower() in last.lower()), "unclear"

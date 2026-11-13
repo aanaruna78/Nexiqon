@@ -115,7 +115,7 @@ def stack(conv_db: PgUrls) -> Iterator[Stack]:
         service_keys={"svc-ar": "agent-runtime"},
     )
     authorizer = StaticAuthorizer(ROLES)
-    db = DatabaseSettings(url=conv_db.app)
+    db = DatabaseSettings(url=conv_db.app, pool_size=0)
     config_settings = ConfigSettings(log_json=False, context_token=tokens, database=db)
     fakes = FakeServices()
     # Everything below runs inside the conversation client's event loop, except the setup client.

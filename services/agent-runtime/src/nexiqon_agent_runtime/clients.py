@@ -152,28 +152,149 @@ class ServiceReads:
         return [hit[1][n] for n in names if n in hit[1]]
 
 
-class ToolResult(Protocol):
-    ok: bool
-
-
 class Tools(Protocol):
-    """Port to the tool gateway (Phase 3 slice 2). ``invoke`` returns a JSON-able result."""
+    """Port to the tool gateway. Calls run with the caller's token."""
 
     async def describe(self, token: str, name: str) -> dict[str, Any] | None: ...
 
+    async def request_confirmation(
+        self,
+        token: str,
+        name: str,
+        *,
+        agent: str,
+        arguments: dict[str, Any],
+        conversation_id: str | None,
+    ) -> dict[str, Any]: ...
+
+    async def decide(self, token: str, approval_id: str, approved: bool) -> dict[str, Any]: ...
+
     async def invoke(
-        self, token: str, name: str, arguments: dict[str, Any], *, idempotency_key: str
+        self,
+        token: str,
+        name: str,
+        *,
+        agent: str,
+        arguments: dict[str, Any],
+        idempotency_key: str,
+        approval_id: str | None = None,
+        conversation_id: str | None = None,
     ) -> dict[str, Any]: ...
 
 
+def _tool_error(r: httpx.Response) -> dict[str, Any]:
+    try:
+        body = r.json()
+    except ValueError:
+        body = {}
+    return {
+        "ok": False,
+        "error": body.get("code") or f"http_{r.status_code}",
+        "detail": body.get("detail") or r.reason_phrase,
+    }
+
+
+class HttpTools(Http):
+    async def describe(self, token: str, name: str) -> dict[str, Any] | None:
+        r = await self.call(token, "GET", f"/v1/tools/{name}")
+        if r.status_code in (403, 404):
+            return None
+        _raise(r, f"tool {name!r}")
+        result: dict[str, Any] = r.json()
+        return result
+
+    async def request_confirmation(
+        self,
+        token: str,
+        name: str,
+        *,
+        agent: str,
+        arguments: dict[str, Any],
+        conversation_id: str | None,
+    ) -> dict[str, Any]:
+        r = await self.call(
+            token,
+            "POST",
+            f"/v1/tools/{name}/approvals",
+            json={"agent": agent, "arguments": arguments, "conversation_id": conversation_id},
+        )
+        if r.status_code >= 400:
+            return _tool_error(r)
+        result: dict[str, Any] = r.json()
+        return result
+
+    async def decide(self, token: str, approval_id: str, approved: bool) -> dict[str, Any]:
+        r = await self.call(
+            token, "POST", f"/v1/approvals/{approval_id}/decision", json={"approved": approved}
+        )
+        if r.status_code >= 400:
+            return _tool_error(r)
+        result: dict[str, Any] = r.json()
+        return result
+
+    async def invoke(
+        self,
+        token: str,
+        name: str,
+        *,
+        agent: str,
+        arguments: dict[str, Any],
+        idempotency_key: str,
+        approval_id: str | None = None,
+        conversation_id: str | None = None,
+    ) -> dict[str, Any]:
+        r = await self.call(
+            token,
+            "POST",
+            f"/v1/tools/{name}/invoke",
+            json={
+                "agent": agent,
+                "arguments": arguments,
+                "idempotency_key": idempotency_key,
+                "approval_id": approval_id,
+                "conversation_id": conversation_id,
+            },
+        )
+        if r.status_code >= 400:
+            return _tool_error(r)
+        result: dict[str, Any] = r.json()
+        return result
+
+
 class NoTools:
-    """Until the tool gateway is configured: every tool is reported unavailable (never faked)."""
+    """When no tool gateway is configured: every tool is reported unavailable (never faked)."""
 
     async def describe(self, token: str, name: str) -> dict[str, Any] | None:
         return None
 
+    async def request_confirmation(
+        self,
+        token: str,
+        name: str,
+        *,
+        agent: str,
+        arguments: dict[str, Any],
+        conversation_id: str | None,
+    ) -> dict[str, Any]:
+        return {
+            "ok": False,
+            "error": "tool_unavailable",
+            "detail": f"Tool {name!r} is not available",
+        }
+
+    async def decide(self, token: str, approval_id: str, approved: bool) -> dict[str, Any]:
+        return {"ok": False, "error": "tool_unavailable"}
+
     async def invoke(
-        self, token: str, name: str, arguments: dict[str, Any], *, idempotency_key: str
+        self,
+        token: str,
+        name: str,
+        *,
+        agent: str,
+        arguments: dict[str, Any],
+        idempotency_key: str,
+        approval_id: str | None = None,
+        conversation_id: str | None = None,
     ) -> dict[str, Any]:
         return {
             "ok": False,
