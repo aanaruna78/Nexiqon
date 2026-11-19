@@ -2,3 +2,5 @@
 *.tfstate
 *.tfstate.*
 *.plan
+# Modules are libraries: the lock file belongs to each environment (envs/*).
+modules/*/.terraform.lock.hcl

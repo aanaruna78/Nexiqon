@@ -11,6 +11,7 @@ from nexiqon_core.app import create_service_app
 from nexiqon_core.authz import Authorizer
 from nexiqon_core.bus import Bus, EventRuntime
 from nexiqon_core.db import TenantSessionFactory, create_engine
+from nexiqon_core.licence import load as load_licence
 from nexiqon_identity import __version__
 from nexiqon_identity.access import AccessPolicy, AccessService
 from nexiqon_identity.adapters.oidc import JwksFetcher, OidcVerifier, http_fetch_jwks
@@ -33,6 +34,9 @@ def create_app(
     jwks_fetcher: JwksFetcher = http_fetch_jwks,
 ) -> FastAPI:
     settings = settings or ServiceSettings()
+    # DV-06: a licence that is configured must verify; one that is required must be present.
+    # Either failure stops identity here, with the reason in the log.
+    licence = load_licence(settings.licence)
     engine = (
         create_engine(
             settings.database.url.get_secret_value(), pool_size=settings.database.pool_size
@@ -75,6 +79,7 @@ def create_app(
     )
     issuer = build_issuer(settings.signing, settings.context_token, settings.context_ttl_seconds)
     app.state.db = db
+    app.state.licence = licence
     app.state.access = (
         AccessService(
             db,

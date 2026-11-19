@@ -29,6 +29,7 @@ dependencies = [
 [project.scripts]
 nexiqon-run = "nexiqon_core.runner:main"
 nexiqon-migrate = "nexiqon_core.migrations:main"
+nexiqon-keys = "nexiqon_core.keys:main"
 
 [build-system]
 requires = ["hatchling"]

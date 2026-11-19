@@ -328,6 +328,81 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "LicenceOut": {
+        "properties": {
+          "customer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer"
+          },
+          "deployment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deployment"
+          },
+          "expires": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires"
+          },
+          "grace_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grace Days"
+          },
+          "max_tenants": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tenants"
+          },
+          "status": {
+            "enum": [
+              "unlicensed",
+              "valid",
+              "expiring",
+              "grace",
+              "expired"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "LicenceOut",
+        "type": "object"
+      },
       "MemberInvite": {
         "properties": {
           "email": {
@@ -960,6 +1035,28 @@
           }
         },
         "summary": "Add Group Member",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
+    "/v1/licence": {
+      "get": {
+        "description": "The installation's licence (DV-06), for administrators: status and limits.",
+        "operationId": "get_licence_v1_licence_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LicenceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Licence",
         "tags": [
           "identity"
         ]

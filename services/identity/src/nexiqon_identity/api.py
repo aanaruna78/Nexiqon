@@ -10,7 +10,7 @@ from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Header, Request, Response
 from pydantic import AwareDatetime, BaseModel, EmailStr, Field, field_validator
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,6 +19,7 @@ from nexiqon_core.db import TenantSessionFactory
 from nexiqon_core.errors import BadRequest, Conflict, Forbidden, NotFound, Unauthorized
 from nexiqon_core.events import add_event
 from nexiqon_core.ids import uuid7
+from nexiqon_core.licence import Licence
 from nexiqon_core.tenancy import (
     CONTEXT_HEADER,
     ContextTokenVerifier,
@@ -102,8 +103,48 @@ async def ext_authz(
     Also returns the tenant's region (``X-Nexiqon-Region``), which the gateway uses to send the
     request to that region's cell (DV-07): a tenant's data stays in its region."""
     token = await _access(request).context_for(authorization, tenant, origin, visitor)
-    region = _verifier(request).verify(token).region or "default"
-    return Response(status_code=200, headers={CONTEXT_HEADER: token, REGION_HEADER: region})
+    ctx = _verifier(request).verify(token)
+    if ctx.actor_type == "user" and _licence_status(request) == "expired":
+        # Staff sign-in stops after the grace period; widgets and API keys keep answering.
+        raise Forbidden(
+            "This installation's licence has expired. Ask your administrator to renew it."
+        )
+    return Response(
+        status_code=200, headers={CONTEXT_HEADER: token, REGION_HEADER: ctx.region or "default"}
+    )
+
+
+def _licence(request: Request) -> Licence | None:
+    licence: Licence | None = getattr(request.app.state, "licence", None)
+    return licence
+
+
+def _licence_status(request: Request) -> str:
+    licence = _licence(request)
+    return licence.status() if licence else "unlicensed"
+
+
+async def _check_tenant_allowance(s: AsyncSession, request: Request) -> None:
+    """DV-06: a new organization needs a current licence with room for it."""
+    licence = _licence(request)
+    if licence is None:
+        return
+    if licence.status() == "expired":
+        raise Forbidden(
+            "This installation's licence has expired. Ask your administrator to renew it."
+        )
+    if licence.max_tenants is not None:
+        await s.execute(text("SELECT set_config('app.licence_count', 'on', true)"))
+        count = (
+            await s.execute(
+                select(func.count()).select_from(Tenant).where(Tenant.status != "deleted")
+            )
+        ).scalar_one()
+        await s.execute(text("SELECT set_config('app.licence_count', 'off', true)"))
+        if count >= licence.max_tenants:
+            raise Forbidden(
+                f"This installation is licensed for {licence.max_tenants} organizations, and all are in use."
+            )
 
 
 REGION_HEADER = "x-nexiqon-region"
@@ -211,6 +252,7 @@ async def create_tenant(
                 "tenant_id": str(tenant_id),
             }
         ) as s:
+            await _check_tenant_allowance(s, request)
             user = await access.upsert_user(s, claims)
             tenant = Tenant(
                 id=tenant_id, slug=body.slug, name=body.name, region=body.region, locale=body.locale
@@ -258,6 +300,35 @@ async def get_tenant(ctx: Ctx, request: Request) -> TenantOut:
     if tenant is None:
         raise NotFound("Tenant not found")
     return TenantOut.of(tenant)
+
+
+class LicenceOut(BaseModel):
+    status: Literal["unlicensed", "valid", "expiring", "grace", "expired"]
+    customer: str | None = None
+    expires: str | None = None
+    grace_days: int | None = None
+    max_tenants: int | None = None
+    deployment: str | None = None
+
+
+@tenant_router.get(
+    "/licence",
+    response_model=LicenceOut,
+    dependencies=[require_permission("identity.licence.read", "licence")],
+)
+async def get_licence(ctx: Ctx, request: Request) -> LicenceOut:
+    """The installation's licence (DV-06), for administrators: status and limits."""
+    licence = _licence(request)
+    if licence is None:
+        return LicenceOut(status="unlicensed")
+    return LicenceOut(
+        status=licence.status(),
+        customer=licence.customer,
+        expires=licence.expires.isoformat(),
+        grace_days=licence.grace_days,
+        max_tenants=licence.max_tenants,
+        deployment=licence.deployment,
+    )
 
 
 class TenantPatch(BaseModel):

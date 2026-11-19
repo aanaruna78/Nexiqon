@@ -67,4 +67,10 @@ without reliable JSON; the gateway then uses vLLM's guided decoding instead.
 ## Status
 
 The recipe and its configuration are validated. Running them on a target GPU is still to be done.
-The Helm values for GPU node pools come with the Helm chart (DV-02).
+
+The same three servers are also available in other installs:
+- **Kubernetes:** set `models.enabled` in the Helm chart (on by default in
+  `values/minimal.yaml`). The servers run on nodes labelled `nexiqon.dev/pool: gpu` (the OpenTofu
+  modules' GPU pools) and share one weights volume. On a single-GPU node, enable NVIDIA
+  time-slicing so all three fit (`docs/guides/minimal-footprint.md`).
+- **One server:** `deploy/single-node/install.sh --gpu`.

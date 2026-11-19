@@ -57,6 +57,7 @@ proves it. "Residual" lists what is accepted and why.
 | E1 | **Elevation of privilege**: member to admin | B2 | OPA policy: deny by default; `owner_only`, `admin_only` and `service_only` sets; widgets restricted to an action allowlist | `authz_test.rego` (26 cases) |
 | E2 | Tool call beyond the user's rights | Data plane | Tools run with the caller's identity; effective risk is the stricter of pack and tool; writes need a confirmation tap; high-risk tools are admin-only | Tool-gateway tests; QA3-03 |
 | E3 | Container escape or lateral movement | Runtime | Non-root, read-only root filesystem, all capabilities dropped, no service-account token, no setuid binaries; default-deny NetworkPolicy | Dockerfile; chart; Trivy (HIGH/CRITICAL) |
+| E4 | Running more than the licence allows, or past it (DV-06) | Licence | ES256 licence verified offline with the vendor key; forged or missing licences stop identity; tenant count and expiry enforced by identity | `test_licence.py` (core, identity) |
 
 ## OWASP Top 10 for LLM applications (2025)
 
@@ -102,5 +103,8 @@ proves it. "Residual" lists what is accepted and why.
 - **Studio's CSP allows inline scripts.** Next.js bootstraps inline. Mitigations: no
   third-party scripts, `connect-src 'self'`, every answer rendered as text. A nonce-based CSP
   is planned with Next's nonce support.
+- **Single-node OpenBao unseals itself** with a key on the same disk (`deploy/single-node`):
+  sealing does not protect a stolen disk. Mitigation: full-disk encryption, or HSM or KMS
+  auto-unseal where available.
 - **Model-graded evaluators are not yet used.** Evaluations are deterministic, so they cannot
   judge tone. This is accepted until a reviewed judge exists.

@@ -109,6 +109,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/licence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Licence
+         * @description The installation's licence (DV-06), for administrators: status and limits.
+         */
+        get: operations["get_licence_v1_licence_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/members": {
         parameters: {
             query?: never;
@@ -320,6 +340,24 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** LicenceOut */
+        LicenceOut: {
+            /** Customer */
+            customer?: string | null;
+            /** Deployment */
+            deployment?: string | null;
+            /** Expires */
+            expires?: string | null;
+            /** Grace Days */
+            grace_days?: number | null;
+            /** Max Tenants */
+            max_tenants?: number | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "unlicensed" | "valid" | "expiring" | "grace" | "expired";
         };
         /** MemberInvite */
         MemberInvite: {
@@ -691,6 +729,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_licence_v1_licence_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LicenceOut"];
                 };
             };
         };

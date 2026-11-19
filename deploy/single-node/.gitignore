@@ -1,0 +1,4 @@
+# Written by install.sh: passwords, settings and certificates of this server.
+.env
+config/
+tls/

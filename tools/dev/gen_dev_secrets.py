@@ -15,24 +15,13 @@ from pathlib import Path
 
 import yaml
 
+from nexiqon_core.keys import SERVICE_IDENTITIES as INSTALLATION_IDENTITIES
 from nexiqon_core.testing import make_keypair
 
 CONFIG = Path(__file__).resolve().parents[2] / "deploy" / "compose" / "config"
 OUT = CONFIG / "dev-secrets.yaml"
-# Services that sign their own tenant-scoped tokens -> the settings key their private key goes
-# under. Channel shares a process with agent-runtime in the grouped topology, so it has its own key;
-# evaluation (control-ops) and conversation (agent) likewise.
-SERVICE_IDENTITIES = {
-    "ingestion": "service_identity",
-    "agent-runtime": "service_identity",
-    "tool-gateway": "service_identity",
-    "channel": "channel_identity",
-    "evaluation": "evaluation_identity",
-    "conversation": "conversation_identity",
-    "metering": "metering_identity",
-    "governance": "governance_identity",
-    "config-mirror": "mirror_identity",  # hybrid data plane only (DV-04)
-}
+# The per-service identities (the same list the installation keys use).
+SERVICE_IDENTITIES = INSTALLATION_IDENTITIES
 
 
 def _write(path: Path, data: dict[str, object]) -> None:

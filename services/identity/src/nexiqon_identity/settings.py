@@ -2,6 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, SecretStr
 
+from nexiqon_core.licence import LicenceSettings
 from nexiqon_core.settings import CoreSettings
 from nexiqon_core.signing import SigningSettings
 
@@ -34,3 +35,5 @@ class ServiceSettings(CoreSettings):
     require_admin_mfa: bool = True
     clerk_webhook_secret: SecretStr | None = None
     jit_provisioning: bool = True
+    # Offline licence (DV-06): required by the private and air-gapped profiles.
+    licence: LicenceSettings = Field(default_factory=LicenceSettings)

@@ -1,0 +1,50 @@
+# Minimum on-premises footprint (DV-09): one CPU node and one GPU node.
+#
+#   CPU node (8 vCPU, 32 GB): the platform below at one replica each, plus PostgreSQL, NATS,
+#     Temporal, object storage and OpenBao from their own charts at their smallest settings.
+#   GPU node (1 x 48 GB, or 1 x 24 GB with the 4B chat model): the three vLLM servers.
+#
+# Left out on purpose, to keep the footprint small: a service mesh (traffic inside the cluster is
+# limited by NetworkPolicies; add Linkerd for mTLS between pods if your policy needs it), a
+# bundled monitoring stack (traces and metrics go over OTLP to your own collector), and LLM
+# tracing tools. Sizing, the dependencies' settings and what grows first:
+# docs/guides/minimal-footprint.md.
+topology: { mode: grouped }
+settings:
+  environment: prod
+  require_admin_mfa: true
+groups:
+  control-core:
+    replicas: 1
+    resources: { requests: { cpu: 200m, memory: 384Mi }, limits: { memory: 768Mi } }
+  control-ops:
+    replicas: 1
+    resources: { requests: { cpu: 100m, memory: 256Mi }, limits: { memory: 512Mi } }
+  knowledge:
+    replicas: 1
+    resources: { requests: { cpu: 300m, memory: 768Mi }, limits: { memory: 1536Mi } }
+  agent:
+    replicas: 1
+    resources: { requests: { cpu: 200m, memory: 384Mi }, limits: { memory: 768Mi } }
+  tool-gateway:
+    replicas: 1
+    resources: { requests: { cpu: 50m, memory: 192Mi }, limits: { memory: 384Mi } }
+  model-gateway:
+    replicas: 1
+    env: []   # no cloud provider keys: assistants use the on-prem model profiles
+    resources: { requests: { cpu: 100m, memory: 192Mi }, limits: { memory: 384Mi } }
+gateway:
+  replicas: 1
+  hsts: true
+opa: { replicas: 1 }
+studio:
+  replicas: 1
+  resources: { requests: { cpu: 100m, memory: 192Mi }, limits: { memory: 384Mi } }
+models:
+  enabled: true
+backup:
+  enabled: true   # nightly logical backup to a volume; copy it off the cluster
+# Telemetry to your own collector (no bundled monitoring):
+extraEnv:
+  - { name: NEXIQON_TELEMETRY__ENABLED, value: "true" }
+  - { name: NEXIQON_TELEMETRY__OTLP_ENDPOINT, value: "http://otel-collector.observability:4318" }

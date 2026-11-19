@@ -105,8 +105,19 @@ jobs:
           $H template t . -f values/private.yaml --set studio.baseUrl=https://studio.example --set studio.oidc.issuer=https://login.example > /tmp/render/private.yaml
           $H lint . -f values/hybrid-data.yaml --set studio.baseUrl=https://data.example --set studio.oidc.issuer=https://login.example
           $H template t . -f values/hybrid-data.yaml --set studio.baseUrl=https://data.example --set studio.oidc.issuer=https://login.example > /tmp/render/hybrid-data.yaml
+          $H template t . -f values/minimal.yaml --set studio.baseUrl=https://ai.example --set studio.oidc.issuer=https://login.example > /tmp/render/minimal.yaml
           # The control plane with the data-plane link and one region cell (DV-04, DV-07).
           $H template t . -f values/saas.yaml --set gateway.dataPlaneLink.enabled=true --set cells.eu.host=eu.api.example > /tmp/render/saas-cells.yaml
+      - name: The single-node gateway matches the chart (DV-05)
+        run: |
+          docker run --rm -v $PWD/deploy/helm/nexiqon:/chart -w /chart alpine/helm:3.19.0 \
+              template nexiqon . --set gateway.hsts=true --set studio.enabled=false \
+            | python3 tools/bundle/single_node_gateway.py > /tmp/single-node-envoy.yaml
+          diff -u deploy/single-node/gateway/envoy.yaml /tmp/single-node-envoy.yaml \
+            || { echo "run tools/bundle/single_node_gateway.py (see its docstring)"; exit 1; }
+          docker run --rm -v /tmp/single-node-envoy.yaml:/e.yaml:ro envoyproxy/envoy:v1.40.0 --mode validate -c /e.yaml
+      - name: Single-node scripts
+        run: docker run --rm -v $PWD/deploy/single-node:/m:ro koalaman/shellcheck:v0.10.0 -S warning /m/install.sh /m/backup.sh /m/bootstrap/openbao.sh /m/initdb/00-app-role.sh
       - name: Kubernetes schemas
         run: docker run --rm -v /tmp/render:/m:ro ghcr.io/yannh/kubeconform:v0.7.0 -strict -summary -kubernetes-version 1.31.0 /m
       - name: Generated gateway config is valid Envoy
@@ -127,7 +138,7 @@ jobs:
         run: |
           T="ghcr.io/opentofu/opentofu:1.10.6"
           docker run --rm -v $PWD/deploy/tofu:/w -w /w $T fmt -check -recursive
-          for d in modules/digitalocean envs/staging; do
+          for d in modules/digitalocean modules/aws modules/gcp modules/azure envs/staging; do
             docker run --rm -v $PWD/deploy/tofu:/w -w /w/$d $T init -backend=false -input=false -no-color
             docker run --rm -v $PWD/deploy/tofu:/w -w /w/$d $T validate -no-color
           done

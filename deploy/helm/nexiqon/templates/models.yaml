@@ -1,0 +1,90 @@
+{{- if .Values.models.enabled }}
+{{- $m := .Values.models }}
+# Self-hosted models on the GPU node (M-06, DV-09): the vLLM servers the built-in on-prem-small and
+# on-prem-standard model profiles call (http://vllm:8000/v1, vllm-embed, vllm-rerank). They share
+# one weights volume; on a single-GPU node, enable NVIDIA time-slicing so all three fit.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: models-cache
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+spec:
+  accessModes: [ReadWriteOnce]   # every server runs on the same GPU node
+  {{- with $m.cache.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources: { requests: { storage: {{ $m.cache.size }} } }
+{{- range $name, $s := $m.servers }}
+{{- if $s.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels: {{- include "nexiqon.labels" $ | nindent 4 }}
+spec:
+  replicas: 1
+  strategy: { type: Recreate }   # one GPU: the old pod must free it first
+  selector:
+    matchLabels: {{- include "nexiqon.selector" (dict "root" $ "name" $name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "nexiqon.labels" $ | nindent 8 }}
+        app.kubernetes.io/name: {{ $name }}
+    spec:
+      automountServiceAccountToken: false
+      {{- with $m.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $m.tolerations }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: vllm
+          image: {{ $m.image }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          args: {{- toYaml $s.args | nindent 12 }}
+          env:
+            - { name: HF_HUB_OFFLINE, value: {{ ternary "1" "0" $m.offline | quote }} }
+            - { name: HF_HOME, value: /models }
+            {{- if $m.hfTokenSecret }}
+            - name: HF_TOKEN
+              valueFrom: { secretKeyRef: { name: {{ $m.hfTokenSecret }}, key: token, optional: true } }
+            {{- end }}
+          ports:
+            - { name: http, containerPort: 8000 }
+          readinessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 10
+          startupProbe:   # first start downloads or loads the weights
+            httpGet: { path: /health, port: http }
+            periodSeconds: 15
+            failureThreshold: 80
+          resources:
+            requests: { cpu: {{ $s.cpu | default "2" | quote }}, memory: {{ $s.memory | default "16Gi" }}, nvidia.com/gpu: 1 }
+            limits: { memory: {{ $s.memory | default "16Gi" }}, nvidia.com/gpu: 1 }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+          volumeMounts:
+            - { name: models, mountPath: /models }
+            - { name: shm, mountPath: /dev/shm }
+      volumes:
+        - name: models
+          persistentVolumeClaim: { claimName: models-cache }
+        - name: shm   # tensor parallel workers share memory
+          emptyDir: { medium: Memory, sizeLimit: 4Gi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels: {{- include "nexiqon.labels" $ | nindent 4 }}
+spec:
+  selector: {{- include "nexiqon.selector" (dict "root" $ "name" $name) | nindent 4 }}
+  ports:
+    - { name: http, port: 8000, targetPort: http }
+{{- end }}
+{{- end }}
+{{- end }}

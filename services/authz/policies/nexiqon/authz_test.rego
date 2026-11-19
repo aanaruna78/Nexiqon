@@ -217,3 +217,9 @@ test_the_config_mirror_only_pulls_snapshots if {
 	not authz.allow with input as {"actor": svc, "action": "config.agent.write", "resource": {"type": "agent"}}
 	not authz.allow with input as {"actor": svc, "action": "conversation.all.read", "resource": {"type": "conversation"}}
 }
+
+test_only_admins_read_the_installation_licence if {
+	authz.allow with input as {"actor": actor(["admin"]), "action": "identity.licence.read", "resource": {"type": "licence"}}
+	not authz.allow with input as {"actor": actor(["member"]), "action": "identity.licence.read", "resource": {"type": "licence"}}
+	not authz.allow with input as {"actor": actor(["editor"]), "action": "identity.licence.read", "resource": {"type": "licence"}}
+}

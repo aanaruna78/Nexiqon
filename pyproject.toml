@@ -58,6 +58,7 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Header", 
 # Operator scripts run fixed commands (no user input), build SQL only from information_schema
 # names of the platform's own database, and use /tmp inside the database container.
 "tools/ops/**" = ["S603", "S608", "S108"]
+"tools/bundle/build_bundle.py" = ["S603", "S607"]  # runs docker with fixed arguments
 
 [tool.mypy]
 python_version = "3.12"

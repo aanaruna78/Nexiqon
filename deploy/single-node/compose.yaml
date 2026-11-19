@@ -1,0 +1,356 @@
+# Nexiqon on one server (DV-05): the whole platform with Docker Compose, optionally with
+# self-hosted models on the server's NVIDIA GPUs. Run ./install.sh, which writes .env, settings,
+# keys and the TLS front's configuration, then starts this file.
+#
+#   ./install.sh                         # CPU only: model providers configured in Studio
+#   ./install.sh --gpu                   # + vLLM chat, embeddings and reranking on local GPUs
+#   ./install.sh --offline               # air-gapped: images and weights from the bundle (DV-06)
+#
+# Ports: 443 (Studio), 8443 (API and widget). Everything else stays on the internal network.
+# Sizing and operations: README.md.
+name: nexiqon
+
+x-app: &app
+  image: ${NEXIQON_IMAGE:-nexiqon/platform}:${NEXIQON_VERSION:?set NEXIQON_VERSION in .env}
+  restart: unless-stopped
+  read_only: true
+  tmpfs: [/tmp]
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  networks: [internal]
+  depends_on: &app-deps
+    migrate: { condition: service_completed_successfully }
+    nats: { condition: service_started }
+    flagd: { condition: service_started }
+  healthcheck:
+    test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/readyz', timeout=3)"]
+    interval: 15s
+    timeout: 5s
+    retries: 20
+    start_period: 30s
+
+x-env: &env
+  NEXIQON_DATABASE__URL: postgresql+asyncpg://nexiqon_app:${NEXIQON_APP_DB_PASSWORD}@postgres:5432/nexiqon
+  NEXIQON_TELEMETRY__ENABLED: ${NEXIQON_TELEMETRY_ENABLED:-false}
+  NEXIQON_TELEMETRY__OTLP_ENDPOINT: ${NEXIQON_OTLP_ENDPOINT:-}
+
+# Key files from the keys volume, one file per mount: each group sees only its own (ADR 0026).
+x-key: &key
+  type: volume
+  source: keys
+  read_only: true
+
+services:
+  # ---------------------------------------------------------------- dependencies
+  postgres:
+    image: pgvector/pgvector:0.8.0-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nexiqon
+      POSTGRES_USER: nexiqon
+      POSTGRES_PASSWORD: ${NEXIQON_DB_PASSWORD:?run ./install.sh}
+      NEXIQON_APP_DB_PASSWORD: ${NEXIQON_APP_DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexiqon -d nexiqon"]
+      interval: 5s
+      retries: 30
+    shm_size: 256m
+
+  nats:
+    image: nats:2.15.1-alpine
+    restart: unless-stopped
+    command: ["-js", "-sd", "/data"]
+    volumes: [natsdata:/data]
+    networks: [internal]
+
+  objectstore:
+    image: chrislusf/seaweedfs:4.48
+    restart: unless-stopped
+    command: ["server", "-dir=/data", "-s3", "-s3.port=8333", "-s3.config=/etc/seaweedfs/s3.json"]
+    volumes:
+      - s3data:/data
+      - ./config/s3.json:/etc/seaweedfs/s3.json:ro
+    networks: [internal]
+
+  temporal:
+    image: temporalio/auto-setup:1.26.2
+    restart: unless-stopped
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: nexiqon
+      POSTGRES_PWD: ${NEXIQON_DB_PASSWORD}
+      POSTGRES_SEEDS: postgres
+    networks: [internal]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  opa:
+    image: openpolicyagent/opa:0.70.0
+    restart: unless-stopped
+    command: ["run", "--server", "--addr=0.0.0.0:8181", "/policies"]
+    volumes:
+      - ../helm/nexiqon/files/policies:/policies:ro
+    networks: [internal]
+
+  flagd:
+    image: ghcr.io/open-feature/flagd:v0.14.0
+    restart: unless-stopped
+    command: ["start", "--uri", "file:/flags/flags.json"]
+    volumes:
+      - ../helm/nexiqon/files/flags.json:/flags/flags.json:ro
+    networks: [internal]
+
+  clamav:
+    # Every uploaded file is scanned. Air-gapped: signatures update from the bundle (README).
+    image: clamav/clamav:1.4
+    restart: unless-stopped
+    volumes: [clamdb:/var/lib/clamav]
+    networks: [internal]
+
+  # Tool credentials. File storage on this server; install.sh initialises it once and the unseal
+  # key stays in the openbao volume, so it unseals itself after a restart (README: security).
+  openbao:
+    image: openbao/openbao:2.1.0
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/bootstrap/openbao.sh"]
+    environment:
+      BAO_ADDR: http://127.0.0.1:8200
+    cap_add: [IPC_LOCK]
+    volumes:
+      - baodata:/openbao
+      - ./bootstrap/openbao.sh:/bootstrap/openbao.sh:ro
+    networks: [internal]
+    healthcheck:
+      test: ["CMD", "test", "-f", "/openbao/ready"]
+      interval: 5s
+      retries: 60
+
+  # ---------------------------------------------------------------- one-shot setup
+  keys:
+    # Creates the installation's signing keys in the keys volume once; never overwrites them.
+    image: ${NEXIQON_IMAGE:-nexiqon/platform}:${NEXIQON_VERSION}
+    # Runs as root only to hand the new files to the platform user (10001), mode 600.
+    user: "0"
+    entrypoint: ["nexiqon-keys", "/keys", "--mode", "600", "--owner", "10001"]
+    volumes: [keys:/keys]
+    networks: [internal]
+
+  migrate:
+    image: ${NEXIQON_IMAGE:-nexiqon/platform}:${NEXIQON_VERSION}
+    entrypoint: ["nexiqon-migrate", "all"]
+    environment:
+      NEXIQON_DATABASE__MIGRATION_URL: postgresql+asyncpg://nexiqon:${NEXIQON_DB_PASSWORD}@postgres:5432/nexiqon
+      NEXIQON_GROUPS_FILE: /app/deploy/groups.yaml
+    networks: [internal]
+    depends_on:
+      postgres: { condition: service_healthy }
+      keys: { condition: service_completed_successfully }
+
+  # ---------------------------------------------------------------- the platform (deploy/groups.yaml)
+  control-core:
+    <<: *app
+    environment:
+      <<: *env
+      NEXIQON_GROUP: control-core
+      NEXIQON_CONFIG_FILES: /app/config/settings.yaml,/app/keys/secrets.yaml,/app/keys/service-keys.yaml
+    volumes:
+      - ./config:/app/config:ro
+      - { <<: *key, target: /app/keys/secrets.yaml, volume: { subpath: secrets.yaml } }
+      - { <<: *key, target: /app/keys/service-keys.yaml, volume: { subpath: service-keys.yaml } }
+
+  control-ops:
+    <<: *app
+    environment:
+      <<: *env
+      NEXIQON_GROUP: control-ops
+      NEXIQON_BLOBS__ACCESS_KEY: ${NEXIQON_S3_ACCESS_KEY}
+      NEXIQON_BLOBS__SECRET_KEY: ${NEXIQON_S3_SECRET_KEY}
+      NEXIQON_EMAIL__PASSWORD: ${SMTP_PASSWORD:-}
+      NEXIQON_CONFIG_FILES: /app/config/settings.yaml,/app/keys/public-keys.yaml,/app/keys/service-keys.yaml,/app/keys/identity-evaluation.yaml,/app/keys/identity-metering.yaml,/app/keys/identity-governance.yaml,/app/config/control-ops.yaml
+    volumes:
+      - ./config:/app/config:ro
+      - { <<: *key, target: /app/keys/public-keys.yaml, volume: { subpath: public-keys.yaml } }
+      - { <<: *key, target: /app/keys/service-keys.yaml, volume: { subpath: service-keys.yaml } }
+      - { <<: *key, target: /app/keys/identity-evaluation.yaml, volume: { subpath: identity-evaluation.yaml } }
+      - { <<: *key, target: /app/keys/identity-metering.yaml, volume: { subpath: identity-metering.yaml } }
+      - { <<: *key, target: /app/keys/identity-governance.yaml, volume: { subpath: identity-governance.yaml } }
+
+  knowledge:
+    <<: *app
+    environment:
+      <<: *env
+      NEXIQON_GROUP: knowledge
+      NEXIQON_BLOBS__ACCESS_KEY: ${NEXIQON_S3_ACCESS_KEY}
+      NEXIQON_BLOBS__SECRET_KEY: ${NEXIQON_S3_SECRET_KEY}
+      NEXIQON_CONFIG_FILES: /app/config/settings.yaml,/app/keys/public-keys.yaml,/app/keys/service-keys.yaml,/app/keys/identity-ingestion.yaml,/app/config/knowledge.yaml
+    volumes:
+      - ./config:/app/config:ro
+      - { <<: *key, target: /app/keys/public-keys.yaml, volume: { subpath: public-keys.yaml } }
+      - { <<: *key, target: /app/keys/service-keys.yaml, volume: { subpath: service-keys.yaml } }
+      - { <<: *key, target: /app/keys/identity-ingestion.yaml, volume: { subpath: identity-ingestion.yaml } }
+
+  agent:
+    <<: *app
+    environment:
+      <<: *env
+      NEXIQON_GROUP: agent
+      NEXIQON_CONFIG_FILES: /app/config/settings.yaml,/app/keys/public-keys.yaml,/app/keys/service-keys.yaml,/app/keys/identity-agent-runtime.yaml,/app/keys/identity-channel.yaml,/app/keys/identity-conversation.yaml
+    volumes:
+      - ./config:/app/config:ro
+      - { <<: *key, target: /app/keys/public-keys.yaml, volume: { subpath: public-keys.yaml } }
+      - { <<: *key, target: /app/keys/service-keys.yaml, volume: { subpath: service-keys.yaml } }
+      - { <<: *key, target: /app/keys/identity-agent-runtime.yaml, volume: { subpath: identity-agent-runtime.yaml } }
+      - { <<: *key, target: /app/keys/identity-channel.yaml, volume: { subpath: identity-channel.yaml } }
+      - { <<: *key, target: /app/keys/identity-conversation.yaml, volume: { subpath: identity-conversation.yaml } }
+
+  tool-gateway:
+    <<: *app
+    environment:
+      <<: *env
+      NEXIQON_GROUP: tool-gateway
+      NEXIQON_CONFIG_FILES: /app/config/settings.yaml,/app/keys/public-keys.yaml,/app/keys/service-keys.yaml,/app/keys/identity-tool-gateway.yaml,/app/config/tool-gateway.yaml,/app/bao/tool-gateway.yaml
+    volumes:
+      - ./config:/app/config:ro
+      - { <<: *key, target: /app/keys/public-keys.yaml, volume: { subpath: public-keys.yaml } }
+      - { <<: *key, target: /app/keys/service-keys.yaml, volume: { subpath: service-keys.yaml } }
+      - { <<: *key, target: /app/keys/identity-tool-gateway.yaml, volume: { subpath: identity-tool-gateway.yaml } }
+      - { type: volume, source: baodata, target: /app/bao/tool-gateway.yaml, read_only: true, volume: { subpath: tool-gateway.yaml } }
+    depends_on:
+      <<: *app-deps
+      openbao: { condition: service_healthy }
+
+  model-gateway:
+    <<: *app
+    environment:
+      <<: *env
+      NEXIQON_GROUP: model-gateway
+      NEXIQON_CONFIG_FILES: /app/config/settings.yaml,/app/keys/public-keys.yaml,/app/keys/service-keys.yaml,/app/config/model-gateway.yaml
+      NEXIQON_PROVIDERS__OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      NEXIQON_PROVIDERS__ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      NEXIQON_PROVIDERS__GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    volumes:
+      - ./config:/app/config:ro
+      - { <<: *key, target: /app/keys/public-keys.yaml, volume: { subpath: public-keys.yaml } }
+      - { <<: *key, target: /app/keys/service-keys.yaml, volume: { subpath: service-keys.yaml } }
+
+  gateway:
+    # Generated from the Helm chart (tools/bundle/single_node_gateway.py): the same routes,
+    # security headers, rate ceiling and ext_authz as on Kubernetes.
+    image: envoyproxy/envoy:v1.40.0
+    restart: unless-stopped
+    command: ["-c", "/etc/envoy/envoy.yaml", "--log-level", "warn"]
+    volumes:
+      - ./gateway/envoy.yaml:/etc/envoy/envoy.yaml:ro
+    networks: [internal]
+    depends_on:
+      control-core: { condition: service_healthy }
+
+  studio:
+    image: ${NEXIQON_STUDIO_IMAGE:-nexiqon/studio}:${NEXIQON_VERSION}
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp, /app/apps/studio/.next/cache]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    environment:
+      NEXIQON_GATEWAY_URL: http://gateway:8080
+      STUDIO_BASE_URL: https://${NEXIQON_HOST}
+      STUDIO_ENVIRONMENT: production
+      OIDC_ISSUER: ${OIDC_ISSUER}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-nexiqon-studio}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      STUDIO_SESSION_SECRET: ${STUDIO_SESSION_SECRET}
+    networks: [internal]
+    depends_on: [gateway]
+
+  # TLS front: Studio on 443, the API and widget on 8443. Certificates: install.sh (README).
+  front:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    ports: ["443:443", "8443:8443", "80:80"]
+    volumes:
+      - ./config/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./tls:/tls:ro
+      - caddydata:/data
+    networks: [internal, public]
+    depends_on: [studio, gateway]
+
+  # ---------------------------------------------------------------- models on local GPUs (--gpu)
+  vllm:
+    image: vllm/vllm-openai:v0.11.0
+    profiles: [gpu]
+    restart: unless-stopped
+    ipc: host
+    environment: &vllm-env
+      HF_HUB_OFFLINE: ${HF_HUB_OFFLINE:-0}
+      HF_TOKEN: ${HF_TOKEN:-}
+    volumes: &vllm-vol [models:/root/.cache/huggingface]
+    networks: [internal]
+    deploy:
+      resources:
+        reservations:
+          devices: [{ driver: nvidia, device_ids: ["${VLLM_CHAT_GPUS:-0}"], capabilities: [gpu] }]
+    command:
+      - --model=${VLLM_CHAT_MODEL:-Qwen/Qwen3-8B-AWQ}
+      - --served-model-name=${VLLM_CHAT_NAME:-qwen3-8b}
+      - --max-model-len=${VLLM_CHAT_CONTEXT:-32768}
+      - --gpu-memory-utilization=${VLLM_CHAT_GPU_SHARE:-0.80}
+      - --enable-auto-tool-choice
+      - --tool-call-parser=hermes
+      - --guided-decoding-backend=xgrammar
+
+  vllm-embed:
+    image: vllm/vllm-openai:v0.11.0
+    profiles: [gpu]
+    restart: unless-stopped
+    environment: *vllm-env
+    volumes: *vllm-vol
+    networks: [internal]
+    deploy:
+      resources:
+        reservations:
+          devices: [{ driver: nvidia, device_ids: ["${VLLM_SMALL_GPUS:-0}"], capabilities: [gpu] }]
+    command:
+      - --model=Qwen/Qwen3-Embedding-0.6B
+      - --served-model-name=qwen3-embedding-0.6b
+      - --task=embed
+      - --max-model-len=8192
+      - --gpu-memory-utilization=${VLLM_EMBED_GPU_SHARE:-0.08}
+
+  vllm-rerank:
+    image: vllm/vllm-openai:v0.11.0
+    profiles: [gpu]
+    restart: unless-stopped
+    environment: *vllm-env
+    volumes: *vllm-vol
+    networks: [internal]
+    deploy:
+      resources:
+        reservations:
+          devices: [{ driver: nvidia, device_ids: ["${VLLM_SMALL_GPUS:-0}"], capabilities: [gpu] }]
+    command:
+      - --model=Qwen/Qwen3-Reranker-0.6B
+      - --served-model-name=qwen3-reranker-0.6b
+      - --task=score
+      - --max-model-len=8192
+      - --gpu-memory-utilization=${VLLM_RERANK_GPU_SHARE:-0.08}
+      - '--hf-overrides={"architectures":["Qwen3ForSequenceClassification"],"classifier_from_token":["no","yes"],"is_original_qwen3_reranker":true}'
+
+networks:
+  internal: {}   # outbound allowed (model providers, tools); air-gapped hosts have no route out
+  public: {}
+
+volumes:
+  pgdata:
+  natsdata:
+  s3data:
+  clamdb:
+  baodata:
+  keys:
+  caddydata:
+  models:

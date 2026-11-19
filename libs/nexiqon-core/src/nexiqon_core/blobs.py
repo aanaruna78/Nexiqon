@@ -1,4 +1,5 @@
-"""Object storage port (raw uploaded/fetched files). Adapters: adapters/s3.py; memory for tests.
+"""Object storage port (raw uploaded/fetched files). Adapters: adapters/s3.py (S3-compatible
+stores), adapters/azure_blob.py (Azure Blob Storage); memory for tests.
 
 Keys are always tenant-prefixed through :func:`tenant_key`, so one tenant's key can never name
 another tenant's object.
@@ -16,7 +17,7 @@ _SAFE = re.compile(r"^[A-Za-z0-9._/-]{1,900}$")
 
 
 class BlobSettings(BaseModel):
-    backend: str = "memory"  # memory | s3
+    backend: str = "memory"  # memory | s3 | azure (access_key: account, secret_key: account key)
     endpoint: str = "http://seaweedfs:8333"
     region: str = "us-east-1"
     bucket: str = "nexiqon"
@@ -73,6 +74,17 @@ def create_blob_store(settings: BlobSettings) -> BlobStore:
             settings.secret_key.get_secret_value(),
         )
         return S3BlobStore(client, settings.bucket)
+    if settings.backend == "azure":
+        from nexiqon_core.adapters.azure_blob import AzureBlobStore
+
+        if settings.access_key is None or settings.secret_key is None:
+            raise ValueError("Azure blob storage needs access_key (account) and secret_key")
+        return AzureBlobStore(
+            settings.endpoint,
+            settings.access_key.get_secret_value(),
+            settings.secret_key.get_secret_value(),
+            settings.bucket,
+        )
     if settings.backend == "memory":
         return MemoryBlobStore()
     raise ValueError(f"unknown blob backend {settings.backend!r}")

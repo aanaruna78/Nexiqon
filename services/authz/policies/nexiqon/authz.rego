@@ -116,6 +116,8 @@ admin_only := {
 	"config.release.override",
 	# Webhook endpoints can carry tokens in their URLs (NT-01).
 	"notification.webhooks.read",
+	# The installation's licence (DV-06): customer, limits and expiry.
+	"identity.licence.read",
 }
 
 admin_roles := {"owner", "admin", "service"}

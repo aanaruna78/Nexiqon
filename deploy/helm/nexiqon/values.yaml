@@ -1,4 +1,5 @@
-# Nexiqon Helm chart (DV-02). Profiles in values/: saas.yaml, private.yaml, kind.yaml.
+# Nexiqon Helm chart (DV-02). Profiles in values/: saas.yaml, private.yaml, minimal.yaml (DV-09),
+# hybrid-data.yaml (DV-04), kind.yaml. One server without Kubernetes: deploy/single-node.
 #
 # Nothing cloud-specific lives here: managed databases, buckets and keys are referenced by name
 # (existing Secrets), so the same chart runs on DigitalOcean, AWS, GCP, Azure or on premises.
@@ -210,6 +211,49 @@ studio:
     tls: { secretName: "" }
     annotations: {}
   resources: { requests: { cpu: 100m, memory: 256Mi }, limits: { memory: 512Mi } }
+
+# Self-hosted models on a GPU node (M-06, DV-09): vLLM servers for the on-prem-small and
+# on-prem-standard model profiles. Sizing: docs/guides/minimal-footprint.md.
+models:
+  enabled: false
+  image: vllm/vllm-openai:v0.11.0
+  nodeSelector: { nexiqon.dev/pool: gpu }   # the label the OpenTofu modules give GPU pools
+  tolerations:
+    - { key: nvidia.com/gpu, operator: Exists, effect: NoSchedule }
+  offline: false          # true: never download (air-gapped; preload the weights into the volume)
+  hfTokenSecret: ""       # Secret with key "token", for gated models
+  cache: { size: 100Gi, storageClass: "" }
+  servers:
+    vllm:
+      enabled: true
+      memory: 24Gi
+      args:
+        - --model=Qwen/Qwen3-8B-AWQ
+        - --served-model-name=qwen3-8b
+        - --max-model-len=32768
+        - --gpu-memory-utilization=0.80
+        - --enable-auto-tool-choice
+        - --tool-call-parser=hermes
+        - --guided-decoding-backend=xgrammar
+    vllm-embed:
+      enabled: true
+      memory: 8Gi
+      args:
+        - --model=Qwen/Qwen3-Embedding-0.6B
+        - --served-model-name=qwen3-embedding-0.6b
+        - --task=embed
+        - --max-model-len=8192
+        - --gpu-memory-utilization=0.08
+    vllm-rerank:
+      enabled: true
+      memory: 8Gi
+      args:
+        - --model=Qwen/Qwen3-Reranker-0.6B
+        - --served-model-name=qwen3-reranker-0.6b
+        - --task=score
+        - --max-model-len=8192
+        - --gpu-memory-utilization=0.08
+        - '--hf-overrides={"architectures":["Qwen3ForSequenceClassification"],"classifier_from_token":["no","yes"],"is_original_qwen3_reranker":true}'
 
 # Demo business APIs (two synthetic customers). Development and demos only.
 mockApis:
