@@ -16,6 +16,7 @@ import {
   Settings2,
   ShieldCheck,
   Users,
+  Webhook,
 } from "lucide-react";
 
 export interface NavItem {
@@ -60,6 +61,7 @@ export const NAV: NavGroup[] = [
       { key: "models", href: "/settings/models", icon: Cpu, tone: "sky" },
       { key: "configuration", href: "/settings/configuration", icon: Settings2, tone: "teal" },
       { key: "audit", href: "/settings/audit", icon: ScrollText, tone: "sky" },
+      { key: "webhooks", href: "/settings/webhooks", icon: Webhook, tone: "rose" },
       { key: "organization", href: "/settings/organization", icon: ShieldCheck, tone: "navy" },
     ],
   },

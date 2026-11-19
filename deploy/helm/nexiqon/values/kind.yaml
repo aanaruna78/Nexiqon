@@ -41,3 +41,6 @@ studio:
   baseUrl: http://localhost:3100
   environment: development
   oidc: { issuer: http://localhost:8080/realms/nexiqon }
+backup:
+  enabled: true
+  storage: { size: 2Gi }

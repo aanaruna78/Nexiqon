@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator, Awaitable, Callable
-from contextlib import asynccontextmanager
-from typing import Final
+from contextlib import asynccontextmanager, suppress
+from typing import Any, Final
 
+import structlog
 from fastapi import FastAPI
 from sqlalchemy import text
 
@@ -13,8 +15,10 @@ from nexiqon_core.app import create_service_app
 from nexiqon_core.authz import Authorizer
 from nexiqon_core.bus import Bus, EventRuntime
 from nexiqon_core.db import TenantSessionFactory, create_engine
+from nexiqon_core.fetch import SafeFetcher
 from nexiqon_notification import __version__
 from nexiqon_notification.api import public_router, tenant_router
+from nexiqon_notification.dispatch import Dispatcher
 from nexiqon_notification.lifecycle import lifecycle
 from nexiqon_notification.mail import EmailSender, MemorySender
 from nexiqon_notification.models import Outbox
@@ -38,8 +42,10 @@ def create_app(
     authorizer: Authorizer | None = None,
     bus: Bus | None = None,
     email: EmailSender | None = None,
+    webhook_transport: Any = None,
+    webhook_resolver: Any = None,
 ) -> FastAPI:
-    """Test seam: ``email`` (an in-memory sender)."""
+    """Test seams: ``email`` (an in-memory sender), the webhook transport and DNS resolver."""
     settings = settings or ServiceSettings()
     engine = (
         create_engine(
@@ -50,10 +56,13 @@ def create_app(
     )
     db = TenantSessionFactory(engine) if engine else None
     sender = email or _sender(settings)
+    fetcher = SafeFetcher(settings.webhooks, resolver=webhook_resolver, transport=webhook_transport)
+    dispatcher = Dispatcher(db, fetcher) if db is not None else None
     events = None
-    if settings.events.enabled and db is not None:
+    if settings.events.enabled and db is not None and dispatcher is not None:
         events = EventRuntime(settings.events, SERVICE_NAME, bus)
         events.relay(db, Outbox)
+        events.subscribe("notification", "nexiqon.>", dispatcher)
 
     async def database_ready() -> bool:
         if engine is None:
@@ -62,9 +71,30 @@ def create_app(
             await conn.execute(text("SELECT 1"))
         return True
 
+    async def retry_loop() -> None:
+        while True:
+            await asyncio.sleep(settings.webhook_retry_seconds)
+            try:
+                if dispatcher is not None:
+                    await dispatcher.send_due()
+            except Exception as exc:
+                structlog.get_logger(__name__).warning("webhook_retry_failed", error=str(exc))
+
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-        yield
+        task = (
+            asyncio.create_task(retry_loop())
+            if dispatcher is not None and settings.webhook_retry_seconds > 0
+            else None
+        )
+        try:
+            yield
+        finally:
+            if task is not None:
+                task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await task
+            await fetcher.aclose()
         await sender.aclose()
         if engine is not None:
             await engine.dispose()
@@ -87,4 +117,5 @@ def create_app(
     )
     app.state.db = db
     app.state.email = sender
+    app.state.dispatcher = dispatcher
     return app

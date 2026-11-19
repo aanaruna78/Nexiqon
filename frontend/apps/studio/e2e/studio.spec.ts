@@ -502,6 +502,53 @@ test.describe.serial("Studio", () => {
     await a11y(page, "budgets");
   });
 
+  test("notifications: the bell shows a handover waiting for a person", async () => {
+    await page.goto("/");
+    await expect(async () => {
+      await page.reload();
+      await page.getByTestId("inbox-bell").click();
+      await expect(page.getByTestId("inbox")).toContainText("waiting for a person", { timeout: 2000 });
+    }).toPass({ timeout: 30_000 });
+    await a11y(page, "notifications");
+    await page.getByTestId("inbox").getByRole("button", { name: "Mark all read" }).click();
+    await expect(page.getByTestId("inbox-bell")).toHaveAccessibleName("Notifications");
+    await page.keyboard.press("Escape");
+  });
+
+  test("organization data: export everything, run retention, schedule and cancel deletion", async () => {
+    await page.goto("/settings/organization");
+    await a11y(page, "organization data");
+    await page.getByTestId("start-export").click();
+    const download = page.getByTestId("download-export");
+    await expect(download).toBeVisible({ timeout: 60_000 });
+    const archive = await page.request.get((await download.getAttribute("href"))!);
+    expect(archive.status()).toBe(200);
+    expect(archive.headers()["content-type"]).toBe("application/zip");
+    expect((await archive.body()).subarray(0, 2).toString()).toBe("PK");
+
+    await page.getByTestId("run-retention").click();
+    await expect(page.getByTestId("retention-last")).toContainText("Completed", { timeout: 60_000 });
+
+    const confirm = page.getByTestId("delete-confirm");
+    await confirm.fill("not-the-slug");
+    await expect(page.getByTestId("delete-organization")).toBeDisabled();
+    await confirm.fill(SLUG);
+    await page.getByTestId("delete-organization").click();
+    await expect(page.getByTestId("delete-pending")).toContainText("will be deleted on");
+    await a11y(page, "deletion scheduled");
+    await page.getByTestId("cancel-delete").click();
+    await expect(page.getByTestId("delete-card")).toContainText("was cancelled");
+    await expect(page.getByTestId("delete-confirm")).toBeVisible();
+  });
+
+  test("webhooks: only public HTTPS endpoints, explained", async () => {
+    await page.goto("/settings/webhooks");
+    await a11y(page, "webhooks");
+    await page.getByTestId("hook-url").fill("http://example.com/hook");
+    await expect(page.getByTestId("create-hook")).toBeDisabled();
+    await expect(page.getByText("X-Nexiqon-Signature")).toBeVisible();
+  });
+
   test("evaluations: a test set, a run and its scorecard", async () => {
     await page.goto("/evaluations");
     await a11y(page, "evaluations empty");

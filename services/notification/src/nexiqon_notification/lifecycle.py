@@ -8,7 +8,14 @@ from sqlalchemy import delete, func, select
 
 from nexiqon_core.db import TenantSessionFactory
 from nexiqon_core.lifecycle import DeletionReport, ExportManifest, NoTenantData, TenantLifecycle
-from nexiqon_notification.models import Delivery, Outbox
+from nexiqon_notification.models import (
+    Delivery,
+    InboxItem,
+    InboxRead,
+    Outbox,
+    Webhook,
+    WebhookDelivery,
+)
 
 
 class NotificationLifecycle:
@@ -20,11 +27,16 @@ class NotificationLifecycle:
         variables = {"tenant_id": str(tenant_id), "tenant_deletion": "on"}
         deleted: dict[str, int] = {}
         async with self.db.scoped(variables) as s:
-            for model in (Delivery, Outbox):
+            for model in (InboxRead, InboxItem, WebhookDelivery, Webhook, Delivery, Outbox):
                 result = await s.execute(delete(model).where(model.tenant_id == tenant_id))
                 deleted[model.__tablename__] = int(result.rowcount or 0)  # type: ignore[attr-defined]
         async with self.db.scoped(variables) as s:
-            left = int(await s.scalar(select(func.count()).select_from(Delivery)) or 0)
+            left = sum(
+                [
+                    int(await s.scalar(select(func.count()).select_from(m)) or 0)
+                    for m in (InboxRead, InboxItem, WebhookDelivery, Webhook, Delivery)
+                ]
+            )
         return DeletionReport(
             service=self.service,
             tenant_id=tenant_id,

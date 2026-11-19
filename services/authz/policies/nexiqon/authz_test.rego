@@ -187,3 +187,25 @@ test_metering_and_the_escalation_queue if {
 	widget := {"tenant_id": "t-a", "id": "k-1", "type": "widget", "roles": ["end_user"], "groups": []}
 	not authz.allow with input as {"actor": widget, "action": "conversation.queue.write", "resource": {"type": "conversation"}}
 }
+
+test_only_governance_runs_lifecycles_and_only_owners_delete_or_export if {
+	svc := {"tenant_id": "t-a", "id": "service:governance", "type": "service", "roles": ["service:governance"], "groups": []}
+	authz.allow with input as {"actor": svc, "action": "governance.lifecycle.run", "resource": {"type": "tenant"}}
+	not authz.allow with input as {"actor": svc, "action": "governance.lifecycle.run", "resource": {"type": "tenant", "tenant_id": "t-b"}}
+	not authz.allow with input as {"actor": actor(["owner"]), "action": "governance.lifecycle.run", "resource": {"type": "tenant"}}
+	authz.allow with input as {"actor": actor(["owner"]), "action": "governance.tenant.delete", "resource": {"type": "tenant"}}
+	not authz.allow with input as {"actor": actor(["admin"]), "action": "governance.tenant.delete", "resource": {"type": "tenant"}}
+	not authz.allow with input as {"actor": actor(["admin"]), "action": "governance.tenant.export", "resource": {"type": "tenant"}}
+	authz.allow with input as {"actor": actor(["admin"]), "action": "governance.retention.run", "resource": {"type": "tenant"}}
+	not authz.allow with input as {"actor": actor(["editor"]), "action": "governance.retention.run", "resource": {"type": "tenant"}}
+	authz.allow with input as {"actor": actor(["member"]), "action": "governance.requests.read", "resource": {"type": "tenant"}}
+}
+
+test_webhooks_are_for_admins_and_the_inbox_for_everyone_in_studio if {
+	not authz.allow with input as {"actor": actor(["editor"]), "action": "notification.webhooks.read", "resource": {"type": "webhook"}}
+	not authz.allow with input as {"actor": actor(["editor"]), "action": "notification.webhooks.write", "resource": {"type": "webhook"}}
+	authz.allow with input as {"actor": actor(["admin"]), "action": "notification.webhooks.write", "resource": {"type": "webhook"}}
+	authz.allow with input as {"actor": actor(["member"]), "action": "notification.inbox.read", "resource": {"type": "inbox"}}
+	widget := {"tenant_id": "t-a", "id": "k-1", "type": "widget", "roles": ["end_user"], "groups": []}
+	not authz.allow with input as {"actor": widget, "action": "notification.inbox.read", "resource": {"type": "inbox"}}
+}

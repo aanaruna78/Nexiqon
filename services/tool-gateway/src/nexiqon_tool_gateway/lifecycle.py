@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 
 from nexiqon_core.db import TenantSessionFactory
-from nexiqon_core.lifecycle import DeletionReport, ExportManifest, NoTenantData, TenantLifecycle
+from nexiqon_core.lifecycle import (
+    DeletionReport,
+    ExportManifest,
+    NoTenantData,
+    RetentionPolicy,
+    TenantLifecycle,
+)
 from nexiqon_tool_gateway.models import Approval, Outbox, ToolCall
 from nexiqon_tool_gateway.secrets import Secrets
 
@@ -43,6 +50,18 @@ class ToolLifecycle:
             deleted=deleted,
             residue_check_passed=left == 0,
         )
+
+    async def purge_expired(self, tenant_id: UUID, policy: RetentionPolicy) -> dict[str, int]:
+        """Tool results and arguments older than ``tool_results_days``: the call stays (who, what
+        tool, when, outcome) for accountability; the data it carried goes."""
+        cutoff = datetime.now(UTC) - timedelta(days=policy.tool_results_days)
+        async with self.db.scoped({"tenant_id": str(tenant_id)}) as s:
+            result = await s.execute(
+                update(ToolCall)
+                .where(ToolCall.created_at < cutoff, ToolCall.arguments != {})
+                .values(result=None, arguments={})
+            )
+        return {"tool_results": int(result.rowcount or 0)}  # type: ignore[attr-defined]
 
     async def export_tenant(self, tenant_id: UUID) -> ExportManifest:
         async with self.db.scoped({"tenant_id": str(tenant_id)}) as s:

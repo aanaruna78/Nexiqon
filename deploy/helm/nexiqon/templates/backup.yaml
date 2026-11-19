@@ -1,0 +1,74 @@
+{{- if .Values.backup.enabled }}
+# G-03: nightly pg_dump (custom format) of every service schema, kept for keepDays.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nexiqon-backups
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- with .Values.backup.storage.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.backup.storage.size }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: nexiqon-backup
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            {{- include "nexiqon.labels" . | nindent 12 }}
+            app.kubernetes.io/name: nexiqon-backup
+        spec:
+          restartPolicy: OnFailure
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            runAsGroup: 999
+            fsGroup: 999
+          containers:
+            - name: pg-dump
+              image: {{ .Values.backup.image }}
+              command: ["sh", "-c"]
+              args:
+                - |
+                  set -eu
+                  url="${DATABASE_URL#postgresql+asyncpg://}"
+                  file="/backups/nexiqon-$(date -u +%Y%m%d-%H%M%S).dump"
+                  pg_dump --format=custom --file="$file.part" "postgresql://$url"
+                  mv "$file.part" "$file"
+                  find /backups -name 'nexiqon-*.dump' -mtime +{{ .Values.backup.keepDays }} -delete
+                  ls -l /backups
+              env:
+                - name: DATABASE_URL
+                  valueFrom: { secretKeyRef: { name: {{ .Values.database.existingSecret }}, key: migrationUrl } }
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: { drop: [ALL] }
+              resources:
+                requests: { cpu: 100m, memory: 256Mi }
+                limits: { memory: 1Gi }
+              volumeMounts:
+                - { name: backups, mountPath: /backups }
+                - { name: tmp, mountPath: /tmp }
+          volumes:
+            - name: backups
+              persistentVolumeClaim: { claimName: nexiqon-backups }
+            - name: tmp
+              emptyDir: {}
+{{- end }}

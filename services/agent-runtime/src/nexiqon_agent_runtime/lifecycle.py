@@ -2,13 +2,20 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import delete, func, select
 
 from nexiqon_agent_runtime.models import Checkpoint, CheckpointBlob, CheckpointWrite, Run, Thread
 from nexiqon_core.db import TenantSessionFactory
-from nexiqon_core.lifecycle import DeletionReport, ExportManifest, NoTenantData, TenantLifecycle
+from nexiqon_core.lifecycle import (
+    DeletionReport,
+    ExportManifest,
+    NoTenantData,
+    RetentionPolicy,
+    TenantLifecycle,
+)
 
 MODELS = (CheckpointWrite, CheckpointBlob, Checkpoint, Run, Thread)
 
@@ -17,6 +24,13 @@ class AgentLifecycle:
     def __init__(self, service: str, db: TenantSessionFactory) -> None:
         self.service = service
         self.db = db
+
+    async def purge_expired(self, tenant_id: UUID, policy: RetentionPolicy) -> dict[str, int]:
+        """Run traces (Answer Inspector) older than ``traces_days``."""
+        cutoff = datetime.now(UTC) - timedelta(days=policy.traces_days)
+        async with self.db.scoped({"tenant_id": str(tenant_id)}) as s:
+            result = await s.execute(delete(Run).where(Run.created_at < cutoff))
+        return {"runs": int(result.rowcount or 0)}  # type: ignore[attr-defined]
 
     async def delete_tenant(self, tenant_id: UUID) -> DeletionReport:
         variables = {"tenant_id": str(tenant_id), "tenant_deletion": "on"}

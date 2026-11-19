@@ -37,8 +37,9 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
         lifecycle=lifecycle(SERVICE_NAME),
         readiness_checks={"opa": opa.healthy},
         lifespan=lifespan,
-        # authz does not call itself; its own routes are open to any verified actor.
-        authorizer=StaticAuthorizer({}),
+        # authz does not call itself; its own routes are open to any verified actor. The only
+        # permission it checks is governance's lifecycle call (authz holds no tenant data).
+        authorizer=StaticAuthorizer({"service:governance": ["governance.lifecycle.run"]}),
     )
     app.state.opa = opa
     return app

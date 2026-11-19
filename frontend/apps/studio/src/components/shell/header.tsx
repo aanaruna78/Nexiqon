@@ -19,6 +19,7 @@ import { Hint } from "@/components/visual/hint";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 import { openCommandMenu } from "./command-menu";
+import { InboxBell } from "./inbox-bell";
 import { activeItem, NAV } from "./nav";
 
 export function Header() {
@@ -76,6 +77,7 @@ export function Header() {
         <kbd aria-hidden="true" className="pointer-events-none hidden rounded border bg-muted px-1.5 font-mono text-[10px] sm:inline">⌘K</kbd>
       </Button>
       </Hint>
+      <InboxBell />
     </header>
   );
 }

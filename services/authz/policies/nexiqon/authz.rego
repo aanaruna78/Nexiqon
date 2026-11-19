@@ -81,6 +81,9 @@ role_permissions := {
 	],
 	# Reads packs (KPIs) and unanswered questions (content gaps) for insights (MT-02).
 	"service:metering": ["config.agent.read", "conversation.insights.read"],
+	# Runs tenant deletion/export and retention in every service (G-01, G-02); reads the
+	# tenant's retention profile.
+	"service:governance": ["governance.lifecycle.run", "config.profiles.resolve"],
 	# Sends a person a copy of their own conversation (W-03); nothing else.
 	"service:conversation": ["notification.email.send"],
 	# Reads the agent's pack (widget title, greeting, colour) to answer channel settings requests.
@@ -109,12 +112,14 @@ admin_only := {
 	"tool.credentials.read",
 	# Publishing an assistant version that failed its release gate (QA-02).
 	"config.release.override",
+	# Webhook endpoints can carry tokens in their URLs (NT-01).
+	"notification.webhooks.read",
 }
 
 admin_roles := {"owner", "admin", "service"}
 
 # Actions only service actors may perform (internal index writes), whatever a role says.
-service_only := {"retrieval.index.write", "notification.email.send"}
+service_only := {"retrieval.index.write", "notification.email.send", "governance.lifecycle.run"}
 
 # Actor types that may never hold administrative permissions, even if a role says so.
 restricted_actor_types := {"widget"}

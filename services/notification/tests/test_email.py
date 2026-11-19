@@ -11,7 +11,6 @@ from fastapi.testclient import TestClient
 
 from nexiqon_core.authz import StaticAuthorizer
 from nexiqon_core.db import TenantSessionFactory, create_engine
-from nexiqon_core.migrations import upgrade
 from nexiqon_core.pytest_plugin import PgUrls
 from nexiqon_core.service_auth import ServiceTokens
 from nexiqon_core.settings import ContextTokenSettings, DatabaseSettings, ServiceIdentitySettings
@@ -24,12 +23,6 @@ from nexiqon_notification.settings import ServiceSettings
 PRIVATE, PUBLIC = make_keypair()
 ROLES = {"owner": ["**"], "service:conversation": ["notification.email.send"]}
 BODY = {"to": "a@example.com", "subject": "Hi", "text": "Hello", "kind": "conversation.transcript"}
-
-
-@pytest.fixture(scope="session")
-def mail_db(postgres: PgUrls) -> PgUrls:
-    upgrade("notification", postgres.owner, postgres.app_role)
-    return postgres
 
 
 @pytest.fixture

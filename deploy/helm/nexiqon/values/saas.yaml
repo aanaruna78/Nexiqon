@@ -11,6 +11,7 @@ groups:
   control-ops:
     settings:
       email: { backend: smtp, host: smtp.example.com, port: 587, starttls: true, username: nexiqon, sender: "Assistant <no-reply@example.com>" }
+      blobs: { backend: s3, endpoint: "https://REGION.digitaloceanspaces.com", bucket: nexiqon-prod, region: REGION }
   knowledge:
     settings:
       blobs: { backend: s3, endpoint: "https://REGION.digitaloceanspaces.com", bucket: nexiqon-prod, region: REGION }

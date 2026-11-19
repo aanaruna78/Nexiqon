@@ -67,7 +67,7 @@ def create_app(
         settings=settings,
         routers=[public_router],
         tenant_routers=[tenant_router],
-        lifecycle=lifecycle(SERVICE_NAME),
+        lifecycle=lifecycle(SERVICE_NAME, db),
         readiness_checks={"database": database_ready},
         lifespan=lifespan,
         authorizer=authorizer,

@@ -17,6 +17,7 @@ from nexiqon_core.bus import EventRuntime
 from nexiqon_core.directory import Topology
 from nexiqon_core.errors import install_error_handlers
 from nexiqon_core.lifecycle import NoTenantData, TenantLifecycle
+from nexiqon_core.lifecycle_api import router as lifecycle_router
 from nexiqon_core.logging import configure_logging
 from nexiqon_core.settings import CoreSettings
 from nexiqon_core.telemetry import configure_telemetry
@@ -117,10 +118,10 @@ def create_service_app(
     for router in routers:
         app.include_router(router)
         public_paths.update(r.path for r in router.routes if isinstance(r, APIRoute))
-    if tenant_routers:
-        dep = tenant_context_dependency(ContextTokenVerifier(settings.context_token))
-        for router in tenant_routers:
-            app.include_router(router, dependencies=[Depends(dep)])
+    # Every service answers governance's lifecycle calls (G-01, G-02).
+    dep = tenant_context_dependency(ContextTokenVerifier(settings.context_token))
+    for router in (*tenant_routers, lifecycle_router):
+        app.include_router(router, dependencies=[Depends(dep)])
     app.state.public_paths = frozenset(public_paths)
 
     configure_telemetry(app, name, version, settings.telemetry)

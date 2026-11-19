@@ -176,7 +176,7 @@ services:
     environment:
       <<: *app-env
       NEXIQON_GROUP: control-ops
-      NEXIQON_CONFIG_FILES: /app/config/dev.yaml,/app/config/dev-secrets.yaml,/app/config/dev-service-keys.yaml,/app/config/dev-secrets-evaluation.yaml,/app/config/dev-secrets-metering.yaml,/app/config/control-ops.yaml
+      NEXIQON_CONFIG_FILES: /app/config/dev.yaml,/app/config/dev-secrets.yaml,/app/config/dev-service-keys.yaml,/app/config/dev-secrets-evaluation.yaml,/app/config/dev-secrets-metering.yaml,/app/config/dev-secrets-governance.yaml,/app/config/control-ops.yaml
     ports: ["8102:8000"]
   knowledge:
     <<: *app

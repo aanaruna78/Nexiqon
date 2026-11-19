@@ -1,11 +1,6 @@
-"""Tenant deletion/export hooks for governance.
+"""Tenant deletion/export for governance itself: see ``Runner.own``. Retention runs and the outbox
+go; deletion requests and their steps stay, as the certificate that the deletion happened."""
 
-TODO: replace NoTenantData when this service starts storing tenant data. Deletion must remove
-everything the service holds for the tenant and verify no residue remains (ARCHITECTURE §3).
-"""
+from nexiqon_governance.runner import Runner
 
-from nexiqon_core.lifecycle import NoTenantData, TenantLifecycle
-
-
-def lifecycle(service: str) -> TenantLifecycle:
-    return NoTenantData(service)
+__all__ = ["Runner"]

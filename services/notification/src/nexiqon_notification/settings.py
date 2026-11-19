@@ -2,6 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, SecretStr
 
+from nexiqon_core.fetch import FetchPolicy
 from nexiqon_core.settings import CoreSettings
 
 
@@ -28,3 +29,8 @@ class ServiceSettings(CoreSettings):
     # And at most this many to one address per hour, so a form that sends copies (transcripts)
     # cannot be turned against someone's inbox.
     max_emails_per_recipient_per_hour: int = 3
+    # Webhooks (NT-01): public HTTPS endpoints only, unless the operator allows more.
+    webhooks: FetchPolicy = Field(
+        default_factory=lambda: FetchPolicy(allowed_schemes=["https"], allowed_ports=[443, 8443])
+    )
+    webhook_retry_seconds: float = 30.0  # how often due retries are sent (0 disables the loop)

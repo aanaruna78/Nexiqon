@@ -10,3 +10,11 @@ email:
   port: 1025
   starttls: false
   sender: "Nexiqon dev <no-reply@nexiqon.local>"
+# Governance: export archives in the object store; a short deletion grace period for development.
+blobs:
+  backend: s3
+  endpoint: http://objectstore:8333
+  bucket: nexiqon
+  access_key: nexiqon-dev
+  secret_key: nexiqon-dev-secret
+deletion_grace_hours: 0.05

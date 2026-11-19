@@ -27,6 +27,7 @@ KEY_FILES = {
     "identity-evaluation.yaml": "dev-secrets-evaluation.yaml",
     "identity-conversation.yaml": "dev-secrets-conversation.yaml",
     "identity-metering.yaml": "dev-secrets-metering.yaml",
+    "identity-governance.yaml": "dev-secrets-governance.yaml",
 }
 
 

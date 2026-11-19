@@ -51,7 +51,8 @@
     "build": "Build",
     "operate": "Operate",
     "admin": "Administration",
-    "models": "Models & data policy"
+    "models": "Models & data policy",
+    "webhooks": "Webhooks"
   },
   "shell": {
     "skipToContent": "Skip to main content",
@@ -264,7 +265,8 @@
     "subtitle": "Name and defaults for your organization.",
     "name": "Organization name",
     "locale": "Default language",
-    "saved": "Organization updated"
+    "saved": "Organization updated",
+    "dataTitle": "Data and deletion"
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
@@ -301,7 +303,8 @@
     "configuration": "Versioned settings: draft, publish, deploy",
     "audit": "Tamper-evident record of every change",
     "organization": "Name and defaults for this organization",
-    "models": "Which models answer, where your data goes and what it costs"
+    "models": "Which models answer, where your data goes and what it costs",
+    "webhooks": "Platform events sent to your systems, signed"
   },
   "hints": {
     "removeMember": "Remove this member",
@@ -1402,5 +1405,91 @@
     "budgetHelp": "You are alerted at 50%, 80% and 100%. Hard limits per model profile are set in the profile itself.",
     "alert": "{who} reached {pct}% of its budget: {spent} of {limit}",
     "acknowledge": "Got it"
+  },
+  "data": {
+    "title": "Data and deletion",
+    "steps": "Progress by service",
+    "step": {
+      "pending": "Waiting",
+      "running": "Working",
+      "done": "Done",
+      "failed": "Failed"
+    },
+    "status": {
+      "scheduled": "Scheduled",
+      "running": "In progress",
+      "completed": "Completed",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
+    },
+    "exportTitle": "Export everything",
+    "exportHelp": "One archive with everything this organization holds in every service: settings, assistants, conversations, evaluations, usage and the audit log. Secrets are left out. The archive is kept for 7 days.",
+    "exportStart": "Prepare export",
+    "download": "Download archive",
+    "retentionTitle": "Retention",
+    "retentionHelp": "Conversations, run traces and action results are removed when your retention profile says they have expired. This runs every night; you can also run it now.",
+    "retentionRun": "Run now",
+    "retentionLast": "Last run {when}: {count, plural, =0 {nothing had expired} one {# item removed} other {# items removed}}",
+    "retentionErrors": "Not reached: {services}",
+    "retentionNever": "Not run yet.",
+    "deleteTitle": "Delete this organization",
+    "deleteHelp": "Every assistant, document, conversation, setting and log, in every service, is removed for good after a 72-hour grace period. Only a certificate stays: which services confirmed the deletion and when.",
+    "deleteType": "Type {slug} to confirm",
+    "deleteButton": "Delete organization",
+    "deleteScheduled": "Deletion scheduled. You can cancel it during the grace period.",
+    "deleteWhen": "This organization will be deleted on {when}",
+    "deleteRunning": "Deleting this organization…",
+    "deleteCancel": "Cancel deletion",
+    "deleteCancelled": "Deletion cancelled",
+    "deleteWasCancelled": "The last deletion request was cancelled."
+  },
+  "webhooks": {
+    "title": "Webhooks",
+    "subtitle": "Send platform events to your systems, signed so you can trust them",
+    "add": "Add an endpoint",
+    "url": "Endpoint URL",
+    "urlHelp": "A public HTTPS address. Requests are signed: X-Nexiqon-Signature carries t (time) and v1 (HMAC-SHA256 of \"t.body\" with your secret).",
+    "events": "Events",
+    "eventsHelp": "For example conversation.escalated, evaluation.* or governance.*. Leave empty for every event.",
+    "create": "Add endpoint",
+    "secretTitle": "Signing secret, shown only now",
+    "secretHelp": "Store it in your system. To change it, remove this endpoint and add it again.",
+    "emptyTitle": "No endpoints yet",
+    "emptyBody": "Add an endpoint to hear about handovers, evaluation results, budget alerts and more as they happen.",
+    "allEvents": "Every event",
+    "switchedOff": "Switched off after repeated failures",
+    "enabled": "Send events to {url}",
+    "test": "Send test",
+    "testOk": "The endpoint answered with success",
+    "testFailed": "The endpoint did not accept the test: {detail}",
+    "remove": "Remove {url}",
+    "recent": "Recent deliveries",
+    "delivery": {
+      "pending": "Retrying ({attempts})",
+      "delivered": "Delivered",
+      "failed": "Gave up after {attempts}"
+    }
+  },
+  "inbox": {
+    "title": "Notifications",
+    "label": "Notifications",
+    "labelUnread": "Notifications, {count} unread",
+    "markAll": "Mark all read",
+    "empty": "Nothing needs your attention.",
+    "unread": "Unread",
+    "kinds": {
+      "budget": "{agent} reached {threshold}% of its budget ({spent_usd} of {limit_usd} USD)",
+      "handover": "A conversation with {agent} is waiting for a person",
+      "evaluation_completed": "Evaluation of {agent} v{version} finished: {pass_rate}% passed",
+      "evaluation_failed": "Evaluation of {agent} v{version} failed",
+      "delete_requested": "Deletion of this organization is scheduled",
+      "delete_completed": "This organization's data was deleted",
+      "delete_failed": "Deleting this organization's data did not finish",
+      "delete_cancelled": "The organization's deletion was cancelled",
+      "export_completed": "Your export is ready to download",
+      "export_failed": "Your export could not be prepared",
+      "export_requested": "Your export is being prepared",
+      "retention_errors": "Retention could not reach every service"
+    }
   }
 }

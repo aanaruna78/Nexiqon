@@ -26,10 +26,37 @@ class ExportManifest(BaseModel):
     artifacts: list[dict[str, Any]]  # e.g. {"kind": "documents", "uri": "s3://..."}
 
 
+class RetentionPolicy(BaseModel):
+    """How long a tenant keeps each kind of data (its default retention profile, G-01).
+    A service purges only what is older than its own kind's limit; legal hold purges nothing."""
+
+    conversations_days: int = 365
+    traces_days: int = 30
+    tool_results_days: int = 30
+    legal_hold: bool = False
+
+
+class RetentionReport(BaseModel):
+    service: str
+    tenant_id: UUID
+    purged: dict[str, int]  # resource type -> count
+
+
 class TenantLifecycle(Protocol):
     async def delete_tenant(self, tenant_id: UUID) -> DeletionReport: ...
 
     async def export_tenant(self, tenant_id: UUID) -> ExportManifest: ...
+
+
+async def purge_expired(
+    lifecycle: object, service: str, tenant_id: UUID, policy: RetentionPolicy
+) -> RetentionReport:
+    """Run a lifecycle's optional ``purge_expired(tenant_id, policy) -> dict[str, int]``."""
+    purge = getattr(lifecycle, "purge_expired", None)
+    if policy.legal_hold or purge is None:
+        return RetentionReport(service=service, tenant_id=tenant_id, purged={})
+    purged: dict[str, int] = await purge(tenant_id, policy)
+    return RetentionReport(service=service, tenant_id=tenant_id, purged=purged)
 
 
 class NoTenantData:

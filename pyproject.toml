@@ -55,6 +55,9 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Header", 
 "**/tests/**" = ["S105", "S106", "S608", "PT012"]
 # RLS policy SQL in migrations is built from constants and setting() expressions, never input.
 "**/migrations/**" = ["S608"]
+# Operator scripts run fixed commands (no user input), build SQL only from information_schema
+# names of the platform's own database, and use /tmp inside the database container.
+"tools/ops/**" = ["S603", "S608", "S108"]
 
 [tool.mypy]
 python_version = "3.12"

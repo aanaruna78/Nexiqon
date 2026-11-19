@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import delete, func, select
 
 from nexiqon_core.db import TenantSessionFactory
-from nexiqon_core.lifecycle import DeletionReport, ExportManifest, NoTenantData, TenantLifecycle
+from nexiqon_core.lifecycle import (
+    DeletionReport,
+    ExportManifest,
+    NoTenantData,
+    RetentionPolicy,
+    TenantLifecycle,
+)
 from nexiqon_metering.models import (
     ActivityDaily,
     Budget,
@@ -43,6 +50,13 @@ class MeteringLifecycle:
             deleted=deleted,
             residue_check_passed=left == 0,
         )
+
+    async def purge_expired(self, tenant_id: UUID, policy: RetentionPolicy) -> dict[str, int]:
+        """Event ids kept for de-duplication: redelivery never comes after 90 days."""
+        cutoff = datetime.now(UTC) - timedelta(days=90)
+        async with self.db.scoped({"tenant_id": str(tenant_id)}) as s:
+            result = await s.execute(delete(Processed).where(Processed.created_at < cutoff))
+        return {"processed_events": int(result.rowcount or 0)}  # type: ignore[attr-defined]
 
     async def export_tenant(self, tenant_id: UUID) -> ExportManifest:
         async with self.db.scoped({"tenant_id": str(tenant_id)}) as s:

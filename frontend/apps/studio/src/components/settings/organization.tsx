@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { ShieldCheck } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
+import { DataControls } from "@/components/settings/data-controls";
 import { useStudio } from "@/components/shell/studio-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,10 @@ export function OrganizationPage() {
     <div className="space-y-8">
       <PageHeader title={t("title")} description={t("subtitle")} icon={ShieldCheck} tone="navy" />
       {tenant.data ? <OrganizationForm key={tenant.dataUpdatedAt} tenant={tenant.data} /> : null}
+      <section aria-labelledby="data-title" className="space-y-4">
+        <h2 id="data-title" className="text-lg font-semibold">{t("dataTitle")}</h2>
+        <DataControls />
+      </section>
     </div>
   );
 }

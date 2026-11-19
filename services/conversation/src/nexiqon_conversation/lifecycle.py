@@ -8,7 +8,14 @@ from sqlalchemy import delete, func, select
 
 from nexiqon_conversation.models import Conversation, Feedback, Message, Outbox
 from nexiqon_core.db import TenantSessionFactory
-from nexiqon_core.lifecycle import DeletionReport, ExportManifest, NoTenantData, TenantLifecycle
+from nexiqon_core.lifecycle import (
+    DeletionReport,
+    ExportManifest,
+    NoTenantData,
+    RetentionPolicy,
+    TenantLifecycle,
+)
+from nexiqon_core.lifecycle_tables import TableLifecycle
 
 
 class ConversationLifecycle:
@@ -38,13 +45,18 @@ class ConversationLifecycle:
         )
 
     async def export_tenant(self, tenant_id: UUID) -> ExportManifest:
+        """Every conversation, message and rating: the people's own words are theirs to take."""
+        return await TableLifecycle(
+            self.service, self.db, [], export=[Conversation, Message, Feedback]
+        ).export_tenant(tenant_id)
+
+    async def purge_expired(self, tenant_id: UUID, policy: RetentionPolicy) -> dict[str, int]:
+        """Conversations past their own retention date (set from the assistant's profile)."""
         async with self.db.scoped({"tenant_id": str(tenant_id)}) as s:
-            count = await s.scalar(select(func.count()).select_from(Conversation))
-        return ExportManifest(
-            service=self.service,
-            tenant_id=tenant_id,
-            artifacts=[{"kind": "conversations", "rows": int(count or 0), "format": "rows"}],
-        )
+            result = await s.execute(
+                delete(Conversation).where(Conversation.retain_until < func.now())
+            )
+        return {"conversations": int(result.rowcount or 0)}  # type: ignore[attr-defined]
 
 
 def lifecycle(service: str, db: TenantSessionFactory | None = None) -> TenantLifecycle:
