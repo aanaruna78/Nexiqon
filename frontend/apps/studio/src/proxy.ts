@@ -15,5 +15,6 @@ export function proxy(request: NextRequest): Response {
 
 export const config = {
   // Everything except auth flow, APIs (they answer 401 themselves), static assets and public pages.
-  matcher: ["/((?!auth/|api/|signed-out|_next/|favicon\\.ico|.*\\.(?:svg|png|ico|webp|txt)$).*)"],
+  // The embeddable widget bundle (/widget/) is public: customers' websites load it.
+  matcher: ["/((?!auth/|api/|signed-out|widget/|_next/|favicon\\.ico|.*\\.(?:svg|png|ico|webp|txt)$).*)"],
 };

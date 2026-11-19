@@ -98,6 +98,75 @@
         "title": "FlagOut",
         "type": "object"
       },
+      "GalleryPack": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "installed_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Installed Version"
+          },
+          "intents": {
+            "title": "Intents",
+            "type": "integer"
+          },
+          "locales": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Locales",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "starter_questions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Starter Questions",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "tools": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tools",
+            "type": "array"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "title",
+          "description",
+          "version",
+          "locales",
+          "intents",
+          "tools",
+          "starter_questions",
+          "installed_version"
+        ],
+        "title": "GalleryPack",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1127,6 +1196,75 @@
           }
         },
         "summary": "Publish",
+        "tags": [
+          "config"
+        ]
+      }
+    },
+    "/v1/packs/gallery": {
+      "get": {
+        "description": "Ready-made Domain Packs to start from, and whether each is live in dev already.",
+        "operationId": "pack_gallery_v1_packs_gallery_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GalleryPack"
+                  },
+                  "title": "Response Pack Gallery V1 Packs Gallery Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Pack Gallery",
+        "tags": [
+          "config"
+        ]
+      }
+    },
+    "/v1/packs/gallery/{name}/install": {
+      "post": {
+        "description": "Import a ready-made pack, publish it and make it live in dev, in one step. Installing a\npack whose content is already live changes nothing.",
+        "operationId": "install_gallery_pack_v1_packs_gallery__name__install_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Install Gallery Pack",
         "tags": [
           "config"
         ]

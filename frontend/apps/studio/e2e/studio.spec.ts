@@ -349,6 +349,41 @@ test.describe.serial("Studio", () => {
     await a11y(page, "models");
   });
 
+  test("setup guide: ready-made pack to an embeddable assistant", async () => {
+    await page.goto("/get-started");
+    await a11y(page, "setup guide");
+    await page.getByTestId("use-pack-saas-knowledge-assistant").click();
+    await expect(page.getByTestId("guide-step-pack")).toContainText("Done");
+    await page.getByRole("button", { name: "product-docs" }).click();
+    await expect(page.getByTestId("guide-step-knowledge")).toContainText(/documents? ready/);
+    await page.getByLabel("Assistant name").fill("Guide Helper");
+    await page.getByTestId("guide-create-assistant").click();
+    await expect(page.getByTestId("guide-step-assistant")).toContainText("Done");
+    await page.getByTestId("test-input").fill("How long is each backup kept?");
+    await page.getByTestId("test-send").click();
+    await expect(page.getByTestId("test-chat-log").getByTestId("inspect")).toBeVisible();
+    await a11y(page, "setup guide test");
+    await page.getByLabel("Allowed websites").fill("https://docs.example.com");
+    await page.getByLabel("Allowed websites").press("Enter");
+    await page.getByTestId("create-widget-key").click();
+    const snippet = page.getByTestId("embed-snippet");
+    await expect(snippet).toContainText('agent="guide-helper"');
+    await expect(snippet).toContainText('api-key="nxq_');
+    await expect(snippet).toContainText("/widget/nexiqon-chat.js");
+    await expect(page.getByTestId("widget-keys")).toContainText("https://docs.example.com");
+    await a11y(page, "embed code");
+  });
+
+  test("assistants: widget text and colour per assistant", async () => {
+    await page.goto("/assistants/guide-helper?tab=widget");
+    await page.getByLabel("Greeting").fill("Hello from the guide.");
+    await expect(page.getByTestId("widget-preview")).toContainText("Hello from the guide.");
+    await a11y(page, "widget settings");
+    await page.getByTestId("save-widget").click();
+    await page.waitForURL(/tab=versions/);
+    await expect(page.getByTestId("diff")).toContainText("widget");
+  });
+
   test("knowledge: delete shows the impact first", async () => {
     await page.goto("/knowledge");
     await page.getByTestId("collection-product-docs").click();

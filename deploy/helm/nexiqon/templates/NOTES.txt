@@ -1,0 +1,12 @@
+Nexiqon {{ .Chart.AppVersion }} installed ({{ .Values.topology.mode }} topology).
+
+Gateway:  kubectl -n {{ .Release.Namespace }} port-forward svc/gateway 8000:{{ .Values.gateway.service.port }}
+          curl http://localhost:8000/gateway/healthz
+{{- if .Values.studio.enabled }}
+Studio:   {{ .Values.studio.baseUrl }}
+{{- end }}
+{{- if .Values.bundled.enabled }}
+
+Bundled dependencies are for evaluation only. Use managed PostgreSQL (pgvector), Valkey,
+NATS JetStream, S3 storage, Temporal and your identity provider in production.
+{{- end }}

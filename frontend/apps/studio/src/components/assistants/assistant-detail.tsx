@@ -31,8 +31,9 @@ import { useObject, useObjects, useRelease, useResolvedAgent, useVersion } from 
 import { TagInput } from "./tag-input";
 import { TestChat } from "./test-chat";
 import { ViewAs } from "./view-as";
+import { WidgetSettings } from "./widget-settings";
 
-const TABS = ["setup", "test", "access", "versions", "workflow"] as const;
+const TABS = ["setup", "test", "widget", "access", "versions", "workflow"] as const;
 const TONES = ["friendly", "formal", "concise"] as const;
 
 export function AssistantDetail({ name }: { name: string }) {
@@ -79,6 +80,9 @@ export function AssistantDetail({ name }: { name: string }) {
         <TabsContent value="test" className="pt-4">
           <TestChat agent={name} liveVersion={state.live} versions={object.data.versions} />
         </TabsContent>
+        <TabsContent value="widget" className="pt-4">
+          <WidgetTab name={name} spec={spec} onSaved={() => router.replace(`/assistants/${name}?tab=versions`)} />
+        </TabsContent>
         <TabsContent value="access" className="pt-4">
           <ViewAs collections={spec.knowledge?.collections ?? []} retrievalProfile={spec.retrieval_profile} modelProfile={spec.model_profile} />
         </TabsContent>
@@ -91,6 +95,13 @@ export function AssistantDetail({ name }: { name: string }) {
       </Tabs>
     </div>
   );
+}
+
+function WidgetTab({ name, spec, onSaved }: { name: string; spec: AgentSpec; onSaved: () => void }) {
+  const resolved = useResolvedAgent(name);
+  if (resolved.isLoading) return <Skeleton className="h-64" />;
+  const pack = (((resolved.data?.pack as { channels?: { widget?: object } } | undefined)?.channels?.widget) ?? {}) as Parameters<typeof WidgetSettings>[0]["pack"];
+  return <WidgetSettings key={JSON.stringify(spec.widget ?? {})} name={name} spec={spec} pack={pack} onSaved={onSaved} />;
 }
 
 function Workflow({ name, pack }: { name: string; pack: string }) {

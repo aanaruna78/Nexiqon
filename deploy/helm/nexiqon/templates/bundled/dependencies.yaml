@@ -1,0 +1,203 @@
+{{- if .Values.bundled.enabled }}
+{{- $b := .Values.bundled }}
+{{- $sc := $b.storageClass }}
+# Single-replica dependencies for evaluation and CI clusters. NOT for production.
+---
+# Credentials for the bundled services only (evaluation). Production Secrets come from outside.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Values.database.existingSecret }}
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+stringData:
+  url: {{ printf "postgresql+asyncpg://nexiqon_app:%s@postgres:5432/%s" $b.postgres.appPassword $b.postgres.database | quote }}
+  migrationUrl: {{ printf "postgresql+asyncpg://nexiqon:%s@postgres:5432/%s" $b.postgres.ownerPassword $b.postgres.database | quote }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nexiqon-blobs
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+stringData:
+  access_key: nexiqon-dev
+  secret_key: nexiqon-dev-secret
+{{- if $b.openbao.enabled }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nexiqon-openbao
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+stringData:
+  token: {{ $b.openbao.devRootToken | quote }}
+{{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nexiqon-bundled
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+data:
+  postgres-init.sql: |
+    CREATE EXTENSION IF NOT EXISTS vector;
+    CREATE EXTENSION IF NOT EXISTS ltree;
+    -- Application role: not the table owner, so FORCE ROW LEVEL SECURITY applies to it.
+    CREATE ROLE nexiqon_app LOGIN PASSWORD '{{ $b.postgres.appPassword }}';
+    GRANT CONNECT ON DATABASE {{ $b.postgres.database }} TO nexiqon_app;
+  s3.json: |
+    {{- .Files.Get "files/seaweedfs-s3.json" | nindent 4 }}
+  nexiqon-realm.json: |
+    {{- .Files.Get "files/keycloak-realm.json" | nindent 4 }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels: {{- include "nexiqon.selector" (dict "root" . "name" "postgres") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "nexiqon.labels" . | nindent 8 }}
+        app.kubernetes.io/name: {{ "postgres" }}
+    spec:
+      containers:
+        - name: postgres
+          image: {{ $b.postgres.image }}
+          env:
+            - { name: POSTGRES_DB, value: {{ $b.postgres.database | quote }} }
+            - { name: POSTGRES_USER, value: nexiqon }
+            - { name: POSTGRES_PASSWORD, value: {{ $b.postgres.ownerPassword | quote }} }
+            - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
+          ports:
+            - { name: pg, containerPort: 5432 }
+          readinessProbe:
+            exec: { command: ["pg_isready", "-U", "nexiqon", "-d", {{ $b.postgres.database | quote }}] }
+            periodSeconds: 5
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+            - { name: init, mountPath: /docker-entrypoint-initdb.d, readOnly: true }
+      volumes:
+        - name: init
+          configMap: { name: nexiqon-bundled, items: [{ key: postgres-init.sql, path: 00-init.sql }] }
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: [ReadWriteOnce]
+        {{- with $sc }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources: { requests: { storage: {{ $b.postgres.size }} } }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+spec:
+  selector: {{- include "nexiqon.selector" (dict "root" . "name" "postgres") | nindent 4 }}
+  ports:
+    - { name: pg, port: 5432, targetPort: pg }
+---
+{{ include "nexiqon.bundled.simple" (list . "valkey" $b.valkey.image (list (dict "name" "redis" "port" 6379)) nil nil) }}
+---
+{{ include "nexiqon.bundled.simple" (list . "nats" $b.nats.image (list (dict "name" "client" "port" 4222) (dict "name" "monitor" "port" 8222)) (list "-js" "-sd" "/tmp/nats" "-m" "8222") nil) }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: objectstore
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector:
+    matchLabels: {{- include "nexiqon.selector" (dict "root" . "name" "objectstore") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "nexiqon.labels" . | nindent 8 }}
+        app.kubernetes.io/name: {{ "objectstore" }}
+    spec:
+      containers:
+        - name: seaweedfs
+          image: {{ $b.objectstore.image }}
+          args: ["server", "-dir=/data", "-s3", "-s3.port=8333", "-s3.config=/etc/seaweedfs/s3.json"]
+          ports:
+            - { name: s3, containerPort: 8333 }
+          volumeMounts:
+            - { name: data, mountPath: /data }
+            - { name: config, mountPath: /etc/seaweedfs, readOnly: true }
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: config
+          configMap: { name: nexiqon-bundled, items: [{ key: s3.json, path: s3.json }] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: objectstore
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+spec:
+  selector: {{- include "nexiqon.selector" (dict "root" . "name" "objectstore") | nindent 4 }}
+  ports:
+    - { name: s3, port: 8333, targetPort: s3 }
+---
+{{ include "nexiqon.bundled.simple" (list . "temporal" $b.temporal.image (list (dict "name" "grpc" "port" 7233)) nil (list (dict "name" "DB" "value" "postgres12") (dict "name" "DB_PORT" "value" "5432") (dict "name" "POSTGRES_USER" "value" "nexiqon") (dict "name" "POSTGRES_PWD" "value" $b.postgres.ownerPassword) (dict "name" "POSTGRES_SEEDS" "value" "postgres"))) }}
+{{- if $b.keycloak.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {{- include "nexiqon.selector" (dict "root" . "name" "keycloak") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "nexiqon.labels" . | nindent 8 }}
+        app.kubernetes.io/name: {{ "keycloak" }}
+    spec:
+      containers:
+        - name: keycloak
+          image: {{ $b.keycloak.image }}
+          args: ["start-dev", "--import-realm"]
+          env:
+            - { name: KC_BOOTSTRAP_ADMIN_USERNAME, value: admin }
+            - { name: KC_BOOTSTRAP_ADMIN_PASSWORD, value: {{ $b.keycloak.adminPassword | quote }} }
+            - { name: KC_HOSTNAME, value: {{ $b.keycloak.hostname | quote }} }
+          ports:
+            - { name: http, containerPort: 8080 }
+          volumeMounts:
+            - { name: realm, mountPath: /opt/keycloak/data/import, readOnly: true }
+      volumes:
+        - name: realm
+          configMap: { name: nexiqon-bundled, items: [{ key: nexiqon-realm.json, path: nexiqon-realm.json }] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+spec:
+  selector: {{- include "nexiqon.selector" (dict "root" . "name" "keycloak") | nindent 4 }}
+  ports:
+    - { name: http, port: 8080, targetPort: http }
+{{- end }}
+{{- if $b.openbao.enabled }}
+---
+{{ include "nexiqon.bundled.simple" (list . "openbao" $b.openbao.image (list (dict "name" "http" "port" 8200)) nil (list (dict "name" "BAO_DEV_ROOT_TOKEN_ID" "value" $b.openbao.devRootToken) (dict "name" "BAO_DEV_LISTEN_ADDRESS" "value" "0.0.0.0:8200") (dict "name" "SKIP_SETCAP" "value" "true"))) }}
+{{- end }}
+{{- if $b.clamav.enabled }}
+---
+{{ include "nexiqon.bundled.simple" (list . "clamav" $b.clamav.image (list (dict "name" "clamd" "port" 3310)) nil nil) }}
+{{- end }}
+{{- end }}

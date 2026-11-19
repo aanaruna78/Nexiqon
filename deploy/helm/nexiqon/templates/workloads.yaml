@@ -1,0 +1,117 @@
+{{- $workloads := include "nexiqon.workloads" . | fromYaml }}
+{{- range $name, $w := $workloads }}
+{{- $g := $w.spec }}
+{{- $files := list "/app/config/settings.yaml" }}
+{{- if $g.settings }}{{ $files = append $files (printf "/app/config/group-%s.yaml" $w.group) }}{{ end }}
+{{- range $f := $g.keyFiles }}{{ $files = append $files (printf "/app/keys/%s" $f) }}{{ end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "nexiqon.labels" $ | nindent 4 }}
+    app.kubernetes.io/name: {{ $name }}
+    nexiqon.dev/group: {{ $w.group }}
+    nexiqon.dev/plane: {{ $g.plane }}
+spec:
+  replicas: {{ $g.replicas | default 1 }}
+  selector:
+    matchLabels: {{- include "nexiqon.selector" (dict "root" $ "name" $name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "nexiqon.labels" $ | nindent 8 }}
+        app.kubernetes.io/name: {{ $name }}
+        nexiqon.dev/group: {{ $w.group }}
+        nexiqon.dev/plane: {{ $g.plane }}
+      annotations:
+        checksum/settings: {{ include (print $.Template.BasePath "/settings.yaml") $ | sha256sum }}
+    spec:
+      {{- with $.Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      automountServiceAccountToken: false
+      securityContext: {{- toYaml $.Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: app
+          image: {{ include "nexiqon.image" $ }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          {{- if eq $.Values.topology.mode "split" }}
+          command: ["nexiqon-run", "--services", {{ join "," $w.services | quote }}, "--groups-file", "/app/deploy/groups.yaml"]
+          {{- end }}
+          env:
+            - { name: NEXIQON_GROUP, value: {{ $w.group | quote }} }
+            - { name: NEXIQON_TOPOLOGY_MODE, value: {{ $.Values.topology.mode | quote }} }
+            - { name: NEXIQON_CONFIG_FILES, value: {{ join "," $files | quote }} }
+            - name: NEXIQON_DATABASE__URL
+              valueFrom: { secretKeyRef: { name: {{ $.Values.database.existingSecret }}, key: url } }
+            {{- with $g.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with $.Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - { name: http, containerPort: {{ $.Values.topology.port }} }
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources: {{- toYaml ($g.resources | default dict) | nindent 12 }}
+          securityContext: {{- toYaml $.Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - { name: settings, mountPath: /app/config, readOnly: true }
+            - { name: groups, mountPath: /app/deploy/groups.yaml, subPath: groups.yaml, readOnly: true }
+            - { name: keys, mountPath: /app/keys, readOnly: true }
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: settings
+          configMap:
+            name: nexiqon-settings
+            items:
+              - { key: settings.yaml, path: settings.yaml }
+              {{- if $g.settings }}
+              - { key: {{ printf "group-%s.yaml" $w.group }}, path: {{ printf "group-%s.yaml" $w.group }} }
+              {{- end }}
+        - name: groups
+          configMap: { name: nexiqon-settings, items: [{ key: groups.yaml, path: groups.yaml }] }
+        - name: keys
+          secret:
+            secretName: {{ $.Values.keys.existingSecret }}
+            # Only this group's files: a service's own signing key never reaches other groups.
+            items:
+              {{- range $f := $g.keyFiles }}
+              - { key: {{ $f }}, path: {{ $f }} }
+              {{- end }}
+        - name: tmp
+          emptyDir: { sizeLimit: 2Gi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "nexiqon.labels" $ | nindent 4 }}
+    app.kubernetes.io/name: {{ $name }}
+spec:
+  selector: {{- include "nexiqon.selector" (dict "root" $ "name" $name) | nindent 4 }}
+  ports:
+    - { name: http, port: {{ $.Values.topology.port }}, targetPort: http }
+{{- if gt (int ($g.replicas | default 1)) 1 }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $name }}
+  labels: {{- include "nexiqon.labels" $ | nindent 4 }}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: {{- include "nexiqon.selector" (dict "root" $ "name" $name) | nindent 6 }}
+{{- end }}
+{{- end }}

@@ -444,3 +444,38 @@ export function sseBlock(block: string): StreamEvent | null {
     return null;
   }
 }
+
+// ------------------------------------------------------------------ widget embed (ST-15)
+
+export interface WidgetKey {
+  id: string;
+  name: string;
+  kind: string;
+  prefix: string;
+  allowed_origins: string[];
+  agent_ids: string[];
+  revoked_at: string | null;
+  last_used_at: string | null;
+  created_at: string;
+}
+
+const ATTR = /["<>&]/g;
+const escapeAttr = (v: string) => v.replace(ATTR, (c) => ({ '"': "&quot;", "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c]!);
+
+/** The two lines a website adds to show this assistant's widget. */
+export function embedSnippet(o: { widgetUrl: string; gatewayUrl: string; agent: string; key: string; locale?: string }): string {
+  const locale = o.locale && o.locale !== "en" ? ` locale="${escapeAttr(o.locale)}"` : "";
+  return [
+    `<script type="module" src="${escapeAttr(o.widgetUrl)}"></script>`,
+    `<nexiqon-chat agent="${escapeAttr(o.agent)}" api-base="${escapeAttr(o.gatewayUrl)}" api-key="${escapeAttr(o.key)}"${locale}></nexiqon-chat>`,
+  ].join("\n");
+}
+
+/** Widget keys this assistant can use: active widget keys limited to it. */
+export function keysFor(keys: WidgetKey[], agent: string): WidgetKey[] {
+  return keys.filter((k) => k.kind === "widget" && !k.revoked_at && k.agent_ids.includes(agent));
+}
+
+export function validOrigin(origin: string): boolean {
+  return /^https?:\/\/[a-z0-9.-]+(:\d+)?$/.test(origin);
+}

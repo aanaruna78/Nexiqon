@@ -1,0 +1,9 @@
+**/node_modules
+**/.next
+**/dist
+**/test-results
+**/playwright-report
+**/storybook-static
+**/*.tsbuildinfo
+# Storybook stories never ship (and import schemas from ../contracts)
+apps/studio/src/stories

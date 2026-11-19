@@ -6,12 +6,15 @@ import addFormats from "ajv-formats";
 import { describe, expect, it } from "vitest";
 
 import { turnFromRun } from "@/components/assistants/test-chat";
+import { guideProgress } from "@/components/onboarding/setup-guide";
 import { blankPack } from "@/components/packs/templates";
 import {
   activePath,
   type ConfigObject,
   dataFlow,
+  embedSnippet,
   explainRun,
+  keysFor,
   layoutGraph,
   pathWords,
   type ProfileEntry,
@@ -20,6 +23,8 @@ import {
   slugify,
   sseBlock,
   tradeoffs,
+  validOrigin,
+  type WidgetKey,
 } from "@/lib/studio";
 
 const trace = (over: Partial<RunTrace> = {}): RunTrace => ({
@@ -161,5 +166,33 @@ describe("trying a draft", () => {
     expect(asks.reply?.content).toBe("Go ahead?");
     const handed = turnFromRun({ ...base, status: "completed", answer: { text: "Passing on", kind: "handoff" }, interrupt: null, handoff: { reason: "user_request" } }, "p");
     expect(handed.conversation.status).toBe("escalated");
+  });
+});
+
+describe("widget embed (ST-15)", () => {
+  it("builds a snippet with escaped values", () => {
+    const s = embedSnippet({ widgetUrl: "https://studio.example/widget/nexiqon-chat.js", gatewayUrl: "https://api.example", agent: "support", key: 'nxq_a"b' });
+    expect(s).toBe(
+      '<script type="module" src="https://studio.example/widget/nexiqon-chat.js"></script>\n<nexiqon-chat agent="support" api-base="https://api.example" api-key="nxq_a&quot;b"></nexiqon-chat>',
+    );
+    expect(embedSnippet({ widgetUrl: "w", gatewayUrl: "g", agent: "a", key: "k", locale: "ar" })).toContain(' locale="ar"');
+  });
+
+  it("lists only active widget keys limited to the assistant", () => {
+    const key = (over: Partial<WidgetKey>): WidgetKey => ({ id: "1", name: "k", kind: "widget", prefix: "nxq_1", allowed_origins: [], agent_ids: ["support"], revoked_at: null, last_used_at: null, created_at: "", ...over });
+    const keys = [key({}), key({ id: "2", agent_ids: ["billing"] }), key({ id: "3", revoked_at: "x" }), key({ id: "4", kind: "server" })];
+    expect(keysFor(keys, "support").map((k) => k.id)).toEqual(["1"]);
+    expect(validOrigin("https://docs.example.com")).toBe(true);
+    expect(validOrigin("https://docs.example.com/path")).toBe(false);
+    expect(validOrigin("docs.example.com")).toBe(false);
+  });
+});
+
+describe("setup guide (ST-13)", () => {
+  it("knows which steps are done from what exists", () => {
+    expect(guideProgress({ pack: null, ready: 0, live: null })).toEqual({ pack: false, knowledge: false, assistant: false, embed: false });
+    expect(guideProgress({ pack: "p", ready: 0, live: null }).pack).toBe(true);
+    expect(guideProgress({ pack: "p", ready: 2, live: null })).toMatchObject({ knowledge: true, assistant: false });
+    expect(guideProgress({ pack: "p", ready: 2, live: 1 })).toMatchObject({ knowledge: true, assistant: true });
   });
 });

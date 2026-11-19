@@ -1,0 +1,11 @@
+# Private / on-premises install: everything in the customer's cluster, self-hosted models
+# (deploy/compose/docker-compose.gpu.yml shows the vLLM endpoints; docs/guides/gpu-models.md).
+# Assistants choose the built-in on-prem-small or on-prem-standard model profiles.
+settings:
+  environment: prod
+  require_admin_mfa: true
+groups:
+  model-gateway:
+    env: []   # no cloud provider keys: cloud profiles fail closed
+gateway:
+  service: { type: LoadBalancer }

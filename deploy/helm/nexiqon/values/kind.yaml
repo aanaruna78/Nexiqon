@@ -1,0 +1,43 @@
+# Evaluation and CI on a local kind cluster: bundled dependencies, one replica each, the offline
+# development models and the demo APIs. NOT for production.
+#   tools/dev/kind_up.py builds the images, loads them, creates the key Secrets and installs this.
+image: { pullPolicy: Never, tag: dev }
+topology: { mode: grouped }
+bundled: { enabled: true }
+mockApis: { enabled: true }
+settings:
+  environment: dev
+  log_json: true
+  require_admin_mfa: false
+  allow_offline_provider: true   # deterministic stand-in models (profile dev-offline)
+  idp_providers:
+    - name: keycloak
+      kind: keycloak
+      issuer: http://localhost:8080/realms/nexiqon
+      jwks_url: http://keycloak:8080/realms/nexiqon/protocol/openid-connect/certs
+      audiences: []
+groups:
+  control-core: { replicas: 1 }
+  control-ops: { replicas: 1 }
+  knowledge:
+    replicas: 1
+    settings:
+      blobs: { backend: s3, endpoint: "http://objectstore:8333", bucket: nexiqon, region: us-east-1 }
+      scan: { backend: none }
+      workflows: { enabled: true, address: "temporal:7233" }
+  agent: { replicas: 1 }
+  tool-gateway:
+    replicas: 1
+    settings:
+      secrets: { backend: openbao, address: "http://openbao:8200", mount: secret }
+      allow_insecure_http: true   # the demo APIs inside the cluster
+      egress: { allowed_ports: [80, 443, 9000], allowed_private_cidrs: ["10.0.0.0/8"] }
+  model-gateway: { replicas: 1 }
+gateway: { replicas: 1 }
+opa: { replicas: 1 }
+studio:
+  replicas: 1
+  image: { tag: dev }
+  baseUrl: http://localhost:3100
+  environment: development
+  oidc: { issuer: http://localhost:8080/realms/nexiqon }

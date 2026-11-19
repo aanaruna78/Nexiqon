@@ -21,6 +21,8 @@ RUN apt-get update \
 WORKDIR /app
 COPY --from=build /app/.venv /app/.venv
 COPY deploy/groups.yaml /app/deploy/groups.yaml
+# Ready-made Domain Packs offered by config's pack gallery (ST-13).
+COPY packs /app/packs
 ENV PATH=/app/.venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     NEXIQON_GROUP=control-core

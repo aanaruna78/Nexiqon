@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "./api";
-import type { Approval, Change, ConfigObject, DeploymentEvent, ProfileEntry, RunTrace, ToolCallLog, VersionDetail } from "./studio";
+import type { Approval, WidgetKey, Change, ConfigObject, DeploymentEvent, ProfileEntry, RunTrace, ToolCallLog, VersionDetail } from "./studio";
 
 export function useObjects(kind: string) {
   return useQuery({ queryKey: ["objects", kind], queryFn: () => api<ConfigObject[]>(`config/v1/objects?kind=${kind}`) });
@@ -109,4 +109,16 @@ export function useRelease(kind: string, name: string) {
     onSuccess: refresh,
   });
   return { saveDraft, publish, deploy, refresh };
+}
+
+export function usePublicConfig() {
+  return useQuery({
+    queryKey: ["public-config"],
+    queryFn: async () => (await fetch("/api/public-config")).json() as Promise<{ gatewayUrl: string; widgetUrl: string }>,
+    staleTime: Infinity,
+  });
+}
+
+export function useApiKeys() {
+  return useQuery({ queryKey: ["api-keys"], queryFn: () => api<WidgetKey[]>("identity/v1/api-keys") });
 }

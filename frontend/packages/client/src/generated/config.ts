@@ -206,6 +206,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/packs/gallery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pack Gallery
+         * @description Ready-made Domain Packs to start from, and whether each is live in dev already.
+         */
+        get: operations["pack_gallery_v1_packs_gallery_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/packs/gallery/{name}/install": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Install Gallery Pack
+         * @description Import a ready-made pack, publish it and make it live in dev, in one step. Installing a
+         *     pack whose content is already live changes nothing.
+         */
+        post: operations["install_gallery_pack_v1_packs_gallery__name__install_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/packs/import": {
         parameters: {
             query?: never;
@@ -416,6 +457,27 @@ export interface components {
             enabled: boolean;
             /** Key */
             key: string;
+        };
+        /** GalleryPack */
+        GalleryPack: {
+            /** Description */
+            description: string;
+            /** Installed Version */
+            installed_version: number | null;
+            /** Intents */
+            intents: number;
+            /** Locales */
+            locales: string[];
+            /** Name */
+            name: string;
+            /** Starter Questions */
+            starter_questions: string[];
+            /** Title */
+            title: string;
+            /** Tools */
+            tools: string[];
+            /** Version */
+            version: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -958,6 +1020,57 @@ export interface operations {
                 kind: string;
                 name: string;
                 version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pack_gallery_v1_packs_gallery_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalleryPack"][];
+                };
+            };
+        };
+    };
+    install_gallery_pack_v1_packs_gallery__name__install_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
             };
             cookie?: never;
         };

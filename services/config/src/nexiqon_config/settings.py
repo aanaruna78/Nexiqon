@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any
 
 from pydantic import Field
@@ -17,3 +18,5 @@ class ServiceSettings(CoreSettings):
     deployment_floors: list[dict[str, Any]] = Field(default_factory=list)
     # Signs configuration snapshots pulled by data planes (hybrid mode).
     snapshot_signing: SigningSettings = Field(default_factory=SigningSettings)
+    # Ready-made Domain Packs offered in Studio's setup guide (ST-13): <dir>/<name>/pack.yaml.
+    pack_gallery_dir: Path = Path("packs")

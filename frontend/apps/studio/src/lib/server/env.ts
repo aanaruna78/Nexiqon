@@ -2,6 +2,7 @@
  * Studio server configuration (BFF). Read on the server only; never imported by client components.
  *
  *   NEXIQON_GATEWAY_URL     gateway base URL              (default http://localhost:8000)
+ *   NEXIQON_PUBLIC_GATEWAY_URL  gateway URL websites use (widget embed snippet; default: gateway URL)
  *   STUDIO_BASE_URL         public URL of Studio           (default http://localhost:3100)
  *   STUDIO_AUTH_PROVIDER    oidc | clerk                   (default oidc; Keycloak, Auth0, any OIDC)
  *   OIDC_ISSUER / OIDC_CLIENT_ID / OIDC_CLIENT_SECRET (optional for public PKCE clients)
@@ -14,6 +15,7 @@ const DEV_SECRET = "dev-only-session-secret-change-me-please-0123";
 export interface StudioEnv {
   environment: "development" | "staging" | "production";
   gatewayUrl: string;
+  publicGatewayUrl: string;
   baseUrl: string;
   authProvider: "oidc" | "clerk";
   oidcIssuer: string;
@@ -34,6 +36,7 @@ export function studioEnv(): StudioEnv {
   return {
     environment: environment === "staging" || environment === "production" ? environment : "development",
     gatewayUrl: (process.env.NEXIQON_GATEWAY_URL ?? "http://localhost:8000").replace(/\/$/, ""),
+    publicGatewayUrl: (process.env.NEXIQON_PUBLIC_GATEWAY_URL ?? process.env.NEXIQON_GATEWAY_URL ?? "http://localhost:8000").replace(/\/$/, ""),
     baseUrl,
     authProvider: process.env.STUDIO_AUTH_PROVIDER === "clerk" ? "clerk" : "oidc",
     oidcIssuer: process.env.OIDC_ISSUER ?? "http://localhost:8080/realms/nexiqon",

@@ -1,0 +1,102 @@
+{{- if .Values.opa.enabled }}
+# Authorization decisions (ADR 0008). Policies ship in the chart (files/policies, kept in sync
+# with services/authz/policies by tools/dev/sync_chart_files.py and a test).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nexiqon-policies
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+data:
+  {{- range $path, $_ := .Files.Glob "files/policies/*.rego" }}
+  {{ base $path }}: |
+    {{- $.Files.Get $path | nindent 4 }}
+  {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opa
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.opa.replicas }}
+  selector:
+    matchLabels: {{- include "nexiqon.selector" (dict "root" . "name" "opa") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "nexiqon.labels" . | nindent 8 }}
+        app.kubernetes.io/name: {{ "opa" }}
+      annotations:
+        checksum/policies: {{ (.Files.Glob "files/policies/*.rego").AsConfig | sha256sum }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: opa
+          image: {{ .Values.opa.image }}
+          args: ["run", "--server", "--addr=0.0.0.0:8181", "--disable-telemetry", "/policies"]
+          ports:
+            - { name: http, containerPort: 8181 }
+          readinessProbe:
+            httpGet: { path: /health, port: http }
+          resources: {{- toYaml .Values.opa.resources | nindent 12 }}
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - { name: policies, mountPath: /policies, readOnly: true }
+      volumes:
+        - name: policies
+          configMap: { name: nexiqon-policies }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opa
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+spec:
+  selector: {{- include "nexiqon.selector" (dict "root" . "name" "opa") | nindent 4 }}
+  ports:
+    - { name: http, port: 8181, targetPort: http }
+{{- end }}
+{{- if .Values.flagd.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flagd
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {{- include "nexiqon.selector" (dict "root" . "name" "flagd") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "nexiqon.labels" . | nindent 8 }}
+        app.kubernetes.io/name: {{ "flagd" }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: flagd
+          image: {{ .Values.flagd.image }}
+          args: ["start", "--uri", "file:/flags/flags.json"]
+          ports:
+            - { name: grpc, containerPort: 8013 }
+          resources: {{- toYaml .Values.flagd.resources | nindent 12 }}
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - { name: flags, mountPath: /flags, readOnly: true }
+      volumes:
+        - name: flags
+          configMap: { name: nexiqon-flags }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flagd
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+spec:
+  selector: {{- include "nexiqon.selector" (dict "root" . "name" "flagd") | nindent 4 }}
+  ports:
+    - { name: grpc, port: 8013, targetPort: grpc }
+{{- end }}

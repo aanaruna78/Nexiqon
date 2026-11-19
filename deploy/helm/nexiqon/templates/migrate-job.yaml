@@ -1,0 +1,42 @@
+{{- if .Values.migrations.enabled }}
+# Runs every service's migrations once, before install and before each upgrade.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nexiqon-migrate-{{ .Release.Revision }}
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.bundled.enabled }}
+    # Bundled databases are installed by this same release: run after them, not as a pre-hook.
+    helm.sh/hook: post-install,pre-upgrade
+    {{- else }}
+    helm.sh/hook: pre-install,pre-upgrade
+    {{- end }}
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 10
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels: {{- include "nexiqon.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      automountServiceAccountToken: false
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: migrate
+          image: {{ include "nexiqon.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["nexiqon-migrate", "all"]
+          env:
+            - name: NEXIQON_DATABASE__MIGRATION_URL
+              valueFrom: { secretKeyRef: { name: {{ .Values.database.existingSecret }}, key: migrationUrl } }
+            - { name: NEXIQON_GROUPS_FILE, value: /app/deploy/groups.yaml }
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- end }}

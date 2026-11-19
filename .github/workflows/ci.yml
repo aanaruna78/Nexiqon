@@ -87,6 +87,39 @@ jobs:
       - name: Storybook builds (design-system catalog, a11y addon)
         run: pnpm --filter @nexiqon/studio build-storybook
 
+  helm:
+    name: Deployment (Helm chart, OpenTofu)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: PyYAML for reading rendered manifests
+        run: python3 -m pip install --user --quiet pyyaml==6.0.2
+      - name: Lint and render every profile
+        run: |
+          H="docker run --rm -v $PWD/deploy/helm/nexiqon:/chart -w /chart alpine/helm:3.19.0"
+          $H lint . -f values/kind.yaml
+          mkdir -p /tmp/render
+          $H template t . -f values/kind.yaml > /tmp/render/kind-grouped.yaml
+          $H template t . -f values/kind.yaml --set topology.mode=split > /tmp/render/kind-split.yaml
+          $H template t . -f values/saas.yaml > /tmp/render/saas.yaml
+          $H template t . -f values/private.yaml --set studio.baseUrl=https://studio.example --set studio.oidc.issuer=https://login.example > /tmp/render/private.yaml
+      - name: Kubernetes schemas
+        run: docker run --rm -v /tmp/render:/m:ro ghcr.io/yannh/kubeconform:v0.7.0 -strict -summary -kubernetes-version 1.31.0 /m
+      - name: Generated gateway config is valid Envoy
+        run: |
+          for f in kind-grouped kind-split; do
+            python3 -c "import sys, yaml; [print(d['data']['envoy.yaml']) for d in yaml.safe_load_all(open(sys.argv[1])) if d and d['kind'] == 'ConfigMap' and d['metadata']['name'] == 'nexiqon-gateway']" /tmp/render/$f.yaml > /tmp/render/$f-envoy.yaml
+            docker run --rm -v /tmp/render/$f-envoy.yaml:/e.yaml:ro envoyproxy/envoy:v1.40.0 --mode validate -c /e.yaml
+          done
+      - name: OpenTofu format and validate (no backend, no credentials)
+        run: |
+          T="ghcr.io/opentofu/opentofu:1.10.6"
+          docker run --rm -v $PWD/deploy/tofu:/w -w /w $T fmt -check -recursive
+          for d in modules/digitalocean envs/staging; do
+            docker run --rm -v $PWD/deploy/tofu:/w -w /w/$d $T init -backend=false -input=false -no-color
+            docker run --rm -v $PWD/deploy/tofu:/w -w /w/$d $T validate -no-color
+          done
+
   security:
     name: Security (secrets, dependencies, filesystem)
     runs-on: ubuntu-24.04
@@ -136,6 +169,27 @@ jobs:
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0 (pinned by SHA)
         with:
           image-ref: nexiqon/platform:ci
+          severity: CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+      - name: Build the Studio image (with the widget bundle)
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          file: deploy/docker/studio.Dockerfile
+          tags: nexiqon/studio:ci
+          load: true
+          cache-from: type=gha,scope=studio
+          cache-to: type=gha,mode=max,scope=studio
+      - name: Smoke test Studio and the public widget bundle
+        run: |
+          docker run -d --name studio -p 3000:3000 -e STUDIO_SESSION_SECRET=$(openssl rand -hex 32) nexiqon/studio:ci
+          for i in $(seq 1 30); do curl -fs localhost:3000/api/health && break; sleep 1; done
+          curl -fsI localhost:3000/widget/nexiqon-chat.js | grep -i "access-control-allow-origin: \*"
+      - name: Trivy Studio image scan
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0 (pinned by SHA)
+        with:
+          image-ref: nexiqon/studio:ci
           severity: CRITICAL
           exit-code: "1"
           ignore-unfixed: true

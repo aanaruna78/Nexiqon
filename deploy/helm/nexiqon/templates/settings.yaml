@@ -1,0 +1,26 @@
+# Non-secret settings: the shared layer, one layer per group, the groups file and feature flags.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nexiqon-settings
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+data:
+  settings.yaml: |
+    {{- toYaml .Values.settings | nindent 4 }}
+  groups.yaml: |
+    {{- include "nexiqon.groupsFile" . | nindent 4 }}
+  {{- range $name, $g := .Values.groups }}
+  {{- if and $g.enabled $g.settings }}
+  group-{{ $name }}.yaml: |
+    {{- toYaml $g.settings | nindent 4 }}
+  {{- end }}
+  {{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nexiqon-flags
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+data:
+  flags.json: |
+    {{- .Files.Get "files/flags.json" | nindent 4 }}

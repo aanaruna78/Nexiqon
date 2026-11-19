@@ -56,7 +56,11 @@ class WidgetChannel:
     def settings(self, resolved: dict[str, Any], locale: str) -> dict[str, Any]:
         config = resolved.get("config") or {}
         pack = resolved.get("pack") or {}
-        widget = (pack.get("channels") or {}).get("widget") or {}
+        # The assistant's own widget settings (ST-15) override the pack's, field by field.
+        widget = {
+            **((pack.get("channels") or {}).get("widget") or {}),
+            **(config.get("widget") or {}),
+        }
         name = str(config.get("display_name") or _text(widget.get("title"), locale) or "Assistant")
         starters = widget.get("starter_questions") or {}
         escalation = config.get("escalation") or {}

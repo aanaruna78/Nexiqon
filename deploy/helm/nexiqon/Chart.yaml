@@ -1,0 +1,10 @@
+apiVersion: v2
+name: nexiqon
+description: >-
+  Nexiqon platform: deployment groups (or every service on its own), migrations, the edge gateway,
+  OPA, feature flags, Studio and, for evaluation clusters, bundled dependencies.
+type: application
+version: 0.1.0
+appVersion: "0.4.0"
+kubeVersion: ">=1.29.0-0"
+keywords: [ai, agents, rag, multi-tenant]

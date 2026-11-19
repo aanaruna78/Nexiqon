@@ -1,0 +1,22 @@
+# Production SaaS (DigitalOcean reference, deploy/tofu/digitalocean): managed PostgreSQL with
+# pgvector, managed Valkey, Spaces and NATS/Temporal run outside the chart and are referenced here.
+image: { repository: registry.digitalocean.com/nexiqon/platform }
+settings:
+  environment: prod
+  require_admin_mfa: true
+  events: { enabled: true, nats_url: "nats://nats.nexiqon-infra:4222" }
+  workflows: { enabled: true, address: "temporal-frontend.nexiqon-infra:7233" }
+  idp_providers: []   # set per deployment: the tenants' identity providers
+groups:
+  knowledge:
+    settings:
+      blobs: { backend: s3, endpoint: "https://REGION.digitaloceanspaces.com", bucket: nexiqon-prod, region: REGION }
+      scan: { backend: clamav, clamd_host: clamav.nexiqon-infra, clamd_port: 3310 }
+      workflows: { enabled: true, address: "temporal-frontend.nexiqon-infra:7233" }
+gateway:
+  ingress: { enabled: true, className: nginx, host: api.example.com, tls: { secretName: api-tls } }
+studio:
+  image: { repository: registry.digitalocean.com/nexiqon/studio }
+  baseUrl: https://studio.example.com
+  oidc: { issuer: https://login.example.com/realms/nexiqon }
+  ingress: { enabled: true, className: nginx, host: studio.example.com, tls: { secretName: studio-tls } }

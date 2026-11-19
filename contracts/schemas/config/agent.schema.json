@@ -248,6 +248,52 @@
           }
         }
       }
+    },
+    "widget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "object",
+          "description": "Text per locale, e.g. {\"en\": \"...\", \"ar\": \"...\"}",
+          "propertyNames": {
+            "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+          },
+          "additionalProperties": {
+            "type": "string"
+          },
+          "minProperties": 1
+        },
+        "greeting": {
+          "type": "object",
+          "description": "Text per locale, e.g. {\"en\": \"...\", \"ar\": \"...\"}",
+          "propertyNames": {
+            "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+          },
+          "additionalProperties": {
+            "type": "string"
+          },
+          "minProperties": 1
+        },
+        "starter_questions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6
+          }
+        },
+        "accent_color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "x-ui": {
+            "widget": "color"
+          }
+        }
+      },
+      "description": "This assistant's widget text and colour; each field overrides the Domain Pack's channels.widget."
     }
   }
 }

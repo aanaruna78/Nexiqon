@@ -27,9 +27,9 @@ async function settled<T>(p: Promise<T>, fallback: T): Promise<T> {
 }
 
 const STEPS = [
-  { key: "pack", href: "/settings/configuration?kind=domain_pack", icon: Package, tone: "teal" },
-  { key: "agent", href: "/settings/configuration/agent/new", icon: Bot, tone: "violet" },
-  { key: "deploy", href: "/settings/configuration?kind=agent", icon: Rocket, tone: "amber" },
+  { key: "pack", href: "/get-started", icon: Package, tone: "teal" },
+  { key: "agent", href: "/assistants", icon: Bot, tone: "violet" },
+  { key: "deploy", href: "/assistants", icon: Rocket, tone: "amber" },
   { key: "members", href: "/settings/members?invite=1", icon: Users, tone: "sky" },
   { key: "keys", href: "/settings/api-keys?create=1", icon: KeyRound, tone: "rose" },
 ] as const;

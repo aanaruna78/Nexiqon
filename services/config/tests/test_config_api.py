@@ -476,3 +476,32 @@ def test_pack_guardrails_survive_the_packs_agent_defaults(make_client: ClientFac
     assert cfg["guardrails"]["min_evidence_score"] == 0.6
     assert cfg["guardrails"]["max_answer_tokens"] == 600  # the agent's own value still wins
     assert cfg["escalation"]["after_failed_turns"] == 2
+
+
+def test_pack_gallery_installs_a_ready_made_pack_once(make_client: ClientFactory) -> None:
+    """ST-13: the setup guide starts from a pack shipped with the platform."""
+    t = TwoTenants.create()
+    gallery_dir = Path(__file__).resolve().parents[3] / "packs"
+    c = make_client(t, pack_gallery_dir=gallery_dir)
+    listed = ok(c.get("/v1/packs/gallery", headers=t.a.headers))
+    pack = next(p for p in listed if p["name"] == "saas-knowledge-assistant")
+    assert pack["installed_version"] is None
+    assert pack["starter_questions"]
+    assert "create-ticket" in pack["tools"]  # arch: allow - the pack's own tool name
+    first = ok(c.post("/v1/packs/gallery/saas-knowledge-assistant/install", headers=t.a.headers))
+    assert first["status"] == "published"
+    again = ok(c.post("/v1/packs/gallery/saas-knowledge-assistant/install", headers=t.a.headers))
+    assert again["version"] == first["version"]  # nothing changed: nothing new
+    listed = ok(c.get("/v1/packs/gallery", headers=t.a.headers))
+    assert (
+        next(p for p in listed if p["name"] == "saas-knowledge-assistant")["installed_version"]
+        == first["version"]
+    )
+    member = _as(t, "member")
+    assert (
+        c.post(
+            "/v1/packs/gallery/saas-knowledge-assistant/install", headers=member.headers
+        ).status_code
+        == 403
+    )
+    assert c.post("/v1/packs/gallery/no-such-pack/install", headers=t.a.headers).status_code == 404

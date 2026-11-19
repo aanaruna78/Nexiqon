@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import time
 from datetime import datetime
+from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Depends, Header, Query, Request, Response
@@ -12,7 +13,7 @@ from pydantic import BaseModel, Field
 from nexiqon_config import kinds, packs
 from nexiqon_config.diff import diff
 from nexiqon_config.models import ENVIRONMENTS, ConfigObject, ConfigVersion
-from nexiqon_config.store import Store, _defaults, canonical_digest
+from nexiqon_config.store import Store, _defaults, canonical_digest, spec_hash
 from nexiqon_core.authz import Resource, check_permission
 from nexiqon_core.db import TenantSessionFactory
 from nexiqon_core.errors import BadRequest, NotFound, ServiceUnavailable
@@ -327,6 +328,88 @@ async def export_pack(
         if chosen is None:
             raise NotFound(f"No version {version}")
         return Response(packs.render_pack(name, chosen.spec), media_type="application/yaml")
+
+
+class GalleryPack(BaseModel):
+    name: str
+    title: str
+    description: str
+    version: str
+    locales: list[str]
+    intents: int
+    tools: list[str]
+    starter_questions: list[str]
+    installed_version: int | None  # deployed in dev
+
+
+def _gallery(request: Request) -> dict[str, tuple[str, dict[str, Any]]]:
+    """Packs shipped with the platform (ST-13): name -> (YAML text, stored spec)."""
+    root = Path(request.app.state.settings.pack_gallery_dir)
+    out: dict[str, tuple[str, dict[str, Any]]] = {}
+    for path in sorted(root.glob("*/pack.yaml")) if root.is_dir() else []:
+        text = path.read_text(encoding="utf-8")
+        name, spec = packs.parse_pack(text)
+        out[name] = (text, spec)
+    return out
+
+
+@tenant_router.get("/packs/gallery", response_model=list[GalleryPack])
+async def pack_gallery(request: Request, ctx: Ctx) -> list[GalleryPack]:
+    """Ready-made Domain Packs to start from, and whether each is live in dev already."""
+    await _allow(request, "config.domain_pack.read", "domain_pack")
+    gallery = _gallery(request)
+    out = []
+    async with _db(request).session(ctx) as s:
+        store = Store(s, ctx, request.app.state.settings)
+        for name, (_, spec) in gallery.items():
+            deployed = await store._deployed_version("domain_pack", name, "dev")
+            meta = spec.get("metadata") or {}
+            starters = ((spec.get("channels") or {}).get("widget") or {}).get(
+                "starter_questions"
+            ) or {}
+            out.append(
+                GalleryPack(
+                    name=name,
+                    title=str(meta.get("title") or name),
+                    description=str(meta.get("description") or ""),
+                    version=str(meta.get("pack_version") or ""),
+                    locales=list(meta.get("locales") or ["en"]),
+                    intents=len(spec.get("intents") or []),
+                    tools=[str(t.get("name")) for t in spec.get("tools") or []],
+                    starter_questions=list(starters.get("en") or next(iter(starters.values()), [])),
+                    installed_version=deployed.version if deployed else None,
+                )
+            )
+    return out
+
+
+@tenant_router.post("/packs/gallery/{name}/install", response_model=VersionOut)
+async def install_gallery_pack(name: str, request: Request, ctx: Ctx) -> VersionOut:
+    """Import a ready-made pack, publish it and make it live in dev, in one step. Installing a
+    pack whose content is already live changes nothing."""
+    gallery = _gallery(request)
+    if name not in gallery:
+        raise NotFound(f"No ready-made pack {name!r}")
+    await _allow(request, _write_action("domain_pack"), "domain_pack", name)
+    await _allow(request, "config.deployments.write", "domain_pack", name)
+    _, spec = gallery[name]
+    async with _db(request).session(ctx) as s:
+        store = Store(s, ctx, request.app.state.settings)
+        deployed = await store._deployed_version("domain_pack", name, "dev")
+        if deployed is not None and deployed.spec_hash == spec_hash(spec):
+            return VersionOut.of(deployed)
+        try:
+            await store.get_object("domain_pack", name)
+        except NotFound:
+            await store.create("domain_pack", name, str(spec["metadata"].get("title", "")), spec)
+            draft = await store.version(await store.get_object("domain_pack", name), 1)
+        else:
+            draft = await store.save_draft("domain_pack", name, spec, "installed from the gallery")
+        published = await store.publish("domain_pack", name, draft.version)
+        await store.deploy(
+            "domain_pack", name, "dev", published.version, "installed from the gallery"
+        )
+        return VersionOut.of(published)
 
 
 # ===================================================================== resolution and snapshots

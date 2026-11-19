@@ -1,0 +1,91 @@
+{{- if .Values.studio.enabled }}
+# Studio (Next.js BFF): talks to the gateway inside the cluster; the browser never sees tokens.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: studio
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.studio.replicas }}
+  selector:
+    matchLabels: {{- include "nexiqon.selector" (dict "root" . "name" "studio") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "nexiqon.labels" . | nindent 8 }}
+        app.kubernetes.io/name: {{ "studio" }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: studio
+          image: {{ .Values.studio.image.repository }}:{{ .Values.studio.image.tag | default .Chart.AppVersion }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - { name: NEXIQON_GATEWAY_URL, value: "http://gateway:{{ .Values.gateway.service.port }}" }
+            - { name: STUDIO_BASE_URL, value: {{ required "studio.baseUrl is required" .Values.studio.baseUrl | quote }} }
+            - { name: STUDIO_ENVIRONMENT, value: {{ .Values.studio.environment | quote }} }
+            - { name: OIDC_ISSUER, value: {{ required "studio.oidc.issuer is required" .Values.studio.oidc.issuer | quote }} }
+            - { name: OIDC_CLIENT_ID, value: {{ .Values.studio.oidc.clientId | quote }} }
+            - name: STUDIO_SESSION_SECRET
+              valueFrom: { secretKeyRef: { name: {{ .Values.studio.existingSecret }}, key: STUDIO_SESSION_SECRET } }
+            - name: OIDC_CLIENT_SECRET
+              valueFrom: { secretKeyRef: { name: {{ .Values.studio.existingSecret }}, key: OIDC_CLIENT_SECRET, optional: true } }
+            {{- with .Values.studio.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - { name: http, containerPort: 3000 }
+          readinessProbe:
+            httpGet: { path: /api/health, port: http }
+          livenessProbe:
+            httpGet: { path: /api/health, port: http }
+            initialDelaySeconds: 15
+          resources: {{- toYaml .Values.studio.resources | nindent 12 }}
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - { name: cache, mountPath: /app/apps/studio/.next/cache }
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: cache
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: studio
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+spec:
+  selector: {{- include "nexiqon.selector" (dict "root" . "name" "studio") | nindent 4 }}
+  ports:
+    - { name: http, port: {{ .Values.studio.service.port }}, targetPort: http }
+{{- with .Values.studio.ingress }}
+{{- if .enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: studio
+  labels: {{- include "nexiqon.labels" $ | nindent 4 }}
+  {{- with .annotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  {{- if .tls.secretName }}
+  tls: [{ hosts: [{{ .host | quote }}], secretName: {{ .tls.secretName }} }]
+  {{- end }}
+  rules:
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: studio, port: { name: http } } }
+{{- end }}
+{{- end }}
+{{- end }}

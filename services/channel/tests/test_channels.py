@@ -89,6 +89,7 @@ def stack(postgres: PgUrls) -> Iterator[tuple[TestClient, TwoTenants]]:
                     f"/v1/objects/{kind}/{name}/deployments/dev", json={"version": 1}, headers=h
                 )
             )
+        client.app.state.setup_client = setup  # type: ignore[attr-defined]  # tests deploy more
         yield client, tenants
 
 
@@ -133,3 +134,29 @@ def test_channel_rules(stack: tuple[TestClient, TwoTenants]) -> None:
         client.get("/v1/channels/widget/agents/support", headers=widget(tenants, "b")).status_code
         == 404
     )
+
+
+def test_an_assistants_widget_settings_override_the_pack(
+    stack: tuple[TestClient, TwoTenants],
+) -> None:
+    """ST-15: per-assistant widget text and colour, field by field over the pack's."""
+    client, tenants = stack
+    h = tenants.a.headers
+    spec = {
+        "pack": {"name": "saas-knowledge-assistant"},
+        "display_name": "Clinic Help",
+        "widget": {"greeting": {"en": "Hello from the clinic."}, "accent_color": "#123456"},
+    }
+    setup = client.app.state.setup_client  # type: ignore[attr-defined]
+    ok(
+        setup.post(
+            "/v1/objects", json={"kind": "agent", "name": "clinic", "spec": spec}, headers=h
+        ),
+        201,
+    )
+    ok(setup.post("/v1/objects/agent/clinic/versions/1/publish", headers=h))
+    ok(setup.put("/v1/objects/agent/clinic/deployments/dev", json={"version": 1}, headers=h))
+    s = ok(client.get("/v1/channels/widget/agents/clinic", headers=widget(tenants)))
+    assert s["greeting"] == "Hello from the clinic."
+    assert s["accent_color"] == "#123456"
+    assert s["title"] == "Help"  # not overridden: the pack's

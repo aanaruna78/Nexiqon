@@ -695,7 +695,8 @@
       "test": "Test",
       "access": "Access preview",
       "versions": "Versions",
-      "workflow": "Workflow"
+      "workflow": "Workflow",
+      "widget": "Widget"
     },
     "workflowNotLive": "Release a version to see its workflow.",
     "workflowHelp": "The steps this assistant follows, from its Domain Pack.",
@@ -1026,5 +1027,74 @@
     "unused": "Not used by any assistant",
     "customise": "Customise",
     "edit": "Edit"
+  },
+  "guide": {
+    "title": "Get started",
+    "subtitle": "From nothing to cited answers on your website in a few minutes.",
+    "done": "Done",
+    "steps": {
+      "pack": {
+        "title": "Choose what your assistant is for",
+        "body": "Start from a ready-made Domain Pack: vocabulary, intents, prompts and guardrails for your field."
+      },
+      "knowledge": {
+        "title": "Add what it answers from",
+        "body": "Upload documents or point it at your documentation website."
+      },
+      "assistant": {
+        "title": "Create it and ask a question",
+        "body": "See a cited answer, and open the Answer Inspector to see why."
+      },
+      "embed": {
+        "title": "Put it on your website",
+        "body": "Allow your website, then paste two lines into its pages."
+      }
+    },
+    "packReady": "Domain Pack ready",
+    "packFacts": "{intents, plural, one {# intent} other {# intents}} · {tools, plural, one {# tool} other {# tools}}",
+    "installPack": "Use this pack",
+    "usePack": "Use this pack (already added)",
+    "useExisting": "Use an existing collection",
+    "collectionName": "Collection name",
+    "modelProfile": "Model profile",
+    "retrievalProfile": "Retrieval profile",
+    "createCollection": "Create collection",
+    "uploadFiles": "Upload files",
+    "orWebsite": "Or crawl a website",
+    "crawl": "Start crawling",
+    "crawlStarted": "Crawling started",
+    "readyDocs": "{count, plural, one {# document ready} other {# documents ready}}",
+    "waitingDocs": "Add at least one document; this step completes as soon as one is ready.",
+    "assistantName": "Assistant name",
+    "createAssistant": "Create and test",
+    "next": "After step {step}"
+  },
+  "widgetSettings": {
+    "appearance": "Appearance",
+    "appearanceHelp": "Leave a field empty to use the Domain Pack's. Changes are saved as a draft; release them from Versions.",
+    "title": "Title",
+    "greeting": "Greeting",
+    "starters": "Starter questions",
+    "colour": "Theme colour",
+    "discard": "Discard",
+    "saveDraft": "Save draft",
+    "saved": "Draft v{version} saved. Release it to update the widget.",
+    "preview": "Preview",
+    "websites": "Websites",
+    "websitesHelp": "A widget key only works on the websites you list, and only for this assistant. Each visitor gets their own conversations.",
+    "origins": "Allowed websites",
+    "badOrigin": "{origin} is not a website address like https://docs.example.com",
+    "createKey": "Create widget key",
+    "inUse": "In use",
+    "unused": "Not used yet",
+    "revoke": "Revoke key {prefix}",
+    "noKeys": "No widget keys for this assistant yet.",
+    "snippet": "Embed code",
+    "snippetHelp": "Create a key to get code with it filled in. Keys are shown only once.",
+    "secretOnce": "Copy this now",
+    "secretOnceBody": "The key is shown only this once. It is safe on your web pages: it works only on the websites listed, only for this assistant.",
+    "keyPlaceholder": "YOUR_WIDGET_KEY",
+    "copy": "Copy code",
+    "copied": "Copied"
   }
 }
