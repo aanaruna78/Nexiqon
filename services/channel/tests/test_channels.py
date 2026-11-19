@@ -160,3 +160,38 @@ def test_an_assistants_widget_settings_override_the_pack(
     assert s["greeting"] == "Hello from the clinic."
     assert s["accent_color"] == "#123456"
     assert s["title"] == "Help"  # not overridden: the pack's
+
+
+def test_widget_speaks_the_packs_words_and_suggests_follow_ups(
+    stack: tuple[TestClient, TwoTenants],
+) -> None:
+    """W-01/W-04: pack vocabulary and labels, theme, feedback/transcript switches, suggestions."""
+    client, tenants = stack
+    h = tenants.a.headers
+    spec = {
+        "pack": {"name": "saas-knowledge-assistant"},
+        "display_name": "Desk",
+        "widget": {
+            "labels": {"person": {"en": "Contact support", "es": "Contactar soporte"}},
+            "theme": "dark",
+            "transcript_email": False,
+        },
+    }
+    setup = client.app.state.setup_client  # type: ignore[attr-defined]
+    ok(
+        setup.post("/v1/objects", json={"kind": "agent", "name": "desk", "spec": spec}, headers=h),
+        201,
+    )
+    ok(setup.post("/v1/objects/agent/desk/versions/1/publish", headers=h))
+    ok(setup.put("/v1/objects/agent/desk/deployments/dev", json={"version": 1}, headers=h))
+    en = ok(client.get("/v1/channels/widget/agents/desk", headers=widget(tenants)))
+    assert en["labels"] == {"person": "Contact support", "sources": "Product documentation"}
+    assert (en["theme"], en["feedback"], en["transcript_email"]) == ("dark", True, False)
+    assert en["suggestions"][: len(en["starter_questions"])] == en["starter_questions"]
+    assert "How do I invite a teammate?" in en["suggestions"]  # an intent example
+    assert len(en["suggestions"]) <= 12
+    assert len(set(en["suggestions"])) == len(en["suggestions"])
+    assert en["endpoints"]["transcript"].endswith("/transcript")
+    es = ok(client.get("/v1/channels/widget/agents/desk?locale=es", headers=widget(tenants)))
+    assert es["labels"]["person"] == "Contactar soporte"
+    assert "How do I invite a teammate?" not in es["suggestions"]  # English examples stay English

@@ -78,6 +78,8 @@ role_permissions := {
 		"config.agent.read",
 		"tool.definitions.read",
 	],
+	# Sends a person a copy of their own conversation (W-03); nothing else.
+	"service:conversation": ["notification.email.send"],
 	# Reads the agent's pack (widget title, greeting, colour) to answer channel settings requests.
 	"service:channel": ["config.agent.read"],
 	# Reads tool definitions and agents' tool allowlists; invocations run as the calling user.
@@ -109,7 +111,7 @@ admin_only := {
 admin_roles := {"owner", "admin", "service"}
 
 # Actions only service actors may perform (internal index writes), whatever a role says.
-service_only := {"retrieval.index.write"}
+service_only := {"retrieval.index.write", "notification.email.send"}
 
 # Actor types that may never hold administrative permissions, even if a role says so.
 restricted_actor_types := {"widget"}

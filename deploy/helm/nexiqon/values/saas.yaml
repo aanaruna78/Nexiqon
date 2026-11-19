@@ -8,6 +8,9 @@ settings:
   workflows: { enabled: true, address: "temporal-frontend.nexiqon-infra:7233" }
   idp_providers: []   # set per deployment: the tenants' identity providers
 groups:
+  control-ops:
+    settings:
+      email: { backend: smtp, host: smtp.example.com, port: 587, starttls: true, username: nexiqon, sender: "Assistant <no-reply@example.com>" }
   knowledge:
     settings:
       blobs: { backend: s3, endpoint: "https://REGION.digitaloceanspaces.com", bucket: nexiqon-prod, region: REGION }

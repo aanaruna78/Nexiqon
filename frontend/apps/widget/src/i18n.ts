@@ -1,0 +1,250 @@
+/**
+ * The widget's own words in each language it ships with (W-02). A Domain Pack can rename a few of
+ * them in its own vocabulary (``labels`` in the channel settings), e.g. "Contact support".
+ */
+
+const en = {
+  open: "Ask a question",
+  close: "Close chat",
+  placeholder: "Type your question",
+  send: "Send",
+  person: "Talk to a person",
+  sources: "Sources",
+  yes: "Yes, go ahead",
+  no: "No, thanks",
+  sendToTeam: "Send to the team",
+  notNow: "Not now",
+  confirmTitle: "Please confirm",
+  confirmHelp: "Nothing happens until you choose.",
+  withPerson: "A person from the team will pick this up here.",
+  thinking: "Thinking…",
+  searching: "Searching the documentation…",
+  writing: "Writing…",
+  handing_over: "Preparing a summary for the team…",
+  tool: "Checking {name}…",
+  error: "Something went wrong. Please try again.",
+  unavailable: "The assistant isn't available right now.",
+  retry: "Try again",
+  notSure: "Not sure",
+  notSureHelp: "I couldn't find a reliable answer to this.",
+  askPerson: "Ask a person instead",
+  answered: "{name} answered: {text}",
+  helpful: "Helpful",
+  notHelpful: "Not helpful",
+  thanks: "Thanks for the feedback.",
+  whatWasMissing: "What was missing? (optional)",
+  sendFeedback: "Send feedback",
+  suggested: "You could also ask",
+  emailCopy: "Email me a copy",
+  emailLabel: "Your email address",
+  emailSend: "Send copy",
+  emailCancel: "Cancel",
+  emailSent: "Sent. Check your inbox.",
+  emailSoon: "A copy was just sent. Please try again in a few minutes.",
+  emailBad: "Please check the email address.",
+  emailFailed: "The copy could not be sent right now.",
+  emailNote: "We use this address only to send this copy.",
+};
+
+export type Strings = typeof en;
+
+const es: Strings = {
+  open: "Haz una pregunta",
+  close: "Cerrar chat",
+  placeholder: "Escribe tu pregunta",
+  send: "Enviar",
+  person: "Hablar con una persona",
+  sources: "Fuentes",
+  yes: "Sí, adelante",
+  no: "No, gracias",
+  sendToTeam: "Enviar al equipo",
+  notNow: "Ahora no",
+  confirmTitle: "Confirma, por favor",
+  confirmHelp: "No se hará nada hasta que elijas.",
+  withPerson: "Una persona del equipo continuará aquí.",
+  thinking: "Pensando…",
+  searching: "Buscando en la documentación…",
+  writing: "Escribiendo…",
+  handing_over: "Preparando un resumen para el equipo…",
+  tool: "Consultando {name}…",
+  error: "Algo salió mal. Inténtalo de nuevo.",
+  unavailable: "El asistente no está disponible ahora.",
+  retry: "Reintentar",
+  notSure: "No estoy seguro",
+  notSureHelp: "No encontré una respuesta fiable a esto.",
+  askPerson: "Preguntar a una persona",
+  answered: "{name} respondió: {text}",
+  helpful: "Útil",
+  notHelpful: "No útil",
+  thanks: "Gracias por tu opinión.",
+  whatWasMissing: "¿Qué faltó? (opcional)",
+  sendFeedback: "Enviar opinión",
+  suggested: "También puedes preguntar",
+  emailCopy: "Enviarme una copia",
+  emailLabel: "Tu correo electrónico",
+  emailSend: "Enviar copia",
+  emailCancel: "Cancelar",
+  emailSent: "Enviado. Revisa tu bandeja de entrada.",
+  emailSoon: "Acabamos de enviar una copia. Inténtalo de nuevo en unos minutos.",
+  emailBad: "Revisa la dirección de correo.",
+  emailFailed: "No se pudo enviar la copia ahora.",
+  emailNote: "Solo usamos esta dirección para enviar esta copia.",
+};
+
+const fr: Strings = {
+  open: "Poser une question",
+  close: "Fermer la discussion",
+  placeholder: "Écrivez votre question",
+  send: "Envoyer",
+  person: "Parler à une personne",
+  sources: "Sources",
+  yes: "Oui, allez-y",
+  no: "Non, merci",
+  sendToTeam: "Envoyer à l’équipe",
+  notNow: "Pas maintenant",
+  confirmTitle: "Veuillez confirmer",
+  confirmHelp: "Rien ne se passe tant que vous n’avez pas choisi.",
+  withPerson: "Une personne de l’équipe prendra le relais ici.",
+  thinking: "Réflexion…",
+  searching: "Recherche dans la documentation…",
+  writing: "Rédaction…",
+  handing_over: "Préparation d’un résumé pour l’équipe…",
+  tool: "Vérification de {name}…",
+  error: "Une erreur s’est produite. Veuillez réessayer.",
+  unavailable: "L’assistant n’est pas disponible pour le moment.",
+  retry: "Réessayer",
+  notSure: "Pas sûr",
+  notSureHelp: "Je n’ai pas trouvé de réponse fiable à cette question.",
+  askPerson: "Demander à une personne",
+  answered: "{name} a répondu : {text}",
+  helpful: "Utile",
+  notHelpful: "Pas utile",
+  thanks: "Merci pour votre avis.",
+  whatWasMissing: "Qu’est-ce qui manquait ? (facultatif)",
+  sendFeedback: "Envoyer l’avis",
+  suggested: "Vous pouvez aussi demander",
+  emailCopy: "M’envoyer une copie",
+  emailLabel: "Votre adresse e-mail",
+  emailSend: "Envoyer la copie",
+  emailCancel: "Annuler",
+  emailSent: "Envoyé. Consultez votre boîte de réception.",
+  emailSoon: "Une copie vient d’être envoyée. Réessayez dans quelques minutes.",
+  emailBad: "Veuillez vérifier l’adresse e-mail.",
+  emailFailed: "La copie n’a pas pu être envoyée pour le moment.",
+  emailNote: "Cette adresse sert uniquement à envoyer cette copie.",
+};
+
+const de: Strings = {
+  open: "Frage stellen",
+  close: "Chat schließen",
+  placeholder: "Ihre Frage eingeben",
+  send: "Senden",
+  person: "Mit einer Person sprechen",
+  sources: "Quellen",
+  yes: "Ja, fortfahren",
+  no: "Nein, danke",
+  sendToTeam: "An das Team senden",
+  notNow: "Nicht jetzt",
+  confirmTitle: "Bitte bestätigen",
+  confirmHelp: "Es passiert nichts, bevor Sie wählen.",
+  withPerson: "Eine Person aus dem Team übernimmt hier.",
+  thinking: "Denke nach…",
+  searching: "Durchsuche die Dokumentation…",
+  writing: "Schreibe…",
+  handing_over: "Bereite eine Zusammenfassung für das Team vor…",
+  tool: "Prüfe {name}…",
+  error: "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+  unavailable: "Der Assistent ist gerade nicht verfügbar.",
+  retry: "Erneut versuchen",
+  notSure: "Nicht sicher",
+  notSureHelp: "Ich habe dazu keine verlässliche Antwort gefunden.",
+  askPerson: "Stattdessen eine Person fragen",
+  answered: "{name} hat geantwortet: {text}",
+  helpful: "Hilfreich",
+  notHelpful: "Nicht hilfreich",
+  thanks: "Danke für Ihr Feedback.",
+  whatWasMissing: "Was hat gefehlt? (optional)",
+  sendFeedback: "Feedback senden",
+  suggested: "Sie könnten auch fragen",
+  emailCopy: "Kopie per E-Mail",
+  emailLabel: "Ihre E-Mail-Adresse",
+  emailSend: "Kopie senden",
+  emailCancel: "Abbrechen",
+  emailSent: "Gesendet. Bitte prüfen Sie Ihren Posteingang.",
+  emailSoon: "Gerade wurde eine Kopie gesendet. Bitte versuchen Sie es in ein paar Minuten erneut.",
+  emailBad: "Bitte prüfen Sie die E-Mail-Adresse.",
+  emailFailed: "Die Kopie konnte gerade nicht gesendet werden.",
+  emailNote: "Wir verwenden diese Adresse nur für diese Kopie.",
+};
+
+const ar: Strings = {
+  open: "اطرح سؤالًا",
+  close: "إغلاق المحادثة",
+  placeholder: "اكتب سؤالك",
+  send: "إرسال",
+  person: "التحدث إلى شخص",
+  sources: "المصادر",
+  yes: "نعم، تابع",
+  no: "لا، شكرًا",
+  sendToTeam: "أرسل إلى الفريق",
+  notNow: "ليس الآن",
+  confirmTitle: "يرجى التأكيد",
+  confirmHelp: "لن يحدث شيء حتى تختار.",
+  withPerson: "سيتابع أحد أعضاء الفريق هنا.",
+  thinking: "جارٍ التفكير…",
+  searching: "جارٍ البحث في الوثائق…",
+  writing: "جارٍ الكتابة…",
+  handing_over: "جارٍ إعداد ملخص للفريق…",
+  tool: "جارٍ التحقق من {name}…",
+  error: "حدث خطأ ما. حاول مرة أخرى.",
+  unavailable: "المساعد غير متاح الآن.",
+  retry: "إعادة المحاولة",
+  notSure: "غير متأكد",
+  notSureHelp: "لم أجد إجابة موثوقة عن هذا.",
+  askPerson: "اسأل شخصًا بدلًا من ذلك",
+  answered: "أجاب {name}: {text}",
+  helpful: "مفيد",
+  notHelpful: "غير مفيد",
+  thanks: "شكرًا على ملاحظاتك.",
+  whatWasMissing: "ما الذي كان ناقصًا؟ (اختياري)",
+  sendFeedback: "أرسل الملاحظات",
+  suggested: "يمكنك أيضًا أن تسأل",
+  emailCopy: "أرسل لي نسخة بالبريد",
+  emailLabel: "بريدك الإلكتروني",
+  emailSend: "أرسل النسخة",
+  emailCancel: "إلغاء",
+  emailSent: "تم الإرسال. تحقّق من بريدك الوارد.",
+  emailSoon: "أُرسلت نسخة للتو. حاول مرة أخرى بعد بضع دقائق.",
+  emailBad: "يرجى التحقق من عنوان البريد الإلكتروني.",
+  emailFailed: "تعذّر إرسال النسخة الآن.",
+  emailNote: "نستخدم هذا العنوان فقط لإرسال هذه النسخة.",
+};
+
+export const STRINGS: Record<string, Strings> = { en, es, fr, de, ar };
+export const LANGUAGES = Object.keys(STRINGS);
+const RTL = new Set(["ar", "he", "fa", "ur"]);
+
+/** Labels a pack may rename (channel settings ``labels``). */
+export const RENAMEABLE = ["open", "placeholder", "person", "sources", "send"] as const;
+
+export function lang2(locale: string | null | undefined): string {
+  return (locale || "en").slice(0, 2).toLowerCase();
+}
+
+export function direction(locale: string | null | undefined): "rtl" | "ltr" {
+  return RTL.has(lang2(locale)) ? "rtl" : "ltr";
+}
+
+/** The strings for ``locale`` (English when the language is not shipped), with the pack's
+ * renamed labels on top. */
+export function strings(locale: string | null | undefined, labels: Record<string, string> = {}): Strings {
+  const base = STRINGS[lang2(locale)] ?? en;
+  const renamed = Object.fromEntries(
+    RENAMEABLE.filter((k) => typeof labels[k] === "string" && labels[k].trim()).map((k) => [k, labels[k].trim()]),
+  );
+  return { ...base, ...renamed };
+}
+
+export function fill(template: string, values: Record<string, string>): string {
+  return template.replace(/\{(\w+)\}/g, (_, k: string) => values[k] ?? "");
+}

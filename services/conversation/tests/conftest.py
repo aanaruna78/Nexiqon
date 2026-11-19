@@ -25,6 +25,9 @@ from nexiqon_core.pytest_plugin import PgUrls
 from nexiqon_core.settings import ContextTokenSettings, DatabaseSettings, ServiceIdentitySettings
 from nexiqon_core.tenancy import CONTEXT_HEADER, TenantContext
 from nexiqon_core.testing import TwoTenants, make_keypair
+from nexiqon_notification.mail import MemorySender
+from nexiqon_notification.main import create_app as create_notification_app
+from nexiqon_notification.settings import ServiceSettings as NotificationSettings
 
 PACK = (
     Path(__file__).resolve().parents[3] / "packs/saas-knowledge-assistant/pack.yaml"
@@ -47,8 +50,10 @@ ROLES = {
         "config.profiles.resolve",
     ],
     "service:agent-runtime": ["config.agent.read", "ingestion.collections.read"],
+    "service:conversation": ["notification.email.send"],
 }
 SVC_PRIVATE, SVC_PUBLIC = make_keypair()
+CONV_PRIVATE, CONV_PUBLIC = make_keypair()
 
 
 def ok(r: Any, status: int = 200) -> Any:
@@ -58,7 +63,7 @@ def ok(r: Any, status: int = 200) -> Any:
 
 @pytest.fixture(scope="session")
 def conv_db(postgres: PgUrls) -> PgUrls:
-    for service in ("config", "agent-runtime", "conversation"):
+    for service in ("config", "agent-runtime", "conversation", "notification"):
         upgrade(service, postgres.owner, postgres.app_role)
     return postgres
 
@@ -69,6 +74,7 @@ class Stack:
     tenants: TwoTenants
     fakes: FakeServices
     db_url: str
+    mail: MemorySender
 
     def headers(
         self,
@@ -111,8 +117,8 @@ class Stack:
 def stack(conv_db: PgUrls) -> Iterator[Stack]:
     tenants = TwoTenants.create(roles=frozenset({"owner"}))
     tokens = ContextTokenSettings(
-        public_keys={**tenants.settings.public_keys, "svc-ar": SVC_PUBLIC},
-        service_keys={"svc-ar": "agent-runtime"},
+        public_keys={**tenants.settings.public_keys, "svc-ar": SVC_PUBLIC, "svc-cv": CONV_PUBLIC},
+        service_keys={"svc-ar": "agent-runtime", "svc-cv": "conversation"},
     )
     authorizer = StaticAuthorizer(ROLES)
     db = DatabaseSettings(url=conv_db.app, pool_size=0)
@@ -138,8 +144,15 @@ def stack(conv_db: PgUrls) -> Iterator[Stack]:
             {"config": httpx.ASGITransport(app=config_for_services)}, httpx.MockTransport(fakes)
         ),
     )
+    mail = MemorySender()
+    notification = create_notification_app(
+        NotificationSettings(log_json=False, context_token=tokens, database=db),
+        authorizer=authorizer,
+        email=mail,
+    )
     router = HostRouter(
         {
+            "notification": httpx.ASGITransport(app=notification),
             "agent-runtime": httpx.ASGITransport(app=runtime),
             "config": httpx.ASGITransport(app=config_for_services),
         },
@@ -152,6 +165,10 @@ def stack(conv_db: PgUrls) -> Iterator[Stack]:
             database=db,
             agent_runtime_url="http://agent-runtime",
             config_url="http://config",
+            notification_url="http://notification",
+            conversation_identity=ServiceIdentitySettings(
+                key_id="svc-cv", private_key=CONV_PRIVATE
+            ),  # type: ignore[arg-type]
             retention_sweep_seconds=0,
         ),
         authorizer=authorizer,
@@ -201,4 +218,4 @@ def stack(conv_db: PgUrls) -> Iterator[Stack]:
                     f"/v1/objects/{kind}/{name}/deployments/dev", json={"version": 1}, headers=h
                 )
             )
-        yield Stack(client, tenants, fakes, conv_db.app)
+        yield Stack(client, tenants, fakes, conv_db.app, mail)

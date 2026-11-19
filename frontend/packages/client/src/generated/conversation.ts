@@ -164,6 +164,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/conversations/{conversation_id}/transcript": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Email Transcript
+         * @description Email the person a copy of their own conversation. Sent through the notification service
+         *     as conversation's own identity, with a cooldown per conversation; the address is not kept.
+         */
+        post: operations["email_transcript_v1_conversations__conversation_id__transcript_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/messages/{message_id}/feedback": {
         parameters: {
             query?: never;
@@ -321,6 +342,21 @@ export interface components {
             role: string;
             /** Run Id */
             run_id: string | null;
+        };
+        /** TranscriptIn */
+        TranscriptIn: {
+            /** Email */
+            email: string;
+        };
+        /** TranscriptOut */
+        TranscriptOut: {
+            /**
+             * Next Allowed At
+             * Format: date-time
+             */
+            next_allowed_at: string;
+            /** Sent */
+            sent: boolean;
         };
         /** TurnOut */
         TurnOut: {
@@ -640,6 +676,41 @@ export interface operations {
                 };
                 content: {
                     "text/event-stream": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    email_transcript_v1_conversations__conversation_id__transcript_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TranscriptIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptOut"];
                 };
             };
             /** @description Validation Error */

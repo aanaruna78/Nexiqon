@@ -35,6 +35,9 @@ class Conversation(TenantScopedMixin, Base):
     status: Mapped[str] = mapped_column(String(24), default="active")
     title: Mapped[str | None] = mapped_column(String(200), default=None)
     handoff_summary: Mapped[str | None] = mapped_column(Text, default=None)
+    transcript_sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=None
+    )
     last_message_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     retain_until: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), default=None, index=True

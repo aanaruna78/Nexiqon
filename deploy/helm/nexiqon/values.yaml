@@ -30,6 +30,12 @@ groups:
     services: [evaluation, metering, governance, notification]
     replicas: 1
     keyFiles: [secrets.yaml, service-keys.yaml, identity-evaluation.yaml]
+    # Outgoing email (notification): "memory" sends nothing; set smtp for a real relay and put
+    # its password in the nexiqon-smtp Secret (key: password).
+    settings:
+      email: { backend: memory }
+    env:
+      - { name: NEXIQON_EMAIL__PASSWORD, valueFrom: { secretKeyRef: { name: nexiqon-smtp, key: password, optional: true } } }
     resources: { requests: { cpu: 100m, memory: 384Mi }, limits: { memory: 768Mi } }
   knowledge:
     enabled: true
@@ -49,7 +55,7 @@ groups:
     plane: data
     services: [agent-runtime, conversation, channel]
     replicas: 2
-    keyFiles: [secrets.yaml, service-keys.yaml, identity-agent-runtime.yaml, identity-channel.yaml]
+    keyFiles: [secrets.yaml, service-keys.yaml, identity-agent-runtime.yaml, identity-channel.yaml, identity-conversation.yaml]
     resources: { requests: { cpu: 250m, memory: 512Mi }, limits: { memory: 1Gi } }
   tool-gateway:
     enabled: true

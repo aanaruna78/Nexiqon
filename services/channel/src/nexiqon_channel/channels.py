@@ -19,7 +19,10 @@ ENDPOINTS = {
     "handoff": "/conversation/v1/conversations/{id}/handoff",
     "history": "/conversation/v1/conversations/{id}",
     "feedback": "/conversation/v1/messages/{id}/feedback",
+    "transcript": "/conversation/v1/conversations/{id}/transcript",
 }
+LABELS = ("open", "placeholder", "person", "sources", "send")
+MAX_SUGGESTIONS = 12
 STREAM_EVENTS = ["run", "status", "sources", "tool", "delta", "message", "error"]
 
 
@@ -64,6 +67,21 @@ class WidgetChannel:
         name = str(config.get("display_name") or _text(widget.get("title"), locale) or "Assistant")
         starters = widget.get("starter_questions") or {}
         escalation = config.get("escalation") or {}
+        starter_list = list(starters.get(locale) or starters.get("en") or [])[:6]
+        # The pack's own words (W-01): explicit widget labels first, then its vocabulary.
+        vocabulary = pack.get("vocabulary") or {}
+        given = widget.get("labels") or {}
+        labels = {k: _text(given.get(k), locale) for k in LABELS if given.get(k)}
+        if "sources" not in labels and vocabulary.get("knowledge_source"):
+            labels["sources"] = _text(vocabulary["knowledge_source"], locale)
+        # Follow-up suggestions (W-04): starters, then the pack's example questions (written in
+        # English, so offered to English speakers only).
+        suggestions = list(starter_list)
+        if locale.startswith("en"):
+            for intent in pack.get("intents") or []:
+                if intent.get("route") in (None, "knowledge"):
+                    suggestions += [str(q) for q in intent.get("examples") or []]
+        suggestions = list(dict.fromkeys(suggestions))[:MAX_SUGGESTIONS]
         return {
             "channel": self.name,
             "agent": resolved["agent"],
@@ -71,9 +89,14 @@ class WidgetChannel:
             "title": _text(widget.get("title"), locale) or name,
             "assistant_name": name,
             "greeting": _text(widget.get("greeting"), locale),
-            "starter_questions": list(starters.get(locale) or starters.get("en") or [])[:6],
+            "starter_questions": starter_list,
+            "suggestions": suggestions,
+            "labels": {k: v for k, v in labels.items() if v},
             "accent_color": widget.get("accent_color"),
+            "theme": widget.get("theme") or "auto",
             "handoff": escalation.get("on_user_request", True),
+            "feedback": widget.get("feedback", True),
+            "transcript_email": widget.get("transcript_email", True),
             "endpoints": ENDPOINTS,
             "stream_events": STREAM_EVENTS,
         }

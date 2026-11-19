@@ -30,11 +30,31 @@ export interface paths {
         };
         /**
          * Context
-         * @description Echo the verified tenant context (skeleton endpoint used by isolation smoke tests).
+         * @description Echo the verified tenant context (used by isolation smoke tests).
          */
         get: operations["context_v1_context_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/emails": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send Email
+         * @description Send one email for a platform service and log the delivery (without the address).
+         */
+        post: operations["send_email_v1_emails_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -53,6 +73,44 @@ export interface components {
             actor_type: string;
             /** Tenant Id */
             tenant_id: string;
+        };
+        /** DeliveryOut */
+        DeliveryOut: {
+            /** Id */
+            id: string;
+            /** Status */
+            status: string;
+        };
+        /** EmailIn */
+        EmailIn: {
+            /** Kind */
+            kind: string;
+            /** Reference */
+            reference?: string | null;
+            /** Subject */
+            subject: string;
+            /** Text */
+            text: string;
+            /** To */
+            to: string;
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
+        };
+        /** ValidationError */
+        ValidationError: {
+            /** Context */
+            ctx?: Record<string, never>;
+            /** Input */
+            input?: unknown;
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
         };
     };
     responses: never;
@@ -101,6 +159,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContextEcho"];
+                };
+            };
+        };
+    };
+    send_email_v1_emails_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmailIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

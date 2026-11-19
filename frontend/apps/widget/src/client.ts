@@ -15,6 +15,12 @@ export interface WidgetSettings {
   starter_questions: string[];
   accent_color: string | null;
   handoff: boolean;
+  // W-01/W-04 (older servers may not send these)
+  suggestions?: string[];
+  labels?: Record<string, string>;
+  theme?: "auto" | "light" | "dark";
+  feedback?: boolean;
+  transcript_email?: boolean;
 }
 
 export interface Citation {
@@ -161,6 +167,7 @@ export class ChatClient {
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     if (!r.ok) throw new ApiError(r.status, await problem(r));
+    if (r.status === 204) return undefined as T;
     return (await r.json()) as T;
   }
 
@@ -187,6 +194,17 @@ export class ChatClient {
 
   handoff(id: string): Promise<Turn> {
     return this.call("POST", `/conversation/v1/conversations/${id}/handoff`);
+  }
+
+  feedback(messageId: string, rating: "up" | "down", comment?: string): Promise<void> {
+    return this.call("POST", `/conversation/v1/messages/${messageId}/feedback`, {
+      rating,
+      ...(comment ? { comment } : {}),
+    });
+  }
+
+  transcript(id: string, email: string): Promise<{ sent: boolean; next_allowed_at: string }> {
+    return this.call("POST", `/conversation/v1/conversations/${id}/transcript`, { email });
   }
 
   /** Sends a message; ``onEvent`` sees status, sources, tool and delta events; resolves with the

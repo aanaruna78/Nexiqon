@@ -291,6 +291,90 @@
           "x-ui": {
             "widget": "color"
           }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Words the widget shows, in this domain's own vocabulary (e.g. \"Contact support\" for the handoff button)",
+          "properties": {
+            "open": {
+              "type": "object",
+              "description": "Text per locale, e.g. {\"en\": \"...\", \"ar\": \"...\"}",
+              "propertyNames": {
+                "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+              },
+              "additionalProperties": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "minProperties": 1
+            },
+            "placeholder": {
+              "type": "object",
+              "description": "Text per locale, e.g. {\"en\": \"...\", \"ar\": \"...\"}",
+              "propertyNames": {
+                "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+              },
+              "additionalProperties": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "minProperties": 1
+            },
+            "person": {
+              "type": "object",
+              "description": "Text per locale, e.g. {\"en\": \"...\", \"ar\": \"...\"}",
+              "propertyNames": {
+                "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+              },
+              "additionalProperties": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "minProperties": 1
+            },
+            "sources": {
+              "type": "object",
+              "description": "Text per locale, e.g. {\"en\": \"...\", \"ar\": \"...\"}",
+              "propertyNames": {
+                "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+              },
+              "additionalProperties": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "minProperties": 1
+            },
+            "send": {
+              "type": "object",
+              "description": "Text per locale, e.g. {\"en\": \"...\", \"ar\": \"...\"}",
+              "propertyNames": {
+                "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+              },
+              "additionalProperties": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "minProperties": 1
+            }
+          }
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "light",
+            "dark"
+          ],
+          "description": "Light, dark, or follow the visitor's system setting"
+        },
+        "transcript_email": {
+          "type": "boolean",
+          "description": "Visitors may email themselves a copy of the conversation"
+        },
+        "feedback": {
+          "type": "boolean",
+          "description": "Visitors may rate answers"
         }
       },
       "description": "This assistant's widget text and colour; each field overrides the Domain Pack's channels.widget."

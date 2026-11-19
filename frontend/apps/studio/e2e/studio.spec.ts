@@ -1,16 +1,23 @@
 import AxeBuilder from "@axe-core/playwright";
+import { createServer } from "node:http";
+
 import { expect, type Page, test } from "@playwright/test";
 
 const ORG = `E2E ${Date.now().toString(36)}`;
 const SLUG = ORG.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
 async function a11y(page: Page, label: string) {
-  // Next streams page metadata: scan once the title has arrived, not mid-navigation.
-  await expect(page).toHaveTitle(/\S/);
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  const serious = results.violations.filter((v) => ["serious", "critical"].includes(v.impact ?? ""));
+  // Next streams page metadata, and during client navigations the dev server can briefly drop
+  // the <title>: scan once it is there, and rescan if a missing title is the only finding.
+  let serious: Awaited<ReturnType<AxeBuilder["analyze"]>>["violations"] = [];
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await expect(page).toHaveTitle(/\S/);
+    const results = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+      .analyze();
+    serious = results.violations.filter((v) => ["serious", "critical"].includes(v.impact ?? ""));
+    if (!(serious.length === 1 && serious[0].id === "document-title")) break;
+  }
   expect(
     serious.map((v) => `${label}: ${v.id} ${v.help} -> ${v.nodes.map((n) => `${n.target.join(" ")} [${n.failureSummary?.replace(/\s+/g, " ")}]`).join("; ")}`),
   ).toEqual([]);
@@ -26,6 +33,7 @@ async function openPalette(page: Page) {
 }
 
 const PACK = "ops-desk";
+const SITE = "http://127.0.0.1:4310";
 const OPENAPI = `openapi: 3.0.3
 info: { title: Status API, version: "1.0" }
 servers: [{ url: "https://status.example.com" }]
@@ -384,6 +392,73 @@ test.describe.serial("Studio", () => {
     await page.getByTestId("save-widget").click();
     await page.waitForURL(/tab=versions/);
     await expect(page.getByTestId("diff")).toContainText("widget");
+  });
+
+  test("widget on a customer's site: answer, feedback, suggestions, email copy, accessible", async () => {
+    // A widget key for the customer's site, made in Studio.
+    await page.goto("/assistants/ops-helper?tab=widget");
+    // The customer's site, served by the test on a loopback origin (browsers stop public pages
+    // from reaching a local gateway; a real site and gateway are both public).
+    await page.getByLabel("Allowed websites").fill(SITE);
+    await page.getByLabel("Allowed websites").press("Enter");
+    await page.getByTestId("create-widget-key").click();
+    await expect(page.getByTestId("embed-snippet")).toContainText('api-key="nxq_');
+    const snippet = (await page.getByTestId("embed-snippet").textContent()) ?? "";
+    const attr = (name: string) => new RegExp(`${name}="([^"]+)"`).exec(snippet)?.[1] ?? "";
+    const [script, gateway, key] = [/src="([^"]+)"/.exec(snippet)?.[1] ?? "", attr("api-base"), attr("api-key")];
+    expect(key).toMatch(/^nxq_/);
+
+    const site = await page.context().newPage();
+    const host = (locale: string, theme = "auto") =>
+      `<!doctype html><html lang="en"><head><title>Docs</title></head><body><main><h1>Docs</h1></main>
+       <script type="module" src="${script}"></script>
+       <nexiqon-chat agent="ops-helper" api-base="${gateway}" api-key="${key}" locale="${locale}" theme="${theme}"></nexiqon-chat></body></html>`;
+    let locale = "en";
+    let theme = "auto";
+    const server = createServer((_, res) => res.writeHead(200, { "content-type": "text/html" }).end(host(locale, theme)));
+    await new Promise<void>((done) => server.listen(Number(new URL(SITE).port), "127.0.0.1", done));
+    await site.goto(`${SITE}/help`);
+    const launcher = site.locator("nexiqon-chat").getByRole("button", { name: /Help|Ask a question/ });
+    await launcher.click();
+    const chat = site.getByRole("dialog");
+    await chat.getByRole("textbox", { name: "Type your question" }).fill("How long is each backup kept?");
+    await chat.getByRole("button", { name: "Send" }).click();
+    await expect(chat.getByRole("log")).toContainText("35 days");
+    await chat.getByRole("button", { name: "Helpful", exact: true }).click();
+    await expect(chat.getByRole("button", { name: "Helpful", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(chat.getByText("You could also ask")).toBeVisible();
+    await a11y(site, "widget answer (light)");
+
+    await chat.getByRole("button", { name: "Email me a copy" }).click();
+    await chat.getByRole("textbox", { name: "Your email address" }).fill("e2e-visitor@example.com");
+    await chat.getByRole("button", { name: "Send copy" }).click();
+    await expect(chat.getByRole("status")).toHaveText("Sent. Check your inbox.");
+    await expect(async () => {
+      const inbox = await (await fetch("http://localhost:8025/api/v1/search?query=to%3Ae2e-visitor%40example.com")).json();
+      expect(JSON.stringify(inbox.messages ?? [])).toContain("Your conversation with Ops Helper");
+    }).toPass({ timeout: 15_000 });
+
+    await site.keyboard.press("Escape");
+    await expect(chat).toHaveCount(0);
+    await expect(launcher).toBeFocused();
+
+    theme = "dark";
+    await site.reload();
+    await launcher.click();
+    await expect(site.getByRole("dialog").getByRole("log")).toContainText("35 days"); // the conversation continues
+    await a11y(site, "widget (dark)");
+
+    locale = "ar";
+    theme = "auto";
+    await site.evaluate(() => localStorage.clear());
+    await site.reload();
+    await site.locator("nexiqon-chat").getByRole("button").click();
+    const rtl = site.getByRole("dialog");
+    await expect(rtl).toHaveAttribute("dir", "rtl");
+    await expect(rtl.getByRole("textbox", { name: "اكتب سؤالك" })).toBeVisible();
+    await a11y(site, "widget (Arabic)");
+    await site.close();
+    server.close();
   });
 
   test("evaluations: a test set, a run and its scorecard", async () => {

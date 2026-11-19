@@ -163,3 +163,13 @@ test_evaluation_answers_and_release_overrides if {
 	not authz.allow with input as {"actor": actor(["editor"]), "action": "config.release.override", "resource": {"type": "agent"}}
 	authz.allow with input as {"actor": actor(["admin"]), "action": "config.release.override", "resource": {"type": "agent"}}
 }
+
+test_only_services_send_email if {
+	svc := {"tenant_id": "t-a", "id": "service:conversation", "type": "service", "roles": ["service:conversation"], "groups": []}
+	authz.allow with input as {"actor": svc, "action": "notification.email.send", "resource": {"type": "email"}}
+	not authz.allow with input as {"actor": svc, "action": "conversation.all.read", "resource": {"type": "conversation"}}
+	not authz.allow with input as {"actor": actor(["owner"]), "action": "notification.email.send", "resource": {"type": "email"}}
+	widget := {"tenant_id": "t-a", "id": "k-1", "type": "widget", "roles": ["end_user"], "groups": []}
+	not authz.allow with input as {"actor": widget, "action": "notification.email.send", "resource": {"type": "email"}}
+	authz.allow with input as {"actor": widget, "action": "conversation.messages.create", "resource": {"type": "conversation"}}
+}

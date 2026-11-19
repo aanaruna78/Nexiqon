@@ -3,3 +3,10 @@
 workflows:
   enabled: true
   address: temporal:7233
+# Outgoing email goes to Mailpit (development only).
+email:
+  backend: smtp
+  host: mailpit
+  port: 1025
+  starttls: false
+  sender: "Nexiqon dev <no-reply@nexiqon.local>"

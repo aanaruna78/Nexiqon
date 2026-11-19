@@ -24,6 +24,7 @@ from nexiqon_core.bus import Bus, EventRuntime
 from nexiqon_core.db import TenantSessionFactory, create_engine
 from nexiqon_core.directory import Topology
 from nexiqon_core.profiles import ProfileResolver
+from nexiqon_core.service_auth import ServiceTokens
 
 SERVICE_NAME: Final = "conversation"
 PLANE: Final = "data"
@@ -127,5 +128,11 @@ def create_app(
         else None
     )
     app.state.retention_profiles = retention_profiles
+    app.state.tokens = ServiceTokens(
+        SERVICE_NAME, settings.context_token, settings.conversation_identity
+    )
+    app.state.notification_url = (
+        u.rstrip("/") if (u := _url(settings, settings.notification_url, "notification")) else None
+    )
     app.state.streams = set()  # streamed turns still being stored
     return app

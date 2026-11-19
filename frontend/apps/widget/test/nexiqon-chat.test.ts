@@ -1,6 +1,6 @@
 import "../src/nexiqon-chat";
 import { ChatClient, parseSSE, visitorId } from "../src/client";
-import { readableTheme, type NexiqonChat } from "../src/nexiqon-chat";
+import { isUnsure, nextSuggestions, readableTheme, type NexiqonChat } from "../src/nexiqon-chat";
 
 const SETTINGS = {
   agent: "support",
@@ -225,5 +225,159 @@ describe("<nexiqon-chat>", () => {
     expect(adjusted.ink).toBe("#ffffff");
     expect(adjusted.accent).not.toBe("#0E8A7E");
     expect(readableTheme("nope")).toBeNull();
+  });
+});
+
+describe("W-01..W-04", () => {
+  const RICH = {
+    ...SETTINGS,
+    suggestions: ["How do I get started?", "What plan am I on?", "How do I reset my password?", "How do I invite a teammate?"],
+    labels: { person: "Contact support", sources: "Product documentation" },
+    theme: "dark",
+    feedback: true,
+    transcript_email: true,
+  };
+  const chat = (el: NexiqonChat, reply = turn("Open Settings [1].", { citations: [{ marker: "1", citation: "Guide" }] })) =>
+    wire(el, {
+      "/widget/": () => json(RICH),
+      "/messages/stream": () => new Response(sse([["message", reply]])),
+      "/feedback": () => new Response(null, { status: 204 }),
+      "/transcript": () => json({ sent: true, next_allowed_at: "2026-11-19T10:10:00Z" }, 202),
+      "/handoff": () => json(turn("I'm passing this to a person.", { kind: "handoff" }, "escalated")),
+      "/conversations": () => json({ id: "c1", status: "active" }, 201),
+    });
+
+  it("uses the pack's words and theme, and the page can force light", async () => {
+    const el = await mount();
+    chat(el);
+    await el.toggle();
+    await flush(el);
+    expect(root(el).querySelector("header button")!.textContent!.trim()).toBe("Contact support");
+    expect(el.dataset.theme).toBe("dark");
+    el.theme = "light";
+    await flush(el);
+    expect(el.dataset.theme).toBe("light");
+  });
+
+  it("an inline widget is always open, with no launcher", async () => {
+    const el = await mount('agent="support" mode="inline"'); // no gateway: nothing leaves the test
+    await flush(el);
+    expect(root(el).querySelector("section")!.getAttribute("role")).toBe("region");
+    expect(root(el).querySelector(".launcher")).toBeNull();
+  });
+
+  it("speaks French and German, and lays out Arabic right to left", async () => {
+    for (const [locale, open, dir] of [["fr", "Poser une question", "ltr"], ["de-DE", "Frage stellen", "ltr"], ["ar", "اطرح سؤالًا", "rtl"]]) {
+      const el = await mount(`agent="support" locale="${locale}"`);
+      expect(root(el).querySelector(".launcher")!.textContent!.trim()).toBe(open);
+      el.open = true;
+      await flush(el);
+      expect(root(el).querySelector("section")!.getAttribute("dir")).toBe(dir);
+    }
+  });
+
+  it("Escape closes the chat and puts focus back on the launcher", async () => {
+    const el = await mount();
+    chat(el);
+    await el.toggle();
+    await flush(el);
+    el.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, composed: true }));
+    await flush(el);
+    expect(el.open).toBe(false);
+    expect(el.shadowRoot!.activeElement).toBe(root(el).querySelector(".launcher"));
+  });
+
+  it("announces each finished answer once, not every streamed word", async () => {
+    const el = await mount();
+    chat(el);
+    await el.toggle();
+    await el.send("How do I invite a teammate?");
+    await flush(el);
+    expect(root(el).querySelector('.sr[aria-live="polite"]')!.textContent).toBe("Acme Help answered: Open Settings [1].");
+  });
+
+  it("is honest when unsure and offers a person in one tap", async () => {
+    const el = await mount();
+    const calls = chat(el, turn("I couldn't find that in the documentation.", { abstained: true }));
+    await el.toggle();
+    await el.send("What is the CEO's address?");
+    await flush(el);
+    const bubble = root(el).querySelector(".msg.assistant.unsure")!;
+    expect(bubble.textContent).toContain("Not sure");
+    expect(root(el).querySelector(".rate")).toBeNull(); // nothing to rate
+    const ask = [...root(el).querySelectorAll(".turn button")].find((b) => b.textContent!.includes("Ask a person instead")) as HTMLButtonElement;
+    ask.click();
+    await flush(el);
+    expect(calls.some((c) => c.url.endsWith("/conversations/c1/handoff"))).toBe(true);
+  });
+
+  it("confirmation cards need a tap; typed text cannot approve", async () => {
+    const el = await mount();
+    chat(el, turn("Open a support case titled 'Login fails'?", { kind: "approval", interrupt: { kind: "approval", prompt: "Open a support case titled 'Login fails'?" } }, "awaiting_approval"));
+    await el.toggle();
+    await el.send("open a case please");
+    await flush(el);
+    const card = root(el).querySelector(".card")!;
+    expect(card.getAttribute("role")).toBe("group");
+    expect(card.textContent).toContain("Please confirm");
+    expect((root(el).querySelector("textarea.input") as HTMLTextAreaElement).disabled).toBe(true);
+    await el.send("yes");
+    expect(root(el).querySelector(".card")).not.toBeNull();
+  });
+
+  it("rates answers, asking what was missing when one did not help", async () => {
+    const el = await mount();
+    const calls = chat(el);
+    await el.toggle();
+    await el.send("How do I invite a teammate?");
+    await flush(el);
+    const [up, down] = [...root(el).querySelectorAll(".rate button")] as HTMLButtonElement[];
+    up.click();
+    await flush(el);
+    expect(calls.find((c) => c.url.endsWith("/messages/m1/feedback"))!.body).toEqual({ rating: "up" });
+    expect(up.getAttribute("aria-pressed")).toBe("true");
+    down.click();
+    await flush(el);
+    const why = root(el).querySelector("form.why") as HTMLFormElement;
+    (why.querySelector("textarea") as HTMLTextAreaElement).value = "It skipped the admin step";
+    why.requestSubmit();
+    await flush(el);
+    expect(calls.filter((c) => c.url.endsWith("/feedback")).at(-1)!.body).toEqual({ rating: "down", comment: "It skipped the admin step" });
+  });
+
+  it("suggests follow-ups the visitor has not asked yet", async () => {
+    const el = await mount();
+    chat(el);
+    await el.toggle();
+    await el.send("how do I get STARTED?");
+    await flush(el);
+    const offered = [...root(el).querySelectorAll(".suggest button")].map((b) => b.textContent!.trim());
+    expect(offered).toEqual(["What plan am I on?", "How do I reset my password?", "How do I invite a teammate?"]);
+    expect(nextSuggestions(["a", "b"], ["A "])).toEqual(["b"]);
+  });
+
+  it("emails a copy of the conversation and explains when it cannot", async () => {
+    const el = await mount();
+    const calls = chat(el);
+    await el.toggle();
+    expect(root(el).querySelector("footer")).toBeNull(); // nothing to send yet
+    await el.send("How do I invite a teammate?");
+    await flush(el);
+    (root(el).querySelector("footer .linkish") as HTMLButtonElement).click();
+    await flush(el);
+    await el.emailCopy(" me@example.com ");
+    await flush(el);
+    expect(calls.find((c) => c.url.endsWith("/conversations/c1/transcript"))!.body).toEqual({ email: "me@example.com" });
+    expect(root(el).querySelector('footer [role="status"]')!.textContent).toBe("Sent. Check your inbox.");
+    el.client = new ChatClient("https://gw.test", "nxq_x", "support", "v".repeat(32), fakeFetch({ "/transcript": () => json({ code: "transcript_too_soon" }, 429) }, []));
+    await el.emailCopy("me@example.com");
+    await flush(el);
+    expect(root(el).querySelector('footer [role="status"]')!.textContent).toContain("in a few minutes");
+  });
+
+  it("knows which answers it could not stand behind", () => {
+    expect(isUnsure({ role: "assistant", contract: { abstained: true, kind: "grounded" } })).toBe(true);
+    expect(isUnsure({ role: "assistant", contract: { abstained: true, kind: "handoff" } })).toBe(false);
+    expect(isUnsure({ role: "assistant", contract: { abstained: false } })).toBe(false);
   });
 });

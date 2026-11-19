@@ -5,6 +5,9 @@ settings:
   environment: prod
   require_admin_mfa: true
 groups:
+  control-ops:
+    settings:
+      email: { backend: smtp, host: smtp.example.com, port: 587, starttls: true, username: nexiqon, sender: "Assistant <no-reply@example.com>" }
   model-gateway:
     env: []   # no cloud provider keys: cloud profiles fail closed
 gateway:

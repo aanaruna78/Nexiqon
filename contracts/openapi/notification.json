@@ -23,6 +23,123 @@
         ],
         "title": "ContextEcho",
         "type": "object"
+      },
+      "DeliveryOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ],
+        "title": "DeliveryOut",
+        "type": "object"
+      },
+      "EmailIn": {
+        "properties": {
+          "kind": {
+            "pattern": "^[a-z][a-z0-9_.-]{1,62}$",
+            "title": "Kind",
+            "type": "string"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "subject": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Subject",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 200000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "to": {
+            "maxLength": 320,
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "to",
+          "subject",
+          "text",
+          "kind"
+        ],
+        "title": "EmailIn",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
       }
     }
   },
@@ -59,7 +176,7 @@
     },
     "/v1/context": {
       "get": {
-        "description": "Echo the verified tenant context (skeleton endpoint used by isolation smoke tests).",
+        "description": "Echo the verified tenant context (used by isolation smoke tests).",
         "operationId": "context_v1_context_get",
         "responses": {
           "200": {
@@ -74,6 +191,48 @@
           }
         },
         "summary": "Context",
+        "tags": [
+          "notification"
+        ]
+      }
+    },
+    "/v1/emails": {
+      "post": {
+        "description": "Send one email for a platform service and log the delivery (without the address).",
+        "operationId": "send_email_v1_emails_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Send Email",
         "tags": [
           "notification"
         ]

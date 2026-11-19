@@ -84,6 +84,8 @@ run-group: ## Run a group locally without Docker: make run-group GROUP=control-c
 	uv run nexiqon-run --group $(GROUP) --port $${PORT:-8000}
 
 studio: ## Run Studio (admin UI) on :3100 against the local stack (needs make dev-up PROFILES=platform,apps)
+	npx --yes pnpm@12.15.0 --dir frontend/apps/widget build
+	mkdir -p frontend/apps/studio/public/widget && cp frontend/apps/widget/dist/nexiqon-chat.js frontend/apps/studio/public/widget/
 	npx --yes pnpm@12.15.0 --dir frontend/apps/studio exec next dev --port 3100
 
 image: ## Build the platform image

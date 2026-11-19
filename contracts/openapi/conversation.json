@@ -371,6 +371,40 @@
         "title": "MessageOut",
         "type": "object"
       },
+      "TranscriptIn": {
+        "properties": {
+          "email": {
+            "maxLength": 320,
+            "minLength": 6,
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "TranscriptIn",
+        "type": "object"
+      },
+      "TranscriptOut": {
+        "properties": {
+          "next_allowed_at": {
+            "format": "date-time",
+            "title": "Next Allowed At",
+            "type": "string"
+          },
+          "sent": {
+            "title": "Sent",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "sent",
+          "next_allowed_at"
+        ],
+        "title": "TranscriptOut",
+        "type": "object"
+      },
       "TurnOut": {
         "properties": {
           "conversation": {
@@ -871,6 +905,60 @@
           }
         },
         "summary": "Stream Message",
+        "tags": [
+          "conversation"
+        ]
+      }
+    },
+    "/v1/conversations/{conversation_id}/transcript": {
+      "post": {
+        "description": "Email the person a copy of their own conversation. Sent through the notification service\nas conversation's own identity, with a cooldown per conversation; the address is not kept.",
+        "operationId": "email_transcript_v1_conversations__conversation_id__transcript_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranscriptIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Email Transcript",
         "tags": [
           "conversation"
         ]

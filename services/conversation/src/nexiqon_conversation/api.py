@@ -20,6 +20,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from nexiqon_conversation.models import Conversation, Feedback, Message, Outbox
+from nexiqon_conversation.transcripts import Line, render
 from nexiqon_core.authz import Resource, check_permission
 from nexiqon_core.db import TenantSessionFactory
 from nexiqon_core.errors import (
@@ -630,3 +631,98 @@ async def feedback(message_id: uuid.UUID, body: FeedbackIn, request: Request, ct
             data={"message_id": str(message_id), "rating": body.rating},
         )
     return Response(status_code=204)
+
+
+# ===================================================================== transcript email (W-03)
+
+
+class TranscriptIn(BaseModel):
+    email: str = Field(min_length=6, max_length=320)
+
+
+class TranscriptOut(BaseModel):
+    sent: bool
+    next_allowed_at: datetime
+
+
+class TooSoon(NexiqonError):
+    status, code, title = 429, "transcript_too_soon", "A copy was sent a moment ago"
+
+
+def _assistant_name(agent: str) -> str:
+    return agent.replace("-", " ").strip().title() or "Assistant"
+
+
+@tenant_router.post(
+    "/conversations/{conversation_id}/transcript", response_model=TranscriptOut, status_code=202
+)
+async def email_transcript(
+    conversation_id: uuid.UUID, body: TranscriptIn, request: Request, ctx: Ctx
+) -> TranscriptOut:
+    """Email the person a copy of their own conversation. Sent through the notification service
+    as conversation's own identity, with a cooldown per conversation; the address is not kept."""
+    await check_permission(
+        request,
+        "conversation.messages.create",
+        Resource(type="conversation", id=str(conversation_id)),
+    )
+    c = await _load(request, ctx, conversation_id, write=True)
+    settings = request.app.state.settings
+    cooldown = timedelta(seconds=settings.transcript_cooldown_seconds)
+    now = datetime.now(UTC)
+    if c.transcript_sent_at is not None and now - c.transcript_sent_at < cooldown:
+        raise TooSoon("Please wait a few minutes before asking for another copy")
+    async with _db(request).session(ctx) as s:
+        rows = list(
+            await s.scalars(
+                select(Message)
+                .where(Message.conversation_id == conversation_id)
+                .order_by(Message.created_at, Message.id)
+            )
+        )
+    if not rows:
+        raise BadRequest("There is nothing to send yet")
+    subject, text = render(
+        _assistant_name(c.agent),
+        c.locale,
+        [Line(m.role, m.content, m.contract or {}, m.created_at) for m in rows],
+    )
+    url = request.app.state.notification_url
+    if url is None:
+        raise ServiceUnavailable("Email is not available")
+    token = request.app.state.tokens.for_tenant(ctx.tenant_id)
+    try:
+        r = await request.app.state.agent_client.post(
+            f"{url}/v1/emails",
+            headers={CONTEXT_HEADER: token},
+            json={
+                "to": body.email,
+                "subject": subject,
+                "text": text,
+                "kind": "conversation.transcript",
+                "reference": str(conversation_id),
+            },
+            timeout=30.0,
+        )
+    except httpx.HTTPError as exc:
+        raise ServiceUnavailable("Email is not available") from exc
+    if r.status_code == 422:
+        raise BadRequest("That does not look like an email address")
+    if r.status_code == 429:
+        raise TooSoon("Too many copies were sent; please try again later")
+    if r.status_code >= 300:
+        raise ServiceUnavailable("The email could not be sent")
+    async with _db(request).session(ctx) as s:
+        stored = await s.get(Conversation, conversation_id)
+        if stored is not None:
+            stored.transcript_sent_at = now
+        add_event(
+            s,
+            Outbox,
+            ctx,
+            source=SERVICE,
+            type="nexiqon.conversation.transcript.sent",
+            subject=str(conversation_id),
+            data={"conversation_id": str(conversation_id), "messages": len(rows)},
+        )
+    return TranscriptOut(sent=True, next_allowed_at=now + cooldown)
