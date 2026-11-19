@@ -1,0 +1,18 @@
+[2m2026-11-18T10:34:11.237967Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mcontrol[0m [36mservice[0m=[35mconfig[0m [36mversion[0m=[35m0.1.0[0m
+[2m2026-11-18T10:34:11.239684Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mdata[0m [36mservice[0m=[35mconversation[0m [36mversion[0m=[35m0.1.0[0m
+billing-only key reading support conversation: 404 messages: 0 list count: 0
+.[2m2026-11-18T10:34:12.303837Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mconversation[0m
+[2m2026-11-18T10:34:12.305278Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mconfig[0m
+[2m2026-11-18T10:34:12.315805Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mcontrol[0m [36mservice[0m=[35mconfig[0m [36mversion[0m=[35m0.1.0[0m
+[2m2026-11-18T10:34:12.316586Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mdata[0m [36mservice[0m=[35mconversation[0m [36mversion[0m=[35m0.1.0[0m
+trusted prior answer label: restricted next call label: restricted profile: cloud-frontier restricted history included: True
+.[2m2026-11-18T10:34:13.584486Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mconversation[0m
+[2m2026-11-18T10:34:13.587363Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mconfig[0m
+
+=============================== warnings summary ===============================
+docs/qa/reproductions/phase3_conversation_cases.py::test_scoped_member_api_key_must_not_read_other_assistants_conversations
+  /home/arun/Documents/Nexiqon/Nexiqon/libs/nexiqon-core/src/nexiqon_core/pytest_plugin.py:52: DeprecationWarning: testcontainers.postgres is deprecated, use testcontainers.community.postgres instead
+    from testcontainers.postgres import PostgresContainer
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+2 passed, 1 warning in 5.28s

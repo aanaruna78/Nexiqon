@@ -49,6 +49,21 @@ class ToolDef:
         }
 
 
+@dataclass(frozen=True)
+class AgentTools:
+    allowed: set[str]
+    risks: dict[str, str]
+    always_confirm: set[str]
+
+
+@dataclass(frozen=True)
+class Effective:
+    """What actually applies to one tool for one assistant: the stricter of pack and tool."""
+
+    risk: str
+    needs_confirmation: bool
+
+
 class Registry:
     def __init__(
         self,
@@ -94,15 +109,18 @@ class Registry:
         body = await self._get(tenant, f"/v1/resolve/objects/tool/{name}", ("tool", name))
         return ToolDef(name=name, version=int(body["version"]), spec=dict(body["spec"]))
 
-    async def agent_tools(self, tenant: uuid.UUID, agent: str) -> tuple[set[str], dict[str, str]]:
-        """Tools the agent may use, and the pack's risk levels for them (the stricter one wins)."""
+    async def agent_tools(self, tenant: uuid.UUID, agent: str) -> AgentTools:
+        """Tools the agent may use, with the pack's risk levels and confirmation rules for them
+        (the stricter of pack and tool definition always wins)."""
         body = await self._get(tenant, f"/v1/resolve/agents/{agent}", ("agent", agent))
-        allowed = set((body.get("config") or {}).get("tools") or [])
-        risks = {
-            str(t.get("name")): str(t.get("risk_level", "read"))
-            for t in (body.get("pack") or {}).get("tools") or []
-        }
-        return allowed, risks
+        pack_tools = (body.get("pack") or {}).get("tools") or []
+        return AgentTools(
+            allowed=set((body.get("config") or {}).get("tools") or []),
+            risks={str(t.get("name")): str(t.get("risk_level", "read")) for t in pack_tools},
+            always_confirm={
+                str(t.get("name")) for t in pack_tools if t.get("confirmation") == "always"
+            },
+        )
 
     async def aclose(self) -> None:
         await self._client.aclose()

@@ -426,4 +426,67 @@ class GitConnector:
         )
 
 
-CONNECTORS = [UploadConnector(), WebCrawler(), S3Connector(), GitConnector()]
+# --------------------------------------------------------------------------- Q&A snippets (RT-04)
+
+
+class SnippetConnector:
+    """Curated question-and-answer pairs written in Studio. Each becomes a small document under
+    ``snippet://``; retrieval ranks those above other content (``snippet_boost``), so a reviewed
+    answer wins over an outdated page until the page is fixed."""
+
+    manifest = Manifest(
+        name="snippets",
+        kind=PluginKind.CONNECTOR,
+        title="Q&A snippets",
+        description="Short reviewed answers to common questions. They outrank other content.",
+        config_schema={
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["snippets"],
+            "properties": {
+                "snippets": {
+                    "type": "array",
+                    "maxItems": 1000,
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "required": ["question", "answer"],
+                        "properties": {
+                            "question": {"type": "string", "minLength": 3, "maxLength": 500},
+                            "answer": {"type": "string", "minLength": 1, "maxLength": 8000},
+                        },
+                    },
+                }
+            },
+        },
+        capabilities=["discover", "incremental"],
+        icon="message-square-quote",
+    )
+
+    @staticmethod
+    def _key(question: str) -> str:
+        return hashlib.sha256(" ".join(question.lower().split()).encode()).hexdigest()[:16]
+
+    async def discover(self, ctx: Context, config: Mapping[str, Any]) -> AsyncIterator[Item]:
+        for snippet in config.get("snippets") or []:
+            question, answer = str(snippet["question"]).strip(), str(snippet["answer"]).strip()
+            yield Item(
+                uri=f"snippet://{self._key(question)}",
+                title=question,
+                version=hashlib.sha256(f"{question}\n{answer}".encode()).hexdigest(),
+                media_type="text/markdown",
+                metadata={"question": question, "answer": answer},
+            )
+
+    async def fetch(
+        self, ctx: Context, config: Mapping[str, Any], item: Item, previous_version: str | None
+    ) -> Content:
+        if previous_version == item.version:
+            return Content(uri=item.uri, not_modified=True, version=item.version)
+        text = f"# {item.metadata['question']}\n\n{item.metadata['answer']}\n"
+        return Content(
+            uri=item.uri, data=text.encode(), media_type="text/markdown", version=item.version
+        )
+
+
+CONNECTORS = [UploadConnector(), WebCrawler(), S3Connector(), GitConnector(), SnippetConnector()]

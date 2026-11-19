@@ -1,0 +1,52 @@
+[2m2026-11-18T09:50:51.297935Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mdata[0m [36mservice[0m=[35mretrieval[0m [36mversion[0m=[35m0.1.0[0m
+widget search status: 200 visible: 0 hidden: 1
+F[2m2026-11-18T09:50:51.585019Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mretrieval[0m
+
+=================================== FAILURES ===================================
+_________ test_widget_search_must_not_count_hidden_restricted_sources __________
+
+stack = SearchStack(client=<starlette.testclient.TestClient object at 0x73926623f8c0>, tenants=TwoTenants(settings=ContextToke...n_retrieval.testing.HashModelClient object at 0x7392665b78f0>, collection=UUID('bb46b07a-0404-4a67-876a-276f912fc740'))
+
+    def test_widget_search_must_not_count_hidden_restricted_sources(stack):
+        stack.index(
+            "# Payroll\n\n## Backups\n\nPayroll backups use a separate encryption key.",
+            "upload://payroll-qa.md",
+            acl=["payroll"],
+            classification="restricted",
+        )
+        headers = stack.headers({"end_user"}, actor_type="widget")
+        r = stack.client.post(
+            "/v1/search",
+            json={
+                "query": "Payroll backups use a separate encryption key",
+                "collection_ids": [str(stack.collection)],
+                "explain_access": True,
+            },
+            headers=headers,
+        )
+        print(
+            "widget search status:",
+            r.status_code,
+            "visible:",
+            len(r.json().get("passages", [])),
+            "hidden:",
+            r.json().get("hidden"),
+        )
+        if r.status_code == 200:
+>           assert r.json().get("hidden") is None
+E           AssertionError: assert 1 is None
+E            +  where 1 = <built-in method get of dict object at 0x739265192300>('hidden')
+E            +    where <built-in method get of dict object at 0x739265192300> = {'passages': [], 'abstain': True, 'evidence_score': 0.0, 'embedding_model': 'hash-ngram-1024', ...}.get
+E            +      where {'passages': [], 'abstain': True, 'evidence_score': 0.0, 'embedding_model': 'hash-ngram-1024', ...} = json()
+E            +        where json = <Response [200 OK]>.json
+
+docs/qa/reproductions/phase3_retrieval_cases.py:32: AssertionError
+=============================== warnings summary ===============================
+docs/qa/reproductions/phase3_retrieval_cases.py::test_widget_search_must_not_count_hidden_restricted_sources
+  /home/arun/Documents/Nexiqon/Nexiqon/libs/nexiqon-core/src/nexiqon_core/pytest_plugin.py:52: DeprecationWarning: testcontainers.postgres is deprecated, use testcontainers.community.postgres instead
+    from testcontainers.postgres import PostgresContainer
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED docs/qa/reproductions/phase3_retrieval_cases.py::test_widget_search_must_not_count_hidden_restricted_sources
+1 failed, 1 warning in 3.89s

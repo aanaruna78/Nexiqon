@@ -77,7 +77,7 @@ export function AssistantDetail({ name }: { name: string }) {
           <SetupForm key={`${latest}-${version.dataUpdatedAt}`} object={object.data} spec={spec} onSaved={() => router.replace(`/assistants/${name}?tab=versions`)} />
         </TabsContent>
         <TabsContent value="test" className="pt-4">
-          <TestChat agent={name} liveVersion={state.live} />
+          <TestChat agent={name} liveVersion={state.live} versions={object.data.versions} />
         </TabsContent>
         <TabsContent value="access" className="pt-4">
           <ViewAs collections={spec.knowledge?.collections ?? []} retrievalProfile={spec.retrieval_profile} modelProfile={spec.model_profile} />

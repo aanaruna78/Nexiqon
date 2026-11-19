@@ -158,6 +158,11 @@
             "title": "Collection Ids",
             "type": "array"
           },
+          "explain_access": {
+            "default": false,
+            "title": "Explain Access",
+            "type": "boolean"
+          },
           "max_tokens": {
             "default": 800,
             "maximum": 4000.0,
@@ -889,6 +894,11 @@
             "minItems": 1,
             "title": "Collection Ids",
             "type": "array"
+          },
+          "explain_access": {
+            "default": false,
+            "title": "Explain Access",
+            "type": "boolean"
           },
           "model_profile": {
             "anyOf": [

@@ -83,6 +83,7 @@ DEFAULTS: dict[str, Any] = {
         "rerank": False,
         "candidates": 50,
         "rrf_k": 60,
+        "snippet_boost": 1.5,
     },
     "small_to_big": {"enabled": True, "max_context_tokens": 3000},
     "min_evidence_score": 0.55,
@@ -90,6 +91,14 @@ DEFAULTS: dict[str, Any] = {
 _duration = metrics.get_meter("nexiqon.retrieval").create_histogram(
     "nexiqon.retrieval.search.duration", unit="ms", description="Search latency excluding reranking"
 )
+
+
+SNIPPET_PREFIX = "snippet://"
+
+
+def is_snippet(hit: Hit) -> bool:
+    """Curated Q&A snippets (RT-04) are reviewed answers: they should beat stale documents."""
+    return bool(hit.source_uri and hit.source_uri.startswith(SNIPPET_PREFIX))
 
 
 def estimate_tokens(text: str) -> int:
@@ -215,6 +224,7 @@ class Searcher:
             float(cfg["vector_weight"]),
             float(cfg["keyword_weight"]),
             int(cfg["rrf_k"]),
+            float(cfg["snippet_boost"]),
         )
         similarity = {h.id: h.score for h in vector_hits}
         t = lap("fuse", t)
@@ -237,8 +247,13 @@ class Searcher:
             timings["rerank"] = round((time.perf_counter() - r0) * 1000, 2)
             if ranked is not None:
                 reranked = True
-                rerank_scores = {pool[i].id: score for i, score in ranked}
-                fused = [pool[i] for i, _ in ranked] + fused[len(pool) :]
+                boost = float(cfg["snippet_boost"])
+                rerank_scores = {
+                    pool[i].id: score * (boost if is_snippet(pool[i]) else 1.0)
+                    for i, score in ranked
+                }
+                order = sorted(ranked, key=lambda r: rerank_scores[pool[r[0]].id], reverse=True)
+                fused = [pool[i] for i, _ in order] + fused[len(pool) :]
                 for h in fused:
                     h.score = rerank_scores.get(h.id, 0.0)
             t = time.perf_counter()
@@ -273,14 +288,20 @@ class Searcher:
         )
 
     @staticmethod
-    def _fuse(vector: list[Hit], keyword: list[Hit], wv: float, wk: float, k: int) -> list[Hit]:
-        """Weighted reciprocal-rank fusion, then drop chunks whose text duplicates a better one."""
+    def _fuse(
+        vector: list[Hit], keyword: list[Hit], wv: float, wk: float, k: int, boost: float = 1.0
+    ) -> list[Hit]:
+        """Weighted reciprocal-rank fusion (curated snippets boosted), then drop chunks whose text
+        duplicates a better one."""
         scores: dict[uuid.UUID, float] = {}
         hits: dict[uuid.UUID, Hit] = {}
         for weight, ranked in ((wv, vector), (wk, keyword)):
             for rank, hit in enumerate(ranked, start=1):
                 scores[hit.id] = scores.get(hit.id, 0.0) + weight / (k + rank)
                 hits.setdefault(hit.id, hit)
+        for hit_id, hit in hits.items():
+            if is_snippet(hit):
+                scores[hit_id] *= boost
         ordered = sorted(hits.values(), key=lambda h: scores[h.id], reverse=True)
         seen: set[str] = set()
         out: list[Hit] = []

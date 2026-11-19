@@ -113,6 +113,8 @@ static_resources:
                       mutations:
                         request_mutations:
                           - remove: x-nexiqon-context
+                          # Service-to-service proof for staff diagnostics (QA3-06): never from outside.
+                          - remove: x-nexiqon-diagnostics
                   - name: envoy.filters.http.ext_authz
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz

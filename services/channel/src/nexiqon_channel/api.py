@@ -105,6 +105,7 @@ async def channel_settings(
     """What a client of this channel needs to talk to the agent: for the widget, its title,
     greeting, starter questions, theme colour and endpoints (W-00). Nothing secret: the full
     agent configuration never leaves the platform."""
+    ctx.require_agent(agent)
     await check_permission(request, "channel.settings.read", Resource(type="agent", id=agent))
     adapter = REGISTRY.get(channel)
     if adapter is None:

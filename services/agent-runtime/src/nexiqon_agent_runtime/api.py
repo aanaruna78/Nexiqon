@@ -60,6 +60,8 @@ class RunIn(BaseModel):
     history: list[Message] = Field(default_factory=list, max_length=50)
     locale: str = Field(default="en", pattern=r"^[a-z]{2}(-[A-Z]{2})?$")
     handoff: bool = False  # the user asked for a person (widget button): skip intent routing
+    # Run a specific (even draft) version instead of the deployed one (Studio test before release).
+    version: int | None = Field(default=None, ge=1)
 
 
 class RunOut(BaseModel):
@@ -81,7 +83,10 @@ async def run_agent(
     agent: Annotated[str, Field(pattern=NAME)], body: RunIn, request: Request, ctx: Ctx
 ) -> RunOut:
     """Run one turn of an agent on a thread, or resume it after a clarifying question/approval."""
+    ctx.require_agent(agent)
     await check_permission(request, "agent.query.run", Resource(type="agent", id=agent))
+    if body.version is not None:  # unreleased versions are for the people who build them
+        await check_permission(request, "agent.versions.preview", Resource(type="agent", id=agent))
     token = str(request.state.context_token)
     result = await _engine(request).run(
         ctx,
@@ -93,8 +98,9 @@ async def run_agent(
         history=[m.model_dump() for m in body.history],
         locale=body.locale.split("-")[0],
         handoff=body.handoff,
+        version=body.version,
     )
-    return RunOut(**result.__dict__)
+    return _out(result, ctx)
 
 
 def sse(kind: str, data: Any) -> bytes:
@@ -112,7 +118,10 @@ async def stream_agent(
     """The same turn as ``/runs`` as server-sent events (CH-01): ``run``, ``status``, ``sources``,
     ``tool``, ``delta`` (answer text as it is written), then ``result`` (the RunOut, with the
     checked answer and citations, which replaces the streamed text)."""
+    ctx.require_agent(agent)
     await check_permission(request, "agent.query.run", Resource(type="agent", id=agent))
+    if body.version is not None:  # unreleased versions are for the people who build them
+        await check_permission(request, "agent.versions.preview", Resource(type="agent", id=agent))
     events = _engine(request).stream(
         ctx,
         str(request.state.context_token),
@@ -123,6 +132,7 @@ async def stream_agent(
         history=[m.model_dump() for m in body.history],
         locale=body.locale.split("-")[0],
         handoff=body.handoff,
+        version=body.version,
     )
     first = await anext(events)  # refusals surface as ordinary HTTP errors
 
@@ -132,7 +142,7 @@ async def stream_agent(
             while event is not None:
                 kind = str(event["type"])
                 if kind == "result":
-                    yield sse(kind, RunOut(**event["result"].__dict__).model_dump(mode="json"))
+                    yield sse(kind, _out(event["result"], ctx).model_dump(mode="json"))
                     return
                 yield sse(kind, {k: v for k, v in event.items() if k != "type"})
                 event = await anext(events, None)
@@ -144,6 +154,23 @@ async def stream_agent(
         media_type="text/event-stream",
         headers={"cache-control": "no-store", "x-accel-buffering": "no"},
     )
+
+
+def _staff(ctx: TenantContext) -> bool:
+    return ctx.has_role(*STAFF_ROLES, "editor")
+
+
+def _redact(steps: list[dict[str, Any]], staff: bool) -> list[dict[str, Any]]:
+    """Diagnostics for staff only: the asker never learns how much was hidden from them."""
+    if staff:
+        return steps
+    return [{k: v for k, v in s.items() if k != "hidden_by_access"} for s in steps]
+
+
+def _out(result: Any, ctx: TenantContext) -> RunOut:
+    out = RunOut(**result.__dict__)
+    out.steps = _redact(out.steps, _staff(ctx))
+    return out
 
 
 class RunTrace(BaseModel):
@@ -166,9 +193,21 @@ async def get_run(run_id: uuid.UUID, request: Request, ctx: Ctx) -> RunTrace:
     await check_permission(request, "agent.runs.read", Resource(type="run", id=str(run_id)))
     async with _engine(request).db.session(ctx) as s:
         run = await s.get(Run, run_id)
-    if run is None or (run.actor_id != ctx.actor_id and not ctx.has_role(*STAFF_ROLES, "editor")):
+    staff = ctx.has_role(*STAFF_ROLES, "editor")
+    if (
+        run is None
+        or not ctx.may_use_agent(run.agent)
+        or (run.actor_id != ctx.actor_id and not staff)
+    ):
         raise NotFound("Run not found")
-    return RunTrace.model_validate(run, from_attributes=True)
+    return _trace(run, staff)
+
+
+def _trace(run: Run, staff: bool) -> RunTrace:
+    """Only staff learn how many sources access rules hid; the asker never does."""
+    trace = RunTrace.model_validate(run, from_attributes=True)
+    trace.steps = _redact(trace.steps, staff)
+    return trace
 
 
 @tenant_router.get("/threads/{thread_id}/runs", response_model=list[RunTrace])
@@ -180,9 +219,9 @@ async def thread_runs(thread_id: str, request: Request, ctx: Ctx) -> list[RunTra
         ).all()
     staff = ctx.has_role(*STAFF_ROLES, "editor")
     return [
-        RunTrace.model_validate(r, from_attributes=True)
+        _trace(r, staff)
         for r in rows
-        if staff or r.actor_id == ctx.actor_id
+        if (staff or r.actor_id == ctx.actor_id) and ctx.may_use_agent(r.agent)
     ]
 
 

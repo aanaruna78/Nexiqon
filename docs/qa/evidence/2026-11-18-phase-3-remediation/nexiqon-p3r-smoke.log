@@ -1,0 +1,27 @@
+PASS  self-serve tenant creation
+PASS  tenant API through gateway with IdP token
+PASS  owner listed as member
+PASS  API key created
+PASS  API key (member role) can read members
+PASS  API key (member role) cannot invite
+PASS  expiring key works before expiry
+PASS  expired key refused despite gateway cache (QA-01)
+PASS  timezone-free expiry rejected with 422 (QA-02)
+PASS  forged context header without credentials is rejected
+PASS  unknown tenant is forbidden
+PASS  domain pack imported
+PASS  pack published
+PASS  pack deployed to dev
+PASS  agent created
+PASS  agent deployed to dev
+PASS  agent resolves through all layers within floors
+PASS  signed snapshot verifies with the published key
+PASS  member API key cannot change config
+PASS  identity and config events reached the audit log
+PASS  audit hash chain verifies
+PASS  member API key cannot read the audit log
+PASS  feature flags evaluated by flagd
+PASS  internal path not routed: /identity/internal/ext-authz/x
+PASS  internal path not routed: /authz/v1/decisions
+PASS  internal path not routed: /model-gateway/meta
+gateway smoke test passed

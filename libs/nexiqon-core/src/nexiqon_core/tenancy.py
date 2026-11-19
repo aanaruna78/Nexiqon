@@ -16,7 +16,7 @@ from typing import Any, Literal
 import jwt
 from fastapi import Request
 
-from nexiqon_core.errors import Unauthorized
+from nexiqon_core.errors import Forbidden, Unauthorized
 from nexiqon_core.settings import ContextTokenSettings
 
 CONTEXT_HEADER = "X-Nexiqon-Context"
@@ -34,9 +34,18 @@ class TenantContext:
     groups: frozenset[str] = field(default_factory=frozenset)
     token_id: str = ""
     region: str | None = None
+    # Agents this caller may talk to: None means any. Set for API keys restricted to agents.
+    agents: frozenset[str] | None = None
 
     def has_role(self, *roles: str) -> bool:
         return bool(self.roles.intersection(roles))
+
+    def may_use_agent(self, agent: str) -> bool:
+        return self.agents is None or agent in self.agents
+
+    def require_agent(self, agent: str) -> None:
+        if not self.may_use_agent(agent):
+            raise Forbidden(f"This key is not allowed to use assistant {agent!r}")
 
 
 def current_context() -> TenantContext | None:
@@ -83,6 +92,8 @@ class ContextTokenIssuer:
         }
         if ctx.region:
             claims["reg"] = ctx.region
+        if ctx.agents is not None:
+            claims["agt"] = sorted(ctx.agents)
         return jwt.encode(
             claims, self._key, algorithm=self._settings.algorithm, headers={"kid": self._kid}
         )
@@ -126,6 +137,7 @@ class ContextTokenVerifier:
                 groups=frozenset(claims.get("grp", [])),
                 token_id=str(claims["jti"]),
                 region=claims.get("reg"),
+                agents=frozenset(claims["agt"]) if "agt" in claims else None,
             )
         except (jwt.PyJWTError, ValueError, KeyError) as exc:
             raise Unauthorized("Invalid context token") from exc
@@ -139,6 +151,7 @@ def _check_service_claims(claims: dict[str, Any], service: str) -> None:
         or claims.get("sub") != identity
         or claims.get("rol") != [identity]
         or claims.get("grp", [])
+        or "agt" in claims
     ):
         raise Unauthorized("Service token claims exceed its key")
 

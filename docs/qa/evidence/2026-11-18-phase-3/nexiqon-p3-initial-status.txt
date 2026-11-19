@@ -1,0 +1,55 @@
+## phase-3/gaps
+ M contracts/openapi/agent-runtime.json
+ M contracts/openapi/ingestion.json
+ M contracts/openapi/retrieval.json
+ M contracts/schemas/config/retrieval_profile.schema.json
+ M docs/adr/0009-identity-providers-and-the-tenant-context-token.md
+ M docs/plan/PLAN.md
+ M frontend/apps/studio/e2e/studio.spec.ts
+ M frontend/apps/studio/messages/ar.json
+ M frontend/apps/studio/messages/en.json
+ M frontend/apps/studio/package.json
+ M frontend/apps/studio/src/components/assistants/assistant-detail.tsx
+ M frontend/apps/studio/src/components/assistants/test-chat.tsx
+ M frontend/apps/studio/src/components/knowledge/sources.tsx
+ M frontend/apps/studio/src/components/playground/playground.tsx
+ M frontend/apps/studio/src/lib/server/gateway.ts
+ M frontend/apps/studio/src/lib/studio.ts
+ M frontend/apps/studio/test/studio.test.ts
+ M frontend/apps/widget/package.json
+ M frontend/packages/client/src/generated/agent-runtime.ts
+ M frontend/packages/client/src/generated/ingestion.ts
+ M frontend/packages/client/src/generated/retrieval.ts
+ M frontend/pnpm-lock.yaml
+ M libs/nexiqon-core/src/nexiqon_core/tenancy.py
+ M libs/nexiqon-core/tests/test_tenancy.py
+ M packs/saas-knowledge-assistant/eval/gold.yaml
+ M services/agent-runtime/README.md
+ M services/agent-runtime/src/nexiqon_agent_runtime/api.py
+ M services/agent-runtime/src/nexiqon_agent_runtime/clients.py
+ M services/agent-runtime/src/nexiqon_agent_runtime/engine.py
+ M services/agent-runtime/src/nexiqon_agent_runtime/nodes.py
+ M services/agent-runtime/src/nexiqon_agent_runtime/settings.py
+ M services/agent-runtime/src/nexiqon_agent_runtime/testing.py
+ M services/agent-runtime/tests/test_streaming.py
+ M services/authz/policies/nexiqon/authz_test.rego
+ M services/channel/src/nexiqon_channel/api.py
+ M services/config/src/nexiqon_config/schemas/retrieval_profile.schema.json
+ M services/conversation/src/nexiqon_conversation/api.py
+ M services/identity/src/nexiqon_identity/access.py
+ M services/identity/tests/test_identity.py
+ M services/ingestion/README.md
+ M services/ingestion/src/nexiqon_ingestion/api.py
+ M services/ingestion/src/nexiqon_ingestion/main.py
+ M services/ingestion/src/nexiqon_ingestion/plugins/connectors.py
+ M services/ingestion/src/nexiqon_ingestion/settings.py
+ M services/ingestion/tests/test_connectors.py
+ M services/ingestion/tests/test_pipeline.py
+ M services/retrieval/src/nexiqon_retrieval/api.py
+ M services/retrieval/src/nexiqon_retrieval/search.py
+ M services/retrieval/tests/test_search.py
+?? deploy/compose/docker-compose.gpu.yml
+?? docs/guides/
+?? services/ingestion/src/nexiqon_ingestion/downloads.py
+?? tools/eval/model_bakeoff.py
+?? tools/eval/test_model_bakeoff.py

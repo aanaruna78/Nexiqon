@@ -27,7 +27,10 @@ class Base(DeclarativeBase):
 
 class ToolCall(TenantScopedMixin, Base):
     __tablename__ = "tool_calls"
-    __table_args__ = (UniqueConstraint("tenant_id", "tool", "idempotency_key"),)
+    # One caller and assistant per key: replays never cross people or assistants (QA3-01).
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "tool", "agent", "actor_id", "idempotency_key"),
+    )
 
     tool: Mapped[str] = mapped_column(String(63), index=True)
     tool_version: Mapped[int] = mapped_column(Integer)

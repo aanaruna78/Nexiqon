@@ -1,0 +1,11 @@
+[2m2026-11-18T10:34:23.036100Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mdata[0m [36mservice[0m=[35mretrieval[0m [36mversion[0m=[35m0.1.0[0m
+widget search status: 200 visible: 0 hidden: None
+.[2m2026-11-18T10:34:23.253600Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mretrieval[0m
+
+=============================== warnings summary ===============================
+docs/qa/reproductions/phase3_retrieval_cases.py::test_widget_search_must_not_count_hidden_restricted_sources
+  /home/arun/Documents/Nexiqon/Nexiqon/libs/nexiqon-core/src/nexiqon_core/pytest_plugin.py:52: DeprecationWarning: testcontainers.postgres is deprecated, use testcontainers.community.postgres instead
+    from testcontainers.postgres import PostgresContainer
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1 passed, 1 warning in 2.89s

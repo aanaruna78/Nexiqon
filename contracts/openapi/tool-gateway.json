@@ -932,7 +932,7 @@
     },
     "/v1/tools/{name}": {
       "get": {
-        "description": "What a caller (and a model choosing arguments) may know: description, input schema, risk.",
+        "description": "What a caller (and a model choosing arguments) may know: description, input schema, risk.\nWith ``agent``: the risk and confirmation that actually apply for that assistant.",
         "operationId": "describe_v1_tools__name__get",
         "parameters": [
           {
@@ -942,6 +942,23 @@
             "schema": {
               "title": "Name",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "agent",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agent"
             }
           }
         ],

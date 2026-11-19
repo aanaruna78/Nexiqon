@@ -28,3 +28,16 @@ source --discover--> items --fetch--> file (object storage) --scan--> parse --> 
 ```bash
 uv run pytest services/ingestion        # unit + end-to-end (Postgres, Temporal test server)
 ```
+
+**Q&A snippets (RT-04).** The `snippets` connector holds reviewed question-and-answer pairs (edit them
+with `PATCH /v1/sources/{id}`; the next sync re-indexes only what changed). Each pair becomes a
+`snippet://` document, which retrieval ranks above other content by the retrieval profile's
+`search.snippet_boost` (default 1.5). A reviewed answer therefore wins over an outdated page until
+the page is fixed.
+
+**Download links (RT-06).** `POST /v1/documents/{id}/download-link` returns a link valid for
+`download_link_seconds` (default 300). The link names the tenant, document, version and the person
+it was issued to, and is signed (HMAC-SHA256, `download_signing_key`; set the same key on every
+replica). `GET /v1/downloads/{token}` serves the original file as an attachment only to that
+person, in that tenant, while the file is still that version and still visible to them. Anything
+else gets "not found".

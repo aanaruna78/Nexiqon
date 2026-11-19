@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { BookOpenText, CircleAlert, ExternalLink, FlaskConical, Gauge, Quote, Search, Sparkles, Timer } from "lucide-react";
+import { BookOpenText, CircleAlert, Download, ExternalLink, FlaskConical, Gauge, Quote, Search, Sparkles, Timer } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -350,6 +350,7 @@ function SourcePreview({ passage: p, query, onClose }: { passage: Passage | null
                     </a>
                   </Button>
                 ) : null}
+                {p.source_uri?.startsWith("upload://") ? <DownloadOriginal documentId={p.document_id} /> : null}
                 <Button asChild variant="outline" size="sm">
                   <Link href={`/knowledge/${p.collection_id}`}>
                     <BookOpenText className="size-3.5" aria-hidden="true" />
@@ -366,5 +367,26 @@ function SourcePreview({ passage: p, query, onClose }: { passage: Passage | null
         ) : null}
       </SheetContent>
     </Sheet>
+  );
+}
+
+/** Opens a short-lived, personal download link for the original file (RT-06). */
+function DownloadOriginal({ documentId }: { documentId: string }) {
+  const t = useTranslations("playground");
+  const link = useMutation({
+    mutationFn: () => api<{ url: string }>(`ingestion/v1/documents/${documentId}/download-link`, { method: "POST" }),
+    onSuccess: ({ url }) => {
+      // Through Studio's BFF, which adds the session; the file arrives as an attachment.
+      const anchor = document.createElement("a");
+      anchor.href = `/api/nx${url}`;
+      anchor.rel = "noopener";
+      anchor.click();
+    },
+  });
+  return (
+    <Button variant="outline" size="sm" onClick={() => link.mutate()} disabled={link.isPending} data-testid="download-original">
+      <Download className="size-3.5" aria-hidden="true" />
+      {t("downloadOriginal")}
+    </Button>
   );
 }

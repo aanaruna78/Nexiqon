@@ -1,0 +1,46 @@
+[
+  {
+    "branch": "phase-3/agent-runtime",
+    "runs": [
+      {
+        "head_sha": "d854bc9deceef7cb6aad647eac85c19e143a4b6f",
+        "conclusion": "success",
+        "html_url": "https://github.com/aanaruna78/Nexiqon/actions/runs/42571912550"
+      }
+    ]
+  },
+  {
+    "branch": "phase-3/tool-gateway",
+    "runs": [
+      {
+        "head_sha": "65ecf354acc277c0523300a85dfc3fe2c4d1120e",
+        "conclusion": "success",
+        "html_url": "https://github.com/aanaruna78/Nexiqon/actions/runs/43415514845"
+      }
+    ]
+  },
+  {
+    "branch": "phase-3/channels-streaming",
+    "runs": [
+      {
+        "head_sha": "d11d25818a82cf31077cc7f83c266e80bc67a035",
+        "conclusion": "success",
+        "html_url": "https://github.com/aanaruna78/Nexiqon/actions/runs/43421850384"
+      }
+    ]
+  },
+  {
+    "branch": "phase-3/studio",
+    "runs": [
+      {
+        "head_sha": "dbf70734281e835decccbc998fc5bd379c5fe8a5",
+        "conclusion": "success",
+        "html_url": "https://github.com/aanaruna78/Nexiqon/actions/runs/43427430341"
+      }
+    ]
+  },
+  {
+    "branch": "phase-3/gaps",
+    "runs": []
+  }
+]

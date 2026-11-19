@@ -137,3 +137,9 @@ test_widget_reads_channel_settings_and_channel_service_reads_agents_only if {
 	not authz.allow with input as {"actor": svc, "action": "config.tool.read", "resource": {"type": "tool"}}
 	not authz.allow with input as {"actor": svc, "action": "agent.query.run", "resource": {"type": "agent"}}
 }
+
+test_only_builders_run_unreleased_assistant_versions if {
+	authz.allow with input as {"actor": actor(["editor"]), "action": "agent.versions.preview", "resource": {"type": "agent"}}
+	not authz.allow with input as {"actor": actor(["member"]), "action": "agent.versions.preview", "resource": {"type": "agent"}}
+	not authz.allow with input as {"actor": actor(["end_user"]), "action": "agent.versions.preview", "resource": {"type": "agent"}}
+}

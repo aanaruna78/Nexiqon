@@ -344,3 +344,34 @@ def test_view_as_previews_another_persons_access_and_counts_what_they_miss(
         headers=stack.headers({"member"}, {"engineering"}),
     )
     assert member.status_code == 403
+
+
+def test_hidden_counts_are_staff_diagnostics(stack: SearchStack) -> None:
+    """QA3-06: only staff, or agent-runtime's verified proof, may learn how much was hidden."""
+    stack.index(GUIDE, "upload://ops-guide.md")
+    stack.index(SECRET, "upload://payroll.md", acl=["payroll"])
+    query = "payroll backups encrypted with a separate key"
+    outsider = stack.headers({"member"}, {"engineering"})
+    assert stack.search(query, headers=outsider, explain_access=True)["hidden"] is None
+    widget = stack.headers({"end_user"}, actor_type="widget")
+    assert stack.search(query, headers=widget, explain_access=True)["hidden"] is None
+    assert stack.runtime is not None
+    tenant = stack.tenants.a.context.tenant_id
+    proof = {**outsider, "x-nexiqon-diagnostics": stack.runtime.for_tenant(tenant)}
+    counted = stack.search(query, headers=proof, explain_access=True)
+    assert counted["hidden"] >= 1
+    assert all("payroll" not in p["source_uri"] for p in counted["passages"])
+    insider = stack.headers({"member"}, {"payroll"})
+    with_proof = {**insider, "x-nexiqon-diagnostics": stack.runtime.for_tenant(tenant)}
+    assert stack.search(query, headers=with_proof, explain_access=True)["hidden"] == 0
+    assert stack.search(query, headers=stack.headers({"admin"}), explain_access=True)["hidden"] == 0
+    # Proof from another tenant, another service or a user token counts for nothing.
+    elsewhere = {
+        **outsider,
+        "x-nexiqon-diagnostics": stack.runtime.for_tenant(stack.tenants.b.context.tenant_id),
+    }
+    assert stack.search(query, headers=elsewhere, explain_access=True)["hidden"] is None
+    ingestion = {**outsider, "x-nexiqon-diagnostics": stack.service.for_tenant(tenant)}
+    assert stack.search(query, headers=ingestion, explain_access=True)["hidden"] is None
+    forged = {**outsider, "x-nexiqon-diagnostics": stack.headers({"admin"})["X-Nexiqon-Context"]}
+    assert stack.search(query, headers=forged, explain_access=True)["hidden"] is None

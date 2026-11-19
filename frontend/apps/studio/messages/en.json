@@ -488,7 +488,11 @@
       "truncated": "Stopped at the item limit; nothing was removed.",
       "warnings": "{count, plural, one {# page was skipped} other {# pages were skipped}}",
       "incomplete": "Some pages could not be fetched (see warnings), so nothing was removed this time."
-    }
+    },
+    "editSource": "Edit",
+    "editSourceTitle": "Edit {name}",
+    "saveAndSync": "Save and sync",
+    "sourceUpdated": "{name} updated; syncing now"
   },
   "playground": {
     "title": "Playground",
@@ -556,7 +560,8 @@
     "openOriginal": "Open original",
     "openCollection": "Open collection",
     "mode": "Mode",
-    "shortened": "shortened to fit"
+    "shortened": "shortened to fit",
+    "downloadOriginal": "Download original"
   },
   "release": {
     "released": "Version {version} is live",
@@ -640,13 +645,14 @@
       "waiting": "The assistant is waiting for the user ({kind}).",
       "abstained": "No claim could be backed by a source, so the assistant said it could not answer.",
       "grounded": "The answer is backed by {count, plural, one {# verified citation} other {# verified citations}}.",
-      "failed": "The run failed: {error}"
+      "failed": "The run failed: {error}",
+      "hiddenByAccess": "{count, plural, one {# matching source was} other {# matching sources were}} hidden from this person by access rules; if they should see it, check its access groups."
     },
     "answer": "Answer",
     "sources": "{count, plural, one {# source considered} other {# sources considered}}",
     "cited": "Cited",
     "score": "Relevance of {citation}",
-    "aclNote": "Only sources this user may see are searched. To check what someone else can see, use Access preview.",
+    "aclNote": "Only sources this person may see were searched; the count above says how many were hidden from them. To check someone else, use Access preview.",
     "tools": "Tools",
     "ok": "OK",
     "failedShort": "Failed",
@@ -755,7 +761,14 @@
     "decline": "Decline",
     "escalated": "This conversation is with a person now; the assistant stays quiet.",
     "placeholder": "Type a message",
-    "send": "Send"
+    "send": "Send",
+    "version": "Version",
+    "liveOption": "v{version} · live",
+    "draftOption": "v{version} · draft",
+    "olderOption": "v{version} · not live",
+    "previewBadge": "Not released",
+    "previewHelp": "Trying v{version} before release. Replies are traced for the Inspector but not stored as conversations.",
+    "streamEnded": "The answer stream ended early"
   },
   "viewAs": {
     "who": "Preview as",

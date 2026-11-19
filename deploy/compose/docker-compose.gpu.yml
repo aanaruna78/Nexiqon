@@ -1,0 +1,73 @@
+# Self-hosted models on NVIDIA GPUs with vLLM (M-06). Serves the endpoints the built-in
+# on-prem-small / on-prem-standard model profiles point at:
+#   vllm         chat         http://vllm:8000/v1
+#   vllm-embed   embeddings   http://vllm-embed:8000/v1
+#   vllm-rerank  reranking    http://vllm-rerank:8000/v1
+#
+#   docker compose -f deploy/compose/docker-compose.yml -f deploy/compose/docker-compose.gpu.yml \
+#     --profile platform --profile apps --profile gpu up -d
+#
+# Needs the NVIDIA Container Toolkit. Sizing and model choices: docs/guides/gpu-models.md.
+# Model weights download once into the hf-cache volume; set HF_TOKEN for gated models.
+x-vllm: &vllm
+  image: vllm/vllm-openai:v0.11.0
+  profiles: [gpu]
+  restart: unless-stopped
+  ipc: host
+  environment:
+    HF_TOKEN: ${HF_TOKEN:-}
+    HF_HUB_OFFLINE: ${HF_HUB_OFFLINE:-0}  # 1 for air-gapped installs with pre-loaded weights
+  volumes:
+    - hf-cache:/root/.cache/huggingface
+  healthcheck:
+    test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+    interval: 15s
+    timeout: 5s
+    retries: 40
+    start_period: 120s
+
+services:
+  vllm:
+    <<: *vllm
+    deploy:
+      resources:
+        reservations:
+          devices: [{ driver: nvidia, device_ids: ["${VLLM_CHAT_GPUS:-0}"], capabilities: [gpu] }]
+    command:
+      - --model=${VLLM_CHAT_MODEL:-Qwen/Qwen3-8B-AWQ}
+      - --served-model-name=${VLLM_CHAT_NAME:-qwen3-8b}
+      - --max-model-len=${VLLM_CHAT_CONTEXT:-32768}
+      - --gpu-memory-utilization=${VLLM_CHAT_GPU_SHARE:-0.80}
+      - --enable-auto-tool-choice
+      - --tool-call-parser=hermes
+      - --guided-decoding-backend=xgrammar  # schema-valid JSON for weaker models (guided_json)
+
+  vllm-embed:
+    <<: *vllm
+    deploy:
+      resources:
+        reservations:
+          devices: [{ driver: nvidia, device_ids: ["${VLLM_SMALL_GPUS:-0}"], capabilities: [gpu] }]
+    command:
+      - --model=Qwen/Qwen3-Embedding-0.6B
+      - --served-model-name=qwen3-embedding-0.6b
+      - --task=embed
+      - --max-model-len=8192
+      - --gpu-memory-utilization=${VLLM_EMBED_GPU_SHARE:-0.08}
+
+  vllm-rerank:
+    <<: *vllm
+    deploy:
+      resources:
+        reservations:
+          devices: [{ driver: nvidia, device_ids: ["${VLLM_SMALL_GPUS:-0}"], capabilities: [gpu] }]
+    command:
+      - --model=Qwen/Qwen3-Reranker-0.6B
+      - --served-model-name=qwen3-reranker-0.6b
+      - --task=score
+      - --max-model-len=8192
+      - --gpu-memory-utilization=${VLLM_RERANK_GPU_SHARE:-0.08}
+      - '--hf-overrides={"architectures":["Qwen3ForSequenceClassification"],"classifier_from_token":["no","yes"],"is_original_qwen3_reranker":true}'
+
+volumes:
+  hf-cache:

@@ -51,12 +51,22 @@ class Http:
         self.base = base_url.rstrip("/") if base_url else None
         self.client = httpx.AsyncClient(transport=transport, timeout=timeout, trust_env=False)
 
-    async def call(self, token: str, method: str, path: str, **kw: Any) -> httpx.Response:
+    async def call(
+        self,
+        token: str,
+        method: str,
+        path: str,
+        extra_headers: dict[str, str] | None = None,
+        **kw: Any,
+    ) -> httpx.Response:
         if self.base is None:
             raise ServiceUnavailable(f"Service URL for {path} is not configured")
         try:
             return await self.client.request(
-                method, f"{self.base}{path}", headers={CONTEXT_HEADER: token}, **kw
+                method,
+                f"{self.base}{path}",
+                headers={CONTEXT_HEADER: token, **(extra_headers or {})},
+                **kw,
             )
         except httpx.HTTPError as exc:
             raise ServiceUnavailable(f"{path}: {exc}") from exc
@@ -138,8 +148,13 @@ class Models(Http):
 
 
 class Retrieval(Http):
-    async def search(self, token: str, body: dict[str, Any]) -> dict[str, Any]:
-        r = await self.call(token, "POST", "/v1/search", json=body)
+    async def search(
+        self, token: str, body: dict[str, Any], diagnostics: str | None = None
+    ) -> dict[str, Any]:
+        """``diagnostics``: agent-runtime's own token, proving the hidden-source count is asked
+        for the trace (staff-only Answer Inspector), never for the person searching (QA3-06)."""
+        extra = {"x-nexiqon-diagnostics": diagnostics} if diagnostics else None
+        r = await self.call(token, "POST", "/v1/search", extra_headers=extra, json=body)
         _raise(r, "retrieval")
         result: dict[str, Any] = r.json()
         return result
@@ -167,11 +182,14 @@ class ServiceReads:
         self.tokens = tokens
         self.environment = environment
         self.ttl = cache_seconds
-        self._agents: dict[tuple[uuid.UUID, str], tuple[float, dict[str, Any]]] = {}
+        self._agents: dict[tuple[uuid.UUID, str, int | None], tuple[float, dict[str, Any]]] = {}
         self._collections: dict[uuid.UUID, tuple[float, dict[str, str]]] = {}
 
-    async def agent(self, tenant: uuid.UUID, name: str) -> dict[str, Any]:
-        key = (tenant, name)
+    async def agent(
+        self, tenant: uuid.UUID, name: str, version: int | None = None
+    ) -> dict[str, Any]:
+        """The agent as deployed, or a specific (even draft) version when previewing."""
+        key = (tenant, name, version)
         hit = self._agents.get(key)
         if hit and hit[0] > time.monotonic():
             return hit[1]
@@ -179,7 +197,10 @@ class ServiceReads:
             self.tokens.for_tenant(tenant),
             "GET",
             f"/v1/resolve/agents/{name}",
-            params={"environment": self.environment},
+            params={
+                "environment": self.environment,
+                **({"version": version} if version is not None else {}),
+            },
         )
         _raise(r, f"agent {name!r}")
         resolved: dict[str, Any] = r.json()
@@ -200,7 +221,9 @@ class ServiceReads:
 class Tools(Protocol):
     """Port to the tool gateway. Calls run with the caller's token."""
 
-    async def describe(self, token: str, name: str) -> dict[str, Any] | None: ...
+    async def describe(
+        self, token: str, name: str, agent: str | None = None
+    ) -> dict[str, Any] | None: ...
 
     async def request_confirmation(
         self,
@@ -240,8 +263,12 @@ def _tool_error(r: httpx.Response) -> dict[str, Any]:
 
 
 class HttpTools(Http):
-    async def describe(self, token: str, name: str) -> dict[str, Any] | None:
-        r = await self.call(token, "GET", f"/v1/tools/{name}")
+    async def describe(
+        self, token: str, name: str, agent: str | None = None
+    ) -> dict[str, Any] | None:
+        """The tool as it applies to ``agent``: the stricter of pack and definition (QA3-03)."""
+        params = {"agent": agent} if agent else None
+        r = await self.call(token, "GET", f"/v1/tools/{name}", params=params)
         if r.status_code in (403, 404):
             return None
         _raise(r, f"tool {name!r}")
@@ -309,7 +336,9 @@ class HttpTools(Http):
 class NoTools:
     """When no tool gateway is configured: every tool is reported unavailable (never faked)."""
 
-    async def describe(self, token: str, name: str) -> dict[str, Any] | None:
+    async def describe(
+        self, token: str, name: str, agent: str | None = None
+    ) -> dict[str, Any] | None:
         return None
 
     async def request_confirmation(

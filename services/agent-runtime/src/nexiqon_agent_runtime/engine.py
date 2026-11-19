@@ -23,7 +23,7 @@ from nexiqon_agent_runtime.settings import ServiceSettings
 from nexiqon_agent_runtime.spec import validate_graph
 from nexiqon_agent_runtime.state import fresh_turn
 from nexiqon_core.db import TenantSessionFactory
-from nexiqon_core.errors import Conflict, Forbidden
+from nexiqon_core.errors import Conflict, Forbidden, ServiceUnavailable
 from nexiqon_core.tenancy import TenantContext
 
 log = structlog.get_logger(__name__)
@@ -63,6 +63,16 @@ class Engine:
         self.tools = tools
         self._background: set[asyncio.Task[None]] = set()  # streamed turns still running
 
+    def _diagnostics(self, ctx: TenantContext) -> str | None:
+        """agent-runtime's own token, sent so retrieval reports how many sources the asker's
+        access rules hid; the count is kept for staff only (QA3-06)."""
+        if not self.settings.explain_access:
+            return None
+        try:
+            return self.reads.tokens.for_tenant(ctx.tenant_id)
+        except ServiceUnavailable:
+            return None
+
     async def _thread(self, ctx: TenantContext, thread_id: str, agent: str) -> Thread:
         async with self.db.session(ctx) as s:
             thread = await s.scalar(select(Thread).where(Thread.thread_id == thread_id))
@@ -94,9 +104,10 @@ class Engine:
         history: list[dict[str, str]] | None = None,
         locale: str = "en",
         handoff: bool = False,
+        version: int | None = None,
         emit: Callable[[dict[str, Any]], None] | None = None,
     ) -> TurnResult:
-        resolved = await self.reads.agent(ctx.tenant_id, agent_name)
+        resolved = await self.reads.agent(ctx.tenant_id, agent_name, version)
         spec = validate_graph(resolved["graph"])
         thread = await self._thread(ctx, thread_id, agent_name)
         if thread.status == "awaiting_approval" and resume is None:
@@ -137,6 +148,7 @@ class Engine:
             tools=self.tools,
             run_id=str(run_id),
             emit=emit,
+            extra={"diagnostics": self._diagnostics(ctx)},
         )
         app = compile_graph(spec, context, TenantCheckpointer(self.db, ctx))
         config = {

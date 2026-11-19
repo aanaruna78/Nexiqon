@@ -19,3 +19,9 @@ Tool definitions (`tool` config objects) declare the request (`url_template` wit
 
 Development: `mock_apis.py` serves demo APIs (account/plan lookup, support cases) for two datasets
 (`demo-token-acme`, `demo-token-globex`); the dev stack runs it as `mock-apis` on port 9000.
+
+**Scopes and replays (QA3-01..03).**
+- Keys limited to assistants can only invoke, confirm, describe or see calls and approvals for
+  those assistants, and cannot use tenant-wide operations.
+- Idempotent replays are per caller and assistant.
+- Confirmation follows the stricter of pack and definition.

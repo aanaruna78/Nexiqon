@@ -17,7 +17,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any, Literal
 
 import jsonschema
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -37,7 +37,7 @@ from nexiqon_core.tenancy import TenantContext, require_current_context
 from nexiqon_tool_gateway.executor import ToolFailure, execute, prepare
 from nexiqon_tool_gateway.models import Approval, Outbox, ToolCall
 from nexiqon_tool_gateway.openapi import OpenApiError, import_spec
-from nexiqon_tool_gateway.registry import RISK_ORDER, ToolDef
+from nexiqon_tool_gateway.registry import RISK_ORDER, Effective, ToolDef
 from nexiqon_tool_gateway.secrets import SecretNotFound, SecretsUnavailable, check_name
 
 public_router = APIRouter(tags=["tool-gateway"])
@@ -83,16 +83,34 @@ def args_hash(arguments: dict[str, Any]) -> str:
     ).hexdigest()
 
 
-async def _checked(
-    request: Request, ctx: TenantContext, name: str, agent: str, arguments: dict[str, Any]
-) -> tuple[ToolDef, str]:
-    """Steps shared by invoke and approval requests. Returns the tool and its effective risk."""
+def _unscoped(ctx: TenantContext, what: str) -> None:
+    """Tenant-wide operations are not for keys limited to particular assistants (QA3-02)."""
+    if ctx.agents is not None:
+        raise Forbidden(f"Keys limited to assistants cannot {what}")
+
+
+async def _effective(
+    request: Request, ctx: TenantContext, name: str, agent: str
+) -> tuple[ToolDef, Effective]:
+    """The tool as it applies to this assistant: allowed at all, and the stricter of the pack's
+    and the definition's risk and confirmation rules (QA3-03)."""
+    ctx.require_agent(agent)  # a key limited to other assistants stops here (QA3-02)
     registry = request.app.state.registry
     tool: ToolDef = await registry.tool(ctx.tenant_id, name)
-    allowed, pack_risks = await registry.agent_tools(ctx.tenant_id, agent)
-    if name not in allowed:
+    scope = await registry.agent_tools(ctx.tenant_id, agent)
+    if name not in scope.allowed:
         raise Forbidden(f"Assistant {agent!r} may not use tool {name!r}")
-    risk = max(tool.risk, pack_risks.get(name, "read"), key=RISK_ORDER.index)
+    risk = max(tool.risk, scope.risks.get(name, "read"), key=RISK_ORDER.index)
+    confirm = risk != "read" or tool.needs_confirmation or name in scope.always_confirm
+    return tool, Effective(risk=risk, needs_confirmation=confirm)
+
+
+async def _checked(
+    request: Request, ctx: TenantContext, name: str, agent: str, arguments: dict[str, Any]
+) -> tuple[ToolDef, Effective]:
+    """Steps shared by invoke and approval requests. Returns the tool and what applies to it."""
+    tool, effective = await _effective(request, ctx, name, agent)
+    risk = effective.risk
     await check_permission(request, f"tool.invoke.{risk}", Resource(type="tool", id=name))
     if len(json.dumps(arguments).encode()) > request.app.state.settings.max_argument_bytes:
         raise InvalidArguments("Arguments are too large")
@@ -108,18 +126,29 @@ async def _checked(
             for e in errors[:20]
         ]
         raise problem
-    return tool, risk
+    return tool, effective
 
 
 # ===================================================================== definitions
 
 
 @tenant_router.get("/tools/{name}")
-async def describe(name: str, request: Request, ctx: Ctx) -> dict[str, Any]:
-    """What a caller (and a model choosing arguments) may know: description, input schema, risk."""
+async def describe(
+    name: str, request: Request, ctx: Ctx, agent: Annotated[str | None, Query(pattern=NAME)] = None
+) -> dict[str, Any]:
+    """What a caller (and a model choosing arguments) may know: description, input schema, risk.
+    With ``agent``: the risk and confirmation that actually apply for that assistant."""
     await check_permission(request, "tool.definitions.read", Resource(type="tool", id=name))
-    tool: ToolDef = await request.app.state.registry.tool(ctx.tenant_id, name)
-    return tool.public()
+    if agent is None:
+        _unscoped(ctx, "read tools outside their assistants")
+        tool: ToolDef = await request.app.state.registry.tool(ctx.tenant_id, name)
+        return tool.public()
+    tool, effective = await _effective(request, ctx, name, agent)
+    return {
+        **tool.public(),
+        "risk_level": effective.risk,
+        "needs_confirmation": effective.needs_confirmation,
+    }
 
 
 # ===================================================================== invocation
@@ -146,7 +175,12 @@ class InvokeOut(BaseModel):
 
 
 async def _use_approval(
-    request: Request, ctx: TenantContext, tool: ToolDef, approval_id: uuid.UUID | None, digest: str
+    request: Request,
+    ctx: TenantContext,
+    tool: ToolDef,
+    agent: str,
+    approval_id: uuid.UUID | None,
+    digest: str,
 ) -> uuid.UUID:
     if approval_id is None:
         raise Forbidden(f"Tool {tool.name!r} needs the user's confirmation first")
@@ -157,6 +191,7 @@ async def _use_approval(
             approval is None
             or approval.kind != "confirmation"
             or approval.tool != tool.name
+            or approval.agent != agent
             or approval.actor_id != ctx.actor_id
         ):
             raise Forbidden("This confirmation does not belong to this call")
@@ -176,16 +211,22 @@ async def invoke(
     name: Annotated[str, Field(pattern=NAME)], body: InvokeIn, request: Request, ctx: Ctx
 ) -> InvokeOut:
     settings = request.app.state.settings
-    tool, risk = await _checked(request, ctx, name, body.agent, body.arguments)
+    tool, effective = await _checked(request, ctx, name, body.agent, body.arguments)
+    risk = effective.risk
     digest = args_hash(body.arguments)
     if risk != "read" and not body.idempotency_key:
         raise BadRequest("Write tools need an idempotency_key")
     db = _db(request)
     if body.idempotency_key:
         async with db.session(ctx) as s:
+            # A replay belongs to the verified caller and assistant that made the call: another
+            # person reusing the key gets their own call, never someone else's result (QA3-01).
             prior = await s.scalar(
                 select(ToolCall).where(
-                    ToolCall.tool == name, ToolCall.idempotency_key == body.idempotency_key
+                    ToolCall.tool == name,
+                    ToolCall.idempotency_key == body.idempotency_key,
+                    ToolCall.actor_id == ctx.actor_id,
+                    ToolCall.agent == body.agent,
                 )
             )
         if prior is not None:
@@ -205,8 +246,8 @@ async def invoke(
                 classification=tool.result_classification,
             )
     approval_id = (
-        await _use_approval(request, ctx, tool, body.approval_id, digest)
-        if tool.needs_confirmation
+        await _use_approval(request, ctx, tool, body.agent, body.approval_id, digest)
+        if effective.needs_confirmation
         else None
     )
     guards = request.app.state.guards
@@ -391,7 +432,7 @@ async def decide(
     """Confirmations are decided by the person who asked; human approvals by authorised staff."""
     async with _db(request).session(ctx) as s:
         approval = await s.get(Approval, approval_id, with_for_update=True)
-        if approval is None:
+        if approval is None or not ctx.may_use_agent(approval.agent):
             raise NotFound("Approval not found")
         if approval.kind == "confirmation":
             if approval.actor_id != ctx.actor_id:
@@ -441,6 +482,8 @@ async def list_approvals(
         query = query.where(Approval.status == status)
     if kind:
         query = query.where(Approval.kind == kind)
+    if ctx.agents is not None:
+        query = query.where(Approval.agent.in_(sorted(ctx.agents)))
     async with _db(request).session(ctx) as s:
         return [
             ApprovalOut.model_validate(a, from_attributes=True)
@@ -472,6 +515,8 @@ async def list_calls(
     query = select(ToolCall).order_by(ToolCall.created_at.desc()).limit(min(max(limit, 1), 200))
     if tool:
         query = query.where(ToolCall.tool == tool)
+    if ctx.agents is not None:
+        query = query.where(ToolCall.agent.in_(sorted(ctx.agents)))
     async with _db(request).session(ctx) as s:
         return [
             CallOut.model_validate(c, from_attributes=True) for c in (await s.scalars(query)).all()
@@ -490,6 +535,7 @@ async def dry_run(
     name: Annotated[str, Field(pattern=NAME)], body: DryRunIn, request: Request, ctx: Ctx
 ) -> dict[str, Any]:
     """Validate arguments and show the request that would be sent. Nothing is sent; no secret is read."""
+    _unscoped(ctx, "use the test console")
     await check_permission(request, "tool.definitions.test", Resource(type="tool", id=name))
     tool: ToolDef = await request.app.state.registry.tool(ctx.tenant_id, name)
     problems = [
@@ -536,6 +582,7 @@ class CredentialIn(BaseModel):
 @tenant_router.put("/credentials/{name}", status_code=204)
 async def put_credential(name: str, body: CredentialIn, request: Request, ctx: Ctx) -> Response:
     """Store a credential for this workspace. It can be replaced or deleted, never read back."""
+    _unscoped(ctx, "manage tools or credentials")
     await check_permission(request, "tool.credentials.write", Resource(type="credential", id=name))
     try:
         await request.app.state.secrets.put(ctx.tenant_id, check_name(name), body.value)
@@ -558,6 +605,7 @@ async def put_credential(name: str, body: CredentialIn, request: Request, ctx: C
 
 @tenant_router.get("/credentials")
 async def list_credentials(request: Request, ctx: Ctx) -> list[dict[str, Any]]:
+    _unscoped(ctx, "manage tools or credentials")
     await check_permission(request, "tool.credentials.read", Resource(type="credential"))
     try:
         names = await request.app.state.secrets.names(ctx.tenant_id)
@@ -568,6 +616,7 @@ async def list_credentials(request: Request, ctx: Ctx) -> list[dict[str, Any]]:
 
 @tenant_router.delete("/credentials/{name}", status_code=204)
 async def delete_credential(name: str, request: Request, ctx: Ctx) -> Response:
+    _unscoped(ctx, "manage tools or credentials")
     await check_permission(request, "tool.credentials.write", Resource(type="credential", id=name))
     try:
         await request.app.state.secrets.delete(ctx.tenant_id, check_name(name))
@@ -600,6 +649,7 @@ class OpenApiIn(BaseModel):
 @tenant_router.post("/openapi/import")
 async def openapi_import(body: OpenApiIn, request: Request, ctx: Ctx) -> list[dict[str, Any]]:
     """Turn an OpenAPI 3 document into tool definitions (saved and published through config)."""
+    _unscoped(ctx, "manage tools or credentials")
     await check_permission(request, "tool.openapi.import", Resource(type="tool"))
     try:
         return import_spec(

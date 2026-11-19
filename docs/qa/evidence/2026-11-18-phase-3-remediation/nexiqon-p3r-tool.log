@@ -1,0 +1,23 @@
+[2m2026-11-18T10:34:05.405396Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mdata[0m [36mservice[0m=[35mtool-gateway[0m [36mversion[0m=[35m0.1.0[0m
+[2m2026-11-18T10:34:05.406699Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mcontrol[0m [36mservice[0m=[35mconfig[0m [36mversion[0m=[35m0.1.0[0m
+different callers shared key: replayed= False same result= False upstream calls= 2
+.[2m2026-11-18T10:34:06.034047Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mconfig[0m
+[2m2026-11-18T10:34:06.035412Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mtool-gateway[0m
+[2m2026-11-18T10:34:06.044122Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mdata[0m [36mservice[0m=[35mtool-gateway[0m [36mversion[0m=[35m0.1.0[0m
+[2m2026-11-18T10:34:06.045040Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mcontrol[0m [36mservice[0m=[35mconfig[0m [36mversion[0m=[35m0.1.0[0m
+billing-only key invoking support tool: 403 None
+.[2m2026-11-18T10:34:06.541789Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mconfig[0m
+[2m2026-11-18T10:34:06.543101Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mtool-gateway[0m
+[2m2026-11-18T10:34:06.553800Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mdata[0m [36mservice[0m=[35mtool-gateway[0m [36mversion[0m=[35m0.1.0[0m
+[2m2026-11-18T10:34:06.554639Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mcontrol[0m [36mservice[0m=[35mconfig[0m [36mversion[0m=[35m0.1.0[0m
+pack write risk without approval: 403 None upstream calls: 0
+.[2m2026-11-18T10:34:07.204537Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mconfig[0m
+[2m2026-11-18T10:34:07.205664Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mtool-gateway[0m
+
+=============================== warnings summary ===============================
+docs/qa/reproductions/phase3_tool_cases.py::test_idempotency_results_must_be_scoped_to_the_caller
+  /home/arun/Documents/Nexiqon/Nexiqon/libs/nexiqon-core/src/nexiqon_core/pytest_plugin.py:52: DeprecationWarning: testcontainers.postgres is deprecated, use testcontainers.community.postgres instead
+    from testcontainers.postgres import PostgresContainer
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+3 passed, 1 warning in 4.43s

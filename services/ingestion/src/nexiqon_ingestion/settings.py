@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 
 from nexiqon_core.blobs import BlobSettings
 from nexiqon_core.fetch import FetchPolicy
@@ -26,6 +26,10 @@ class ServiceSettings(CoreSettings):
     worker_max_cached_workflows: int = 1000
     scratch_dir: Path = Path("/tmp/nexiqon-ingestion")  # noqa: S108 - per-run subdirectories
     max_upload_bytes: int = 50 * 1024 * 1024
+    # Signs download links (RT-06). Set the same key on every replica; when unset, each process
+    # makes its own, so links only work on the replica that issued them (fine for one instance).
+    download_signing_key: SecretStr | None = None
+    download_link_seconds: int = 300
     max_items_per_sync: int = 5000
     embed_batch_size: int = 64
     concurrency: int = 4

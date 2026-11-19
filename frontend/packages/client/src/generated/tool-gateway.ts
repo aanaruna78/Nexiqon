@@ -169,6 +169,7 @@ export interface paths {
         /**
          * Describe
          * @description What a caller (and a model choosing arguments) may know: description, input schema, risk.
+         *     With ``agent``: the risk and confirmation that actually apply for that assistant.
          */
         get: operations["describe_v1_tools__name__get"];
         put?: never;
@@ -697,7 +698,9 @@ export interface operations {
     };
     describe_v1_tools__name__get: {
         parameters: {
-            query?: never;
+            query?: {
+                agent?: string | null;
+            };
             header?: never;
             path: {
                 name: string;

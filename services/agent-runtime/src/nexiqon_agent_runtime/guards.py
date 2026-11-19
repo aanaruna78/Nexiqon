@@ -111,3 +111,64 @@ def check_output(text: str, *, allowed_urls: Iterable[str], system_prompt: str) 
     prompt = _shingles(system_prompt)
     leaked = bool(prompt) and len(prompt & _shingles(out)) >= 2
     return OutputCheck(text=re.sub(r"[ \t]{2,}", " ", out).strip(), removed=removed, leaked=leaked)
+
+
+class StreamGuard:
+    """Releases streamed answer text only once it is safe to (QA3-05).
+
+    The last ``holdback`` words, and anything after an unfinished link, image or tag, stay buffered.
+    What is released has already been through the output guard (images, unknown links and HTML
+    removed). As soon as the text starts repeating the system prompt, even one ``size``-word run of
+    it, nothing more is released. Whatever was held back never reaches the caller, and the final
+    checked answer replaces the stream."""
+
+    def __init__(
+        self, system_prompt: str, allowed_urls: Iterable[str], holdback: int = 8, size: int = 8
+    ) -> None:
+        # holdback >= size: when the size-th word of a system-prompt run arrives (and streaming
+        # stops), none of that run has been released yet.
+        self._prompt = _shingles(system_prompt, size)
+        self._size = size
+        self._allowed = list(allowed_urls)
+        self._holdback = holdback
+        self._raw = ""
+        self._sent = ""
+        self.stopped = False
+
+    def _leaking(self) -> bool:
+        return bool(self._prompt) and bool(self._prompt & _shingles(self._raw, self._size))
+
+    def _cut(self) -> int:
+        """End of the text that may be released now: whole words, outside the hold-back window
+        and before any construct still open."""
+        starts = [m.start() for m in re.finditer(r"\S+", self._raw)]
+        if len(starts) <= self._holdback:
+            return 0
+        cut = starts[-self._holdback]
+        head = self._raw[:cut]
+        opened = max(head.rfind("["), head.rfind("<"), head.rfind("!"))
+        if opened >= 0 and not re.search(r"[)>\]]", head[opened:]):
+            cut = opened
+        return cut
+
+    def _release(self, upto: int) -> str:
+        safe = check_output(self._raw[:upto], allowed_urls=self._allowed, system_prompt="").text
+        if not safe.startswith(self._sent):
+            return ""  # an earlier piece would change: wait for the final answer instead
+        new, self._sent = safe[len(self._sent) :], safe
+        return new
+
+    def feed(self, piece: str) -> str:
+        if self.stopped:
+            return ""
+        self._raw += piece
+        if self._leaking():
+            self.stopped = True
+            return ""
+        return self._release(self._cut())
+
+    def finish(self) -> str:
+        if self.stopped or self._leaking():
+            self.stopped = True
+            return ""
+        return self._release(len(self._raw))

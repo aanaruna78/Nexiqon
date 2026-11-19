@@ -283,6 +283,20 @@ def test_key_role_and_origin_rules(env: Env) -> None:
     visitor = "v" * 30
     ctx = env.ctx(env.context(widget, origin="https://docs.a.test", visitor=visitor))
     assert (ctx.actor_type, ctx.roles) == ("widget", frozenset({"end_user"}))
+    assert ctx.agents is None  # not restricted to particular assistants
+    limited = env.client.post(
+        "/v1/api-keys",
+        json={
+            "name": "w2",
+            "kind": "widget",
+            "allowed_origins": ["https://docs.a.test"],
+            "agent_ids": ["support"],
+        },
+        headers=h(owner),
+    ).json()["secret"]
+    assert env.ctx(
+        env.context(limited, origin="https://docs.a.test", visitor=visitor)
+    ).agents == frozenset({"support"})
     # Each website visitor is a separate actor, so visitors never share conversations.
     other = env.ctx(env.context(widget, origin="https://docs.a.test", visitor="w" * 30))
     assert ctx.actor_id.endswith(visitor)

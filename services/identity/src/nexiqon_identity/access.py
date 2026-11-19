@@ -260,6 +260,7 @@ class AccessService:
                 actor_type="widget" if key.kind == "widget" else "api_key",
                 roles=frozenset(roles),
                 region=tenant.region,
+                agents=frozenset(key.agent_ids) if key.agent_ids else None,
             )
             ttl = float(self.policy.cache_seconds)
             if key.expires_at is not None:

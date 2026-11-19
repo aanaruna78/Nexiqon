@@ -13,3 +13,10 @@ One trust model across providers and services.
 ## Consequences
 
 - nexiqon_core.tenancy implements issuer/verifier; tests cover expiry, audience, forged keys and unsigned tokens.
+
+## Amendment (2026-11-18): assistant restrictions
+
+API and widget keys may be limited to particular assistants (`agent_ids`). Identity then adds an
+`agt` claim (the allowed agent names) to the context token. agent-runtime, conversation and channel
+refuse any other assistant (`TenantContext.require_agent`). Tokens without the claim are not
+restricted. Service tokens may never carry it.

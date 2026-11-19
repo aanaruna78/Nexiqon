@@ -6,7 +6,7 @@ import hashlib
 import re
 import uuid
 from contextlib import suppress
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Query, Request, Response
@@ -19,6 +19,7 @@ from nexiqon_core.blobs import tenant_key
 from nexiqon_core.errors import BadRequest, Conflict, NexiqonError, NotFound, ServiceUnavailable
 from nexiqon_core.tenancy import TenantContext, require_current_context
 from nexiqon_core.workflows import TenantScope, workflow_id
+from nexiqon_ingestion.downloads import DownloadSigner
 from nexiqon_ingestion.models import Collection, Document, Run, Source
 from nexiqon_ingestion.pipeline import Pipeline
 from nexiqon_sdk import Manifest, PluginKind, Registry
@@ -404,6 +405,32 @@ async def _schedule(request: Request, ctx: TenantContext, source: SourceOut) -> 
     )
 
 
+class SourcePatch(BaseModel):
+    config: dict[str, Any]
+
+
+@tenant_router.patch("/sources/{source_id}", response_model=SourceOut)
+async def update_source(
+    source_id: uuid.UUID, body: SourcePatch, request: Request, ctx: Ctx
+) -> SourceOut:
+    """Change a source's settings (e.g. edit Q&A snippets); the next sync applies them."""
+    await _allow(request, "ingestion.sources.write", "source")
+    registry: Registry = request.app.state.registry
+    async with _pipeline(request).d.db.session(ctx) as s:
+        src = await s.get(Source, source_id)
+        if src is None:
+            raise NotFound("Source not found")
+        errors = registry.validate_config(PluginKind.CONNECTOR, src.connector, body.config)
+        if errors:
+            problem = BadRequest("Connector configuration is invalid")
+            problem.errors = [{"message": e} for e in errors]
+            raise problem
+        src.config = body.config
+        await s.flush()
+        await s.refresh(src)
+        return _source_out(src)
+
+
 @tenant_router.get("/collections/{collection_id}/sources", response_model=list[SourceOut])
 async def list_sources(collection_id: uuid.UUID, request: Request, ctx: Ctx) -> list[SourceOut]:
     await _allow(request, "ingestion.sources.read", "source")
@@ -647,6 +674,58 @@ async def get_document(document_id: uuid.UUID, request: Request, ctx: Ctx) -> Do
     except NotFound:
         raise NotFound("Document not found") from None
     return _doc_out(doc)
+
+
+class DownloadLink(BaseModel):
+    url: str
+    expires_at: datetime
+
+
+@tenant_router.post("/documents/{document_id}/download-link", response_model=DownloadLink)
+async def download_link(document_id: uuid.UUID, request: Request, ctx: Ctx) -> DownloadLink:
+    """A short-lived link to the original file, for the caller only (RT-06)."""
+    await _allow(request, "ingestion.documents.read", "document", document_id)
+    doc = await _downloadable(request, ctx, document_id)
+    signer: DownloadSigner = request.app.state.downloads
+    token, expires = signer.sign(ctx.tenant_id, doc.id, doc.version, ctx.actor_id)
+    return DownloadLink(
+        url=f"/ingestion/v1/downloads/{token}", expires_at=datetime.fromtimestamp(expires, UTC)
+    )
+
+
+async def _downloadable(request: Request, ctx: TenantContext, document_id: uuid.UUID) -> Document:
+    async with _pipeline(request).d.db.session(ctx) as s:
+        doc = await s.get(Document, document_id)
+    if doc is None or doc.status in ("deleted", "quarantined") or doc.blob_key is None:
+        raise NotFound("Document not found")
+    try:
+        await _get_collection(request, ctx, doc.collection_id)
+    except NotFound:
+        raise NotFound("Document not found") from None
+    return doc
+
+
+@tenant_router.get("/downloads/{token}")
+async def download(token: str, request: Request, ctx: Ctx) -> Response:
+    """Follow a download link: only its own person, in its own tenant, before it expires, and
+    only while the file is still the version it was issued for and still visible to them."""
+    await _allow(request, "ingestion.documents.read", "document")
+    signer: DownloadSigner = request.app.state.downloads
+    grant = signer.verify(token, ctx.tenant_id, ctx.actor_id)
+    doc = await _downloadable(request, ctx, grant.document)
+    if doc.version != grant.version:
+        raise NotFound("This file has changed; open it again from its document")
+    data = await _pipeline(request).d.blobs.get(str(doc.blob_key))
+    name = (doc.uri.rsplit("/", 1)[-1] or "document").replace('"', "")[:200]
+    return Response(
+        content=data,
+        media_type=doc.media_type or "application/octet-stream",
+        headers={
+            "content-disposition": f'attachment; filename="{name}"',
+            "x-content-type-options": "nosniff",
+            "cache-control": "private, no-store",
+        },
+    )
 
 
 @tenant_router.delete("/documents/{document_id}", status_code=204)

@@ -181,6 +181,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{document_id}/download-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Download Link
+         * @description A short-lived link to the original file, for the caller only (RT-06).
+         */
+        post: operations["download_link_v1_documents__document_id__download_link_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/downloads/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download
+         * @description Follow a download link: only its own person, in its own tenant, before it expires, and
+         *     only while the file is still the version it was issued for and still visible to them.
+         */
+        get: operations["download_v1_downloads__token__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/plugins": {
         parameters: {
             query?: never;
@@ -235,7 +276,11 @@ export interface paths {
         delete: operations["delete_source_v1_sources__source_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update Source
+         * @description Change a source's settings (e.g. edit Q&A snippets); the next sync applies them.
+         */
+        patch: operations["update_source_v1_sources__source_id__patch"];
         trace?: never;
     };
     "/v1/sources/{source_id}/sync": {
@@ -395,6 +440,16 @@ export interface components {
             /** Version */
             version: number;
         };
+        /** DownloadLink */
+        DownloadLink: {
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Url */
+            url: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -531,6 +586,13 @@ export interface components {
             schedule_hours: number | null;
             /** Status */
             status: string;
+        };
+        /** SourcePatch */
+        SourcePatch: {
+            /** Config */
+            config: {
+                [key: string]: unknown;
+            };
         };
         /** UploadOut */
         UploadOut: {
@@ -1010,6 +1072,68 @@ export interface operations {
             };
         };
     };
+    download_link_v1_documents__document_id__download_link_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DownloadLink"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_v1_downloads__token__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     plugins_v1_plugins_get: {
         parameters: {
             query?: {
@@ -1089,6 +1213,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_source_v1_sources__source_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SourcePatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceOut"];
+                };
             };
             /** @description Validation Error */
             422: {

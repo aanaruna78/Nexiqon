@@ -8,6 +8,7 @@ import pytest
 from sqlalchemy import select
 
 from nexiqon_core.db import TenantSessionFactory, create_engine
+from nexiqon_core.tenancy import CONTEXT_HEADER, TenantContext
 from nexiqon_ingestion.models import Outbox
 from nexiqon_ingestion.testing import EICAR
 
@@ -401,3 +402,70 @@ async def test_qa2_04_collections_with_access_groups_are_hidden_from_other_membe
     assert [x["name"] for x in (await s.api.get("/v1/collections", headers=editor)).json()] == [
         "legal"
     ]
+
+
+async def test_qa_snippets_sync_as_small_documents_and_follow_edits(stack: Stack) -> None:
+    """RT-04: reviewed Q&A pairs become snippet:// documents; edits re-index only what changed."""
+    s = stack
+    snippets = [
+        {"question": "How long are backups kept?", "answer": "Backups are kept for 35 days."},
+        {"question": "Can I restore a single file?", "answer": "Yes, from the Restore page."},
+        {"question": "Where do I change my password?", "answer": "Under Settings, then Security."},
+    ]
+    c = await s.collection()
+    src = await s.ok(
+        "POST",
+        f"/v1/collections/{c['id']}/sources",
+        201,
+        json={"name": "answers", "connector": "snippets", "config": {"snippets": snippets}},
+    )
+    first = await s.wait(await s.ok("POST", f"/v1/sources/{src['id']}/sync", 202))
+    assert (first["status"], first["processed"]) == ("completed", 3)
+    docs = await s.ok("GET", f"/v1/collections/{c['id']}/documents")
+    assert all(d["uri"].startswith("snippet://") for d in docs)
+    assert {d["title"] for d in docs} == {x["question"] for x in snippets}
+
+    edited = [{**snippets[0], "answer": "Backups are kept for 90 days."}, snippets[1]]
+    await s.ok("PATCH", f"/v1/sources/{src['id']}", json={"config": {"snippets": edited}})
+    second = await s.wait(await s.ok("POST", f"/v1/sources/{src['id']}/sync", 202))
+    assert (second["processed"], second["unchanged"], second["deleted"]) == (1, 1, 1)
+    await s.ok(
+        "PATCH", f"/v1/sources/{src['id']}", 400, json={"config": {"snippets": [{"question": "?"}]}}
+    )
+
+
+async def test_download_links_are_personal_tenant_bound_and_short_lived(stack: Stack) -> None:
+    """RT-06: a link works for its own person in its own tenant, and nowhere else."""
+    s = stack
+    c = await s.collection(name="legal", acl_groups=["legal"])
+    up = await s.upload(c["id"], "terms.md", b"# Terms\n\nBe kind.", "text/markdown")
+    await s.wait(await s.ok("GET", f"/v1/runs/{up['run_id']}"))
+    doc = up["document"]["id"]
+
+    def as_(
+        tenant: str = "a", actor: str = "u-1", groups: tuple[str, ...] = ("legal",)
+    ) -> dict[str, str]:
+        t = (s.tenants.a if tenant == "a" else s.tenants.b).context.tenant_id
+        ctx = TenantContext(t, actor, "user", frozenset({"member"}), frozenset(groups))
+        return {CONTEXT_HEADER: s.tenants.issuer.issue(ctx)}
+
+    link = await s.ok("POST", f"/v1/documents/{doc}/download-link", headers=as_())
+    path = link["url"].removeprefix("/ingestion")
+    got = await s.api.get(path, headers=as_())
+    assert got.status_code == 200
+    assert got.content == b"# Terms\n\nBe kind."
+    assert got.headers["content-disposition"] == 'attachment; filename="terms.md"'
+    assert got.headers["x-content-type-options"] == "nosniff"
+    assert (await s.api.get(path, headers=as_(tenant="b"))).status_code == 404  # cross-tenant
+    assert (await s.api.get(path, headers=as_(actor="u-2"))).status_code == 404  # someone else
+    tampered = path[:-3] + ("AAA" if not path.endswith("AAA") else "BBB")
+    assert (await s.api.get(tampered, headers=as_())).status_code == 404
+    # Outside the collection's access groups there is no link to be had.
+    outsider = await s.api.post(
+        f"/v1/documents/{doc}/download-link", headers=as_(groups=("sales",))
+    )
+    assert outsider.status_code == 404
+    # Links expire.
+    s.app.state.downloads.ttl = -1
+    expired = (await s.ok("POST", f"/v1/documents/{doc}/download-link", headers=as_()))["url"]
+    assert (await s.api.get(expired.removeprefix("/ingestion"), headers=as_())).status_code == 403

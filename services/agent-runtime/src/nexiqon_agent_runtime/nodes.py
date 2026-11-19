@@ -18,6 +18,7 @@ from langgraph.types import interrupt
 
 from nexiqon_agent_runtime.clients import Models, Retrieval, Tools
 from nexiqon_agent_runtime.guards import (
+    StreamGuard,
     blocked_topic,
     check_output,
     flags_instructions,
@@ -68,6 +69,13 @@ STOP = frozenset(
     ]
 )
 LEVELS = ("public", "internal", "confidential", "restricted")
+
+
+def with_history(state: AgentState, *levels: str) -> str:
+    """The label for a model call that includes the conversation so far: at least as strict as
+    anything the assistant has already said on this thread (QA3-04). The thread's label is kept
+    by the runtime in its checkpoint, never taken from the caller."""
+    return strictest("internal", str(state.get("history_label") or "internal"), *levels)
 
 
 def strictest(*levels: str) -> str:
@@ -328,8 +336,10 @@ def retrieve(node: NodeSpec, run: RunContext) -> Node:
                 "collection_ids": run.collection_ids,
                 "model_profile": run.model_profile,
                 "retrieval_profile": run.retrieval_profile,
+                "explain_access": bool(run.extra.get("diagnostics")),
                 **({"top_k": int(node.config["top_k"])} if "top_k" in node.config else {}),
             },
+            diagnostics=run.extra.get("diagnostics"),
         )
         keep = (
             "id",
@@ -362,6 +372,7 @@ def retrieve(node: NodeSpec, run: RunContext) -> Node:
                 None,
                 passages=len(passages),
                 evidence=found.get("evidence_score"),
+                hidden_by_access=found.get("hidden"),
                 sources=[
                     {
                         "citation": p.get("citation"),
@@ -403,7 +414,7 @@ async def extract_arguments(
     history = [m for m in state.get("history", [])[-4:] if m.get("role") in ("user", "assistant")]
     reply = await run.chat(
         profile=run.model_profile,
-        classification="internal",
+        classification=with_history(state),
         messages=[
             {
                 "role": "system",
@@ -446,7 +457,7 @@ def call_tool(node: NodeSpec, run: RunContext) -> Node:
                 conversation_id=run.thread_id,
             )
         else:
-            described = await run.tools.describe(run.token, name)
+            described = await run.tools.describe(run.token, name, agent)
             if described is None:
                 result = {
                     "ok": False,
@@ -599,7 +610,11 @@ def approve(node: NodeSpec, run: RunContext) -> Node:
         )
         tools = [str(t) for t in intent.get("tools") or []]
         name = tools[0] if tools else None
-        described = await run.tools.describe(run.token, name) if name else None
+        described = (
+            await run.tools.describe(run.token, name, str(run.agent.get("agent") or ""))
+            if name
+            else None
+        )
         pending: dict[str, Any] = {"kind": "approval", "tools": tools}
         if described is not None and name:
             arguments = await extract_arguments(run, state, described)
@@ -685,6 +700,7 @@ async def _generate(
     classification: str,
     messages: list[dict[str, str]],
     max_tokens: int,
+    allowed_urls: list[str] | None = None,
 ) -> tuple[str, Any]:
     """The answer text and the model route; streamed piece by piece when the caller streams."""
     if run.emit is None:
@@ -698,6 +714,8 @@ async def _generate(
     run.send("status", stage="writing")
     parts: list[str] = []
     route_: Any = None
+    system = next((m["content"] for m in messages if m["role"] == "system"), "")
+    guard = StreamGuard(system, allowed_urls or [])
     async for piece in run.models.chat_stream(
         run.token,
         profile=run.model_profile,
@@ -711,7 +729,10 @@ async def _generate(
             run.track(piece)
         elif piece.get("text"):
             parts.append(str(piece["text"]))
-            run.send("delta", text=piece["text"])
+            if safe := guard.feed(str(piece["text"])):
+                run.send("delta", text=safe)
+    if tail := guard.finish():
+        run.send("delta", text=tail)
     return "".join(parts).strip(), route_
 
 
@@ -758,9 +779,10 @@ def respond(node: NodeSpec, run: RunContext) -> Node:
                 "kind": "declined",
             }
         elif state.get("route") == "smalltalk":
+            label = with_history(state)
             text, model = await _generate(
                 run,
-                classification="internal",
+                classification=label,
                 messages=[
                     {"role": "system", "content": system},
                     *history,
@@ -775,6 +797,7 @@ def respond(node: NodeSpec, run: RunContext) -> Node:
                 "abstained": safe is None,
                 "kind": "smalltalk" if safe is not None else "withheld",
                 "model": model,
+                "classification": label,
             }
         else:
             sources: list[dict[str, Any]] = list(state.get("passages") or [])
@@ -797,7 +820,9 @@ def respond(node: NodeSpec, run: RunContext) -> Node:
                     "kind": "unavailable",
                 }
             else:
-                label = strictest(*(str(s.get("classification") or "internal") for s in sources))
+                label = with_history(
+                    state, *(str(s.get("classification") or "internal") for s in sources)
+                )
                 prompt, neutralised = _sources_prompt(question, sources)
                 text, model = await _generate(
                     run,
@@ -808,6 +833,7 @@ def respond(node: NodeSpec, run: RunContext) -> Node:
                         {"role": "user", "content": prompt},
                     ],
                     max_tokens=max_tokens,
+                    allowed_urls=[str(s.get("source_uri") or "") for s in sources],
                 )
                 safe, guard = _guarded(text, system, sources, locale)
                 if safe is None:
@@ -820,10 +846,14 @@ def respond(node: NodeSpec, run: RunContext) -> Node:
                 else:
                     answer = await _verified(run, safe, sources)
                 answer["model"] = model
+                answer["classification"] = label
             failed = failed + 1 if answer.get("abstained") else 0
+        # What the assistant said now joins the history later calls carry: remember its label.
+        said = str(answer.get("classification") or "internal")
         return {
             "answer": answer,
             "failed_turns": failed,
+            "history_label": strictest(str(state.get("history_label") or "internal"), said),
             "outcome": "done",
             "steps": _step(
                 state,
@@ -933,8 +963,8 @@ def escalate(node: NodeSpec, run: RunContext) -> Node:
         if prompt:
             reply = await run.chat(
                 profile=run.model_profile,
-                classification=strictest(
-                    "internal",
+                classification=with_history(
+                    state,
                     *(
                         str(p.get("classification") or "internal")
                         for p in state.get("passages") or []
@@ -956,7 +986,11 @@ def escalate(node: NodeSpec, run: RunContext) -> Node:
             "kind": "handoff",
         }
         tool_name = run.escalation.get("handoff_tool")
-        described = await run.tools.describe(run.token, str(tool_name)) if tool_name else None
+        described = (
+            await run.tools.describe(run.token, str(tool_name), str(run.agent.get("agent") or ""))
+            if tool_name
+            else None
+        )
         if described is not None:
             arguments = handoff_arguments(
                 described.get("input_schema") or {}, summary, state.get("question", "")

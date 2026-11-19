@@ -1,0 +1,118 @@
+[2m2026-11-18T09:50:50.243112Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mdata[0m [36mservice[0m=[35mtool-gateway[0m [36mversion[0m=[35m0.1.0[0m
+[2m2026-11-18T09:50:50.244396Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mcontrol[0m [36mservice[0m=[35mconfig[0m [36mversion[0m=[35m0.1.0[0m
+different callers shared key: replayed= True same result= True upstream calls= 1
+F[2m2026-11-18T09:50:51.073041Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mconfig[0m
+[2m2026-11-18T09:50:51.074211Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mtool-gateway[0m
+[2m2026-11-18T09:50:51.089294Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mdata[0m [36mservice[0m=[35mtool-gateway[0m [36mversion[0m=[35m0.1.0[0m
+[2m2026-11-18T09:50:51.091106Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mcontrol[0m [36mservice[0m=[35mconfig[0m [36mversion[0m=[35m0.1.0[0m
+billing-only key invoking support tool: 200 True
+F[2m2026-11-18T09:50:51.882493Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mconfig[0m
+[2m2026-11-18T09:50:51.885559Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mtool-gateway[0m
+[2m2026-11-18T09:50:51.892826Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mdata[0m [36mservice[0m=[35mtool-gateway[0m [36mversion[0m=[35m0.1.0[0m
+[2m2026-11-18T09:50:51.893458Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mcontrol[0m [36mservice[0m=[35mconfig[0m [36mversion[0m=[35m0.1.0[0m
+pack write risk without approval: 200 True upstream calls: 1
+F[2m2026-11-18T09:50:52.856926Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mconfig[0m
+[2m2026-11-18T09:50:52.859424Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mtool-gateway[0m
+
+=================================== FAILURES ===================================
+____________ test_idempotency_results_must_be_scoped_to_the_caller _____________
+
+stack = Stack(client=<starlette.testclient.TestClient object at 0x79afdf5d1c10>, config=<starlette.testclient.TestClient objec...s.MemorySecrets object at 0x79afdf84b050>, db_url='postgresql+asyncpg://nexiqon_app:app-password@localhost:32813/test')
+
+    def test_idempotency_results_must_be_scoped_to_the_caller(stack):
+        a = stack.invoke(
+            "account-lookup",
+            headers=stack.headers(actor="customer-a"),
+            key="shared-request-id",
+        )
+        b = stack.invoke(
+            "account-lookup",
+            headers=stack.headers(actor="customer-b"),
+            key="shared-request-id",
+        )
+        print(
+            "different callers shared key: replayed=",
+            b["replayed"],
+            "same result=",
+            a["result"] == b["result"],
+            "upstream calls=",
+            len(stack.upstream.requests),
+        )
+>       assert not b["replayed"], "Customer B received customer A account response"
+E       AssertionError: Customer B received customer A account response
+E       assert not True
+
+docs/qa/reproductions/phase3_tool_cases.py:29: AssertionError
+____ test_agent_restricted_key_must_not_invoke_a_different_assistants_tools ____
+
+stack = Stack(client=<starlette.testclient.TestClient object at 0x79afdd3eb170>, config=<starlette.testclient.TestClient objec...s.MemorySecrets object at 0x79afdf5d3ec0>, db_url='postgresql+asyncpg://nexiqon_app:app-password@localhost:32813/test')
+
+    def test_agent_restricted_key_must_not_invoke_a_different_assistants_tools(stack):
+        ctx = TenantContext(
+            stack.tenants.a.context.tenant_id,
+            "key:restricted",
+            "api_key",
+            frozenset({"end_user"}),
+            agents=frozenset({"billing"}),
+        )
+        headers = {CONTEXT_HEADER: stack.tenants.issuer.issue(ctx)}
+        r = stack.client.post(
+            "/v1/tools/account-lookup/invoke",
+            json={"agent": "support", "arguments": {}},
+            headers=headers,
+        )
+        print("billing-only key invoking support tool:", r.status_code, r.json().get("ok"))
+>       assert r.status_code == 403
+E       assert 200 == 403
+E        +  where 200 = <Response [200 OK]>.status_code
+
+docs/qa/reproductions/phase3_tool_cases.py:47: AssertionError
+____________ test_pack_raised_write_risk_must_require_confirmation _____________
+
+stack = Stack(client=<starlette.testclient.TestClient object at 0x79afdc180800>, config=<starlette.testclient.TestClient objec...s.MemorySecrets object at 0x79afdd3e9400>, db_url='postgresql+asyncpg://nexiqon_app:app-password@localhost:32813/test')
+
+    def test_pack_raised_write_risk_must_require_confirmation(stack):
+        fixture = importlib.import_module("services.tool-gateway.tests.conftest")
+        spec = {**fixture.CASE_TOOL, "risk_level": "read", "confirmation": "never"}
+        stack.deploy("tool", "create-ticket", spec)
+        stack.deploy(
+            "agent",
+            "ticket-desk",
+            {
+                "pack": {"name": "saas-knowledge-assistant"},
+                "display_name": "QA desk",
+                "tools": ["create-ticket"],
+            },
+        )
+        r = stack.client.post(
+            "/v1/tools/create-ticket/invoke",
+            json={
+                "agent": "ticket-desk",
+                "arguments": {"subject": "QA synthetic case"},
+                "idempotency_key": "qa-effective-risk",
+            },
+            headers=stack.headers(),
+        )
+        print(
+            "pack write risk without approval:",
+            r.status_code,
+            r.json().get("ok"),
+            "upstream calls:",
+            len(stack.upstream.requests),
+        )
+>       assert r.status_code == 403
+E       assert 200 == 403
+E        +  where 200 = <Response [200 OK]>.status_code
+
+docs/qa/reproductions/phase3_tool_cases.py:79: AssertionError
+=============================== warnings summary ===============================
+docs/qa/reproductions/phase3_tool_cases.py::test_idempotency_results_must_be_scoped_to_the_caller
+  /home/arun/Documents/Nexiqon/Nexiqon/libs/nexiqon-core/src/nexiqon_core/pytest_plugin.py:52: DeprecationWarning: testcontainers.postgres is deprecated, use testcontainers.community.postgres instead
+    from testcontainers.postgres import PostgresContainer
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED docs/qa/reproductions/phase3_tool_cases.py::test_idempotency_results_must_be_scoped_to_the_caller
+FAILED docs/qa/reproductions/phase3_tool_cases.py::test_agent_restricted_key_must_not_invoke_a_different_assistants_tools
+FAILED docs/qa/reproductions/phase3_tool_cases.py::test_pack_raised_write_risk_must_require_confirmation
+3 failed, 1 warning in 5.29s

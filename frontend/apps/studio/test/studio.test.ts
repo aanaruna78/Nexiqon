@@ -5,6 +5,7 @@ import Ajv2020 from "ajv/dist/2020";
 import addFormats from "ajv-formats";
 import { describe, expect, it } from "vitest";
 
+import { turnFromRun } from "@/components/assistants/test-chat";
 import { blankPack } from "@/components/packs/templates";
 import {
   activePath,
@@ -60,6 +61,12 @@ describe("Answer Inspector explanations", () => {
       result: { handoff: { reason: "unresolved" } },
     });
     expect(explainRun(weak).map((w) => w.key)).toEqual(["routedByModel", "noSources", "weakEvidence", "handedOver"]);
+  });
+
+  it("says how many sources access rules hid, as a count only", () => {
+    const t = trace();
+    t.steps[1] = { ...t.steps[1], hidden_by_access: 2 };
+    expect(explainRun(t).find((w) => w.key === "hiddenByAccess")?.values).toEqual({ count: 2 });
   });
 
   it("marks the path a run took", () => {
@@ -140,5 +147,19 @@ describe("models and data flow", () => {
   it("parses server-sent events", () => {
     expect(sseBlock('event: delta\ndata: {"text":"Hi"}')).toEqual({ event: "delta", data: { text: "Hi" } });
     expect(sseBlock(": keep-alive")).toBeNull();
+  });
+});
+
+describe("trying a draft", () => {
+  it("shows a run like a stored conversation turn", () => {
+    const base = { run_id: "r", handoff: null, error: null };
+    const answered = turnFromRun({ ...base, status: "completed", answer: { text: "Hi [1]", kind: "grounded", citations: [{ marker: "1", citation: "Guide" }] }, interrupt: null }, "preview-1");
+    expect(answered.conversation).toEqual({ id: "preview-1", status: "active" });
+    expect(answered.reply?.contract?.citations?.[0].citation).toBe("Guide");
+    const asks = turnFromRun({ ...base, status: "interrupted", answer: null, interrupt: { kind: "approval", prompt: "Go ahead?" } }, "p");
+    expect(asks.conversation.status).toBe("awaiting_approval");
+    expect(asks.reply?.content).toBe("Go ahead?");
+    const handed = turnFromRun({ ...base, status: "completed", answer: { text: "Passing on", kind: "handoff" }, interrupt: null, handoff: { reason: "user_request" } }, "p");
+    expect(handed.conversation.status).toBe("escalated");
   });
 });

@@ -18,7 +18,7 @@ export function isSameOrigin(request: Request, baseUrl: string): boolean {
 }
 
 const FORWARD_REQUEST_HEADERS = ["content-type", "accept", "if-none-match", "accept-language"];
-const FORWARD_RESPONSE_HEADERS = ["content-type", "etag", "cache-control"];
+const FORWARD_RESPONSE_HEADERS = ["content-type", "etag", "cache-control", "content-disposition", "x-content-type-options"];
 
 export async function forward(
   request: Request,

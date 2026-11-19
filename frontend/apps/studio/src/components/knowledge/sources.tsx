@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CalendarClock, Database, GitBranch, Globe, type LucideIcon, Plug, Play, Plus, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, CalendarClock, Database, GitBranch, Globe, type LucideIcon, MessageSquareQuote, Pencil, Plug, Play, Plus, Trash2, Upload } from "lucide-react";
 import { useFormatter, useNow, useTranslations } from "next-intl";
 import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
@@ -39,6 +39,7 @@ const ICONS: Record<string, [LucideIcon, Tone]> = {
   bucket: [Database, "amber"],
   git: [GitBranch, "violet"],
   upload: [Upload, "teal"],
+  "message-square-quote": [MessageSquareQuote, "rose"],
 };
 
 export function connectorVisual(icon: string | null): [LucideIcon, Tone] {
@@ -56,6 +57,7 @@ export function SourcesPanel({ collectionId, documents }: { collectionId: string
   const onError = useErrorToast();
   const [adding, setAdding] = useState(false);
   const [removing, setRemoving] = useState<Source | null>(null);
+  const [editing, setEditing] = useState<Source | null>(null);
   const refresh = () => {
     for (const key of ["sources", "runs", "documents", "collection"]) void queryClient.invalidateQueries({ queryKey: [key, collectionId] });
   };
@@ -128,6 +130,10 @@ export function SourcesPanel({ collectionId, documents }: { collectionId: string
                       {t("syncNow")}
                     </Button>
                   </Hint>
+                  <Button size="sm" variant="ghost" onClick={() => setEditing(s)} aria-label={`${t("editSource")}: ${s.name}`} data-testid={`edit-source-${s.name}`}>
+                    <Pencil className="size-3.5" aria-hidden="true" />
+                    {t("editSource")}
+                  </Button>
                   <Button size="sm" variant="ghost" className="hover:text-destructive" onClick={() => setRemoving(s)} aria-label={`${tc("delete")}: ${s.name}`}>
                     <Trash2 className="size-3.5" aria-hidden="true" />
                     {tc("delete")}
@@ -139,6 +145,9 @@ export function SourcesPanel({ collectionId, documents }: { collectionId: string
         </ul>
       )}
       <AddSourceDialog collectionId={collectionId} open={adding} onOpenChange={setAdding} connectors={connectors.data ?? []} onAdded={refresh} />
+      {editing ? (
+        <EditSourceDialog key={editing.id} source={editing} manifest={manifest(editing.connector)} onClose={() => setEditing(null)} onSaved={refresh} />
+      ) : null}
       <AlertDialog open={!!removing} onOpenChange={(o) => !o && setRemoving(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -295,6 +304,54 @@ function AddSourceDialog({
             </DialogFooter>
           </form>
         )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Change a source's settings (for example its Q&A snippets), then sync so they apply. */
+function EditSourceDialog({ source, manifest, onClose, onSaved }: { source: Source; manifest?: PluginManifest; onClose: () => void; onSaved: () => void }) {
+  const t = useTranslations("knowledge");
+  const tc = useTranslations("common");
+  const onError = useErrorToast();
+  const [config, setConfig] = useState<Record<string, unknown>>(source.config);
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const schema = (manifest?.config_schema ?? { type: "object" }) as JsonSchema;
+  const save = useMutation({
+    mutationFn: async () => {
+      await api(`ingestion/v1/sources/${source.id}`, { method: "PATCH", json: { config } });
+      await api(`ingestion/v1/sources/${source.id}/sync`, { method: "POST" });
+    },
+    onSuccess: () => {
+      toast.success(t("sourceUpdated", { name: source.name }));
+      onSaved();
+      onClose();
+    },
+    onError: (error) => {
+      if (error instanceof ApiError && error.problem.errors) setErrors(problemErrors(error.problem.errors as { path?: string; message?: string }[]));
+      else onError(error);
+    },
+  });
+  function submit(e: FormEvent) {
+    e.preventDefault();
+    const found = validate(schema, config);
+    setErrors(found);
+    if (!Object.keys(found).length) save.mutate();
+  }
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <form onSubmit={submit} className="space-y-4">
+          <DialogHeader>
+            <DialogTitle>{t("editSourceTitle", { name: source.name })}</DialogTitle>
+            <DialogDescription>{manifest?.description}</DialogDescription>
+          </DialogHeader>
+          <SchemaForm schema={schema} value={config} onChange={setConfig} errors={errors} />
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>{tc("cancel")}</Button>
+            <Button type="submit" disabled={save.isPending} data-testid="save-source-settings">{t("saveAndSync")}</Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

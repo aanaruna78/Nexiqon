@@ -373,6 +373,25 @@
         "title": "DocumentOut",
         "type": "object"
       },
+      "DownloadLink": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "expires_at"
+        ],
+        "title": "DownloadLink",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -731,6 +750,20 @@
           "last_synced_at"
         ],
         "title": "SourceOut",
+        "type": "object"
+      },
+      "SourcePatch": {
+        "properties": {
+          "config": {
+            "additionalProperties": true,
+            "title": "Config",
+            "type": "object"
+          }
+        },
+        "required": [
+          "config"
+        ],
+        "title": "SourcePatch",
         "type": "object"
       },
       "UploadOut": {
@@ -1469,6 +1502,91 @@
         ]
       }
     },
+    "/v1/documents/{document_id}/download-link": {
+      "post": {
+        "description": "A short-lived link to the original file, for the caller only (RT-06).",
+        "operationId": "download_link_v1_documents__document_id__download_link_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DownloadLink"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Link",
+        "tags": [
+          "ingestion"
+        ]
+      }
+    },
+    "/v1/downloads/{token}": {
+      "get": {
+        "description": "Follow a download link: only its own person, in its own tenant, before it expires, and\nonly while the file is still the version it was issued for and still visible to them.",
+        "operationId": "download_v1_downloads__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download",
+        "tags": [
+          "ingestion"
+        ]
+      }
+    },
     "/v1/plugins": {
       "get": {
         "description": "Installed connectors, parsers and chunkers with their configuration schemas.",
@@ -1598,6 +1716,58 @@
           }
         },
         "summary": "Delete Source",
+        "tags": [
+          "ingestion"
+        ]
+      },
+      "patch": {
+        "description": "Change a source's settings (e.g. edit Q&A snippets); the next sync applies them.",
+        "operationId": "update_source_v1_sources__source_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "source_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Source Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourcePatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Source",
         "tags": [
           "ingestion"
         ]

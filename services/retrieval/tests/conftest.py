@@ -54,6 +54,7 @@ class SearchStack:
     service: ServiceTokens
     models: HashModelClient
     collection: uuid.UUID = field(default_factory=uuid.uuid4)
+    runtime: ServiceTokens | None = None  # agent-runtime's identity (diagnostics proof, QA3-06)
 
     def headers(
         self,
@@ -144,9 +145,15 @@ class SearchStack:
 def stack(search_db: PgUrls) -> Iterator[SearchStack]:
     tenants = TwoTenants.create(roles=frozenset({"member"}))
     private, public = make_keypair()
+    runtime_private, runtime_public = make_keypair()
     tokens = ContextTokenSettings(
-        public_keys={**tenants.settings.public_keys, "svc": public},
-        service_keys={"svc": "ingestion"},
+        public_keys={**tenants.settings.public_keys, "svc": public, "svc-ar": runtime_public},
+        service_keys={"svc": "ingestion", "svc-ar": "agent-runtime"},
+    )
+    runtime = ServiceTokens(
+        "agent-runtime",
+        tokens,
+        ServiceIdentitySettings(key_id="svc-ar", private_key=runtime_private),  # type: ignore[arg-type]
     )
     service = ServiceTokens(
         "ingestion", tokens, ServiceIdentitySettings(key_id="svc", private_key=private)
@@ -169,4 +176,4 @@ def stack(search_db: PgUrls) -> Iterator[SearchStack]:
         service_transport=httpx.ASGITransport(app=config_app),
     )
     with TestClient(app) as client:
-        yield SearchStack(client, tenants, service, models)
+        yield SearchStack(client, tenants, service, models, runtime=runtime)

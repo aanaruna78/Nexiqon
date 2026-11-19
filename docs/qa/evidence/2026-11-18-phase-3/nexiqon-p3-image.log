@@ -1,0 +1,241 @@
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon   2.57MB
+Step 1/19 : FROM ghcr.io/astral-sh/uv:0.13.0 AS uv
+ ---> cdc6093146eb
+Step 2/19 : FROM python:3.12.15-slim AS build
+ ---> a0f57064cbdc
+Step 3/19 : COPY --from=uv /uv /uvx /bin/
+ ---> Using cache
+ ---> 095bc078a1d2
+Step 4/19 : ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
+ ---> Using cache
+ ---> 56d3e3a1d1e1
+Step 5/19 : WORKDIR /app
+ ---> Using cache
+ ---> bd56f4ef7a62
+Step 6/19 : COPY pyproject.toml uv.lock .python-version ./
+ ---> 23175f18e372
+Step 7/19 : COPY libs libs
+ ---> 25e20ccc2301
+Step 8/19 : COPY services services
+ ---> 0a8010807d24
+Step 9/19 : RUN uv sync --frozen --no-dev --all-packages --no-editable     && rm -rf /root/.cache/uv
+ ---> Running in e861227a5d70
+[91mUsing CPython 3.12.15 interpreter at: /usr/local/bin/python3.12
+Creating virtual environment at: .venv
+[0m[91m   Building nexiqon-authz @ file:///app/services/authz
+[0m[91m   Building nexiqon-config @ file:///app/services/config
+[0m[91m   Building nexiqon-channel @ file:///app/services/channel
+   Building nexiqon-conversation @ file:///app/services/conversation
+[0m[91m   Building nexiqon-core @ file:///app/libs/nexiqon-core
+[0m[91m   Building nexiqon-evaluation @ file:///app/services/evaluation
+[0m[91m   Building nexiqon-identity @ file:///app/services/identity
+[0m[91m   Building nexiqon-governance @ file:///app/services/governance
+[0m[91m   Building nexiqon-metering @ file:///app/services/metering
+[0m[91m   Building nexiqon-ingestion @ file:///app/services/ingestion
+[0m[91m   Building nexiqon-model-gateway @ file:///app/services/model-gateway
+[0m[91m   Building nexiqon-notification @ file:///app/services/notification
+[0m[91m   Building nexiqon-retrieval @ file:///app/services/retrieval
+[0m[91m   Building nexiqon-sdk @ file:///app/libs/nexiqon-sdk
+[0m[91m   Building nexiqon-audit @ file:///app/services/audit
+[0m[91m   Building nexiqon-agent-runtime @ file:///app/services/agent-runtime
+[0m[91m   Building nexiqon-tool-gateway @ file:///app/services/tool-gateway
+[0m[91mDownloading uvloop (4.3MiB)
+[0m[91mDownloading pydantic-core (2.2MiB)
+[0m[91mDownloading cryptography (4.5MiB)
+[0m[91mDownloading sqlalchemy (4.5MiB)
+[0m[91mDownloading lxml (5.0MiB)
+[0m[91mDownloading grpcio (7.0MiB)
+[0m[91mDownloading zstandard (5.3MiB)
+[0m[91mDownloading temporalio (13.7MiB)
+[0m[91mDownloading asyncpg (3.6MiB)
+[0m[91m      Built nexiqon-evaluation @ file:///app/services/evaluation
+[0m[91m      Built nexiqon-config @ file:///app/services/config
+[0m[91m      Built nexiqon-identity @ file:///app/services/identity
+[0m[91m      Built nexiqon-agent-runtime @ file:///app/services/agent-runtime
+[0m[91m      Built nexiqon-core @ file:///app/libs/nexiqon-core
+[0m[91m      Built nexiqon-model-gateway @ file:///app/services/model-gateway
+[0m[91m      Built nexiqon-channel @ file:///app/services/channel
+[0m[91m      Built nexiqon-tool-gateway @ file:///app/services/tool-gateway
+[0m[91m      Built nexiqon-retrieval @ file:///app/services/retrieval
+[0m[91m      Built nexiqon-notification @ file:///app/services/notification
+[0m[91m      Built nexiqon-audit @ file:///app/services/audit
+[0m[91m      Built nexiqon-conversation @ file:///app/services/conversation
+[0m[91m      Built nexiqon-authz @ file:///app/services/authz
+[0m[91m      Built nexiqon-sdk @ file:///app/libs/nexiqon-sdk
+[0m[91m      Built nexiqon-governance @ file:///app/services/governance
+[0m[91m      Built nexiqon-metering @ file:///app/services/metering
+[0m[91m      Built nexiqon-ingestion @ file:///app/services/ingestion
+[0m[91m Downloaded pydantic-core
+[0m[91m Downloaded asyncpg
+[0m[91m Downloaded uvloop
+[0m[91m Downloaded cryptography
+[0m[91m Downloaded sqlalchemy
+[0m[91m Downloaded lxml
+[0m[91m Downloaded zstandard
+[0m[91m Downloaded grpcio
+[0m[91m Downloaded temporalio
+[0m[91mPrepared 122 packages in 13.57s
+[0m[91mInstalled 122 packages in 225ms
+[0m[91mBytecode compiled 3788 files in 1.21s
+[0m[91m + alembic==1.20.1
+ + annotated-doc==0.0.5
+ + annotated-types==0.8.0
+ + anyio==4.16.0
+ + asgiref==3.13.0
+ + asyncpg==0.32.0
+ + attrs==26.1.0
+ + beautifulsoup4==4.15.0
+ + cachebox==5.2.3
+ + cbor2==5.9.0
+ + certifi==2026.[0m[91m10.23
+ + cffi==2.1.1
+ + charset-normalizer==3.5.2
+ + click==8.5.1
+ + cryptography==50.0.2
+ + distro[0m[91m==1.9.0[0m[91m
+ + dnspython[0m[91m==2.[0m[91m9.2
+[0m[91m + email-validator==2.3[0m[91m.0
+ +[0m[91m fastapi==[0m[91m0.162[0m[91m.1
+[0m[91m [0m[91m+ googleapis-common-protos==1.76.0
+ + greenlet==3.5.6[0m[91m
+ + grpcio==1.85.1
+ + h11==0.16.0
+ + httpcore==1.0.9
+ [0m[91m+ httpcore2[0m[91m==2.[0m[91m16.0[0m[91m
+ + [0m[91mhttptools==[0m[91m0.9.[0m[91m0
+ [0m[91m+ [0m[91mhttpx[0m[91m==0[0m[91m.28.1[0m[91m
+ [0m[91m+[0m[91m httpx2[0m[91m==2.16.0[0m[91m
+ +[0m[91m idna==3.20
+ [0m[91m+ jsonpatch==1.37[0m[91m
+ + [0m[91mjsonpointer[0m[91m==3.5[0m[91m
+ + jsonschema[0m[91m==4.26.0
+ + [0m[91mjsonschema-specifications==2025.9.1[0m[91m
+ + [0m[91mlangchain-core==1.7.[0m[91m0
+ + [0m[91mlangchain-protocol==0[0m[91m.0.[0m[91m20
+ + [0m[91mlanggraph==1.[0m[91m2.17
+ [0m[91m+ langgraph-checkpoint[0m[91m==4.3.0
+ +[0m[91m langgraph-prebuilt==1.1[0m[91m.1
+ + [0m[91mlanggraph-sdk==0.4.9[0m[91m
+ + [0m[91mlangsmith==0.14.12
+ + lxml==6.1.3[0m[91m
+ + mako[0m[91m==1.4.3[0m[91m
+ + markdown-it-py==4[0m[91m.2.0
+ + [0m[91mmarkupsafe==3.0[0m[91m.4
+ [0m[91m+ mdurl[0m[91m==0[0m[91m.[0m[91m1.2
+[0m[91m [0m[91m+[0m[91m mmh3[0m[91m==5[0m[91m.3.[0m[91m1[0m[91m
+ +[0m[91m nats-py[0m[91m==2[0m[91m.16.0
+[0m[91m + nexiqon-agent-runtime==0.1[0m[91m.0 (from file:///app/services/agent-runtime)
+ + nexiqon-audit==0.[0m[91m1.0 (from file://[0m[91m/app/services/audit)
+[0m[91m +[0m[91m nexiqon-authz[0m[91m==0[0m[91m.1.[0m[91m0 (from [0m[91mfile:///app/services/authz[0m[91m)
+ [0m[91m+ [0m[91mnexiqon-channel==0.[0m[91m1.0 (from [0m[91mfile://[0m[91m/app/services/channel[0m[91m)
+ [0m[91m+ [0m[91mnexiqon-config==[0m[91m0.1.[0m[91m0 (from file:///app/services/config)
+ [0m[91m+ nexiqon-conversation==0.1[0m[91m.0 (from file:///app/services/conversation)[0m[91m
+ + nexiqon-core[0m[91m==0.1.0 (from [0m[91mfile:///app/libs/nexiqon-core)
+ [0m[91m+ nexiqon-evaluation[0m[91m==0.1.0[0m[91m (from file:///app/services/evaluation)[0m[91m
+ + nexiqon-governance==[0m[91m0.1.0 (from file://[0m[91m/app/services/governance)
+ + [0m[91mnexiqon-identity==0.[0m[91m1.0 (from file://[0m[91m/app/services/identity)[0m[91m
+ [0m[91m+ nexiqon-ingestion[0m[91m==0.1.0 (from [0m[91mfile:///app/services/ingestion)
+[0m[91m + [0m[91mnexiqon-metering==0[0m[91m.1.0 (from [0m[91mfile:///app/services/metering)
+[0m[91m [0m[91m+ nexiqon-model-gateway==[0m[91m0.1.0 (from [0m[91mfile:///app/services/model-gateway[0m[91m)
+ +[0m[91m nexiqon-notification==0.[0m[91m1.0 (from file:///app/services/notification)
+[0m[91m + [0m[91mnexiqon-retrieval==0.1.[0m[91m0 (from file://[0m[91m/app/services/retrieval)
+ + [0m[91mnexiqon-sdk==0.1.0 (from file:[0m[91m///app/libs/nexiqon-sdk)
+[0m[91m + nexiqon-tool-gateway==0.1.0[0m[91m (from file:///app/services/tool-gateway[0m[91m)
+ + [0m[91mnexus-rpc==1.[0m[91m4.0[0m[91m
+ [0m[91m+ openfeature-flagd-api==1.[0m[91m0.0
+ + openfeature-flagd-core==2[0m[91m.0.0
+[0m[91m + [0m[91mopenfeature-provider-flagd==0.6[0m[91m.1
+ +[0m[91m openfeature-sdk==0[0m[91m.10.0[0m[91m
+ + [0m[91mopentelemetry-api==1.45[0m[91m.2
+ +[0m[91m opentelemetry-exporter-http-transport==0.66b[0m[91m2
+ [0m[91m+ [0m[91mopentelemetry-exporter-otlp-common[0m[91m==0.66b2
+[0m[91m +[0m[91m opentelemetry-exporter-otlp-proto-common==1[0m[91m.45.2
+ +[0m[91m opentelemetry-exporter-otlp-proto-http==1.[0m[91m45.2
+ + [0m[91mopentelemetry-instrumentation==0.66[0m[91mb2
+ +[0m[91m opentelemetry-instrumentation-asgi==0.[0m[91m66b2
+[0m[91m + opentelemetry-instrumentation-fastapi[0m[91m==0.66b2
+[0m[91m + [0m[91mopentelemetry-instrumentation-httpx==0.66b2[0m[91m
+ + [0m[91mopentelemetry-proto[0m[91m==1.45.[0m[91m2
+ +[0m[91m opentelemetry-sdk==1[0m[91m.45.2
+ +[0m[91m opentelemetry-semantic-conventions==0.66[0m[91mb2
+ + opentelemetry-util-http[0m[91m==0.66[0m[91mb2[0m[91m
+ +[0m[91m orjson==3[0m[91m.13.0
+ [0m[91m+ [0m[91mormsgpack==[0m[91m1.13.0[0m[91m
+ + [0m[91mpackaging==26[0m[91m.3[0m[91m
+ + panzi-json-logic[0m[91m==1.0.1[0m[91m
+ + [0m[91mpgvector==0.5.[0m[91m1
+ + [0m[91mprotobuf==7.36.2
+ + pycparser==3.12
+ + [0m[91mpydantic==[0m[91m2.14.3[0m[91m
+ [0m[91m+ pydantic-core==2[0m[91m.50.4[0m[91m
+ [0m[91m+ pydantic-settings[0m[91m==2.[0m[91m16.2
+ +[0m[91m pyjwt==2[0m[91m.15.1
+ +[0m[91m pypdf==6.21.4
+ [0m[91m+ python-docx==1.2.[0m[91m0[0m[91m
+ [0m[91m+ python-dotenv[0m[91m==1.2[0m[91m.4[0m[91m
+ +[0m[91m [0m[91mpyyaml[0m[91m==[0m[91m6.0.[0m[91m3[0m[91m
+ + [0m[91mreferencing[0m[91m==[0m[91m0.37.[0m[91m0
+ [0m[91m+[0m[91m requests[0m[91m==2.[0m[91m34.[0m[91m2
+ [0m[91m+[0m[91m [0m[91mrequests-toolbelt[0m[91m==1[0m[91m.0[0m[91m.0
+[0m[91m +[0m[91m rpds-py[0m[91m==2026.9.1[0m[91m
+ + semver==[0m[91m3.1.[0m[91m0
+[0m[91m + sniffio==1.3.1[0m[91m
+ + soupsieve==4.0.1
+ +[0m[91m sqlalchemy==2.1.8
+ + starlette[0m[91m==1.10.0
+ [0m[91m+ structlog==[0m[91m26.1.0[0m[91m
+ + temporalio[0m[91m==1.35.[0m[91m0
+ +[0m[91m tenacity==9[0m[91m.2.1
+[0m[91m + truststore==0[0m[91m.10.5
+ [0m[91m+ [0m[91mtypes-protobuf[0m[91m==7.35.1.20260906[0m[91m
+ + typing-extensions[0m[91m==4.16.0
+ +[0m[91m typing-inspection==0.4.[0m[91m5
+ [0m[91m+ urllib3==2[0m[91m.8.0
+[0m[91m + uuid-utils[0m[91m==0.18.[0m[91m0
+ + [0m[91muvicorn==0[0m[91m.54.0
+ [0m[91m+ uvloop[0m[91m==0.23.0[0m[91m
+ + watchfiles[0m[91m==1.3[0m[91m.0
+ +[0m[91m websockets==17.[0m[91m4[0m[91m
+ + wrapt[0m[91m==2.5.2
+ [0m[91m+ xxhash==4.[0m[91m0.2
+ +[0m[91m zstandard==0.[0m[91m25.0
+[0m ---> Removed intermediate container e861227a5d70
+ ---> 48ec6050839a
+Step 10/19 : FROM python:3.12.15-slim
+ ---> a0f57064cbdc
+Step 11/19 : RUN apt-get update     && apt-get install -y --no-install-recommends git     && rm -rf /var/lib/apt/lists/*     && useradd --system --uid 10001 --no-create-home nexiqon
+ ---> Using cache
+ ---> c9a2df221b9d
+Step 12/19 : WORKDIR /app
+ ---> Using cache
+ ---> 2e22003536ee
+Step 13/19 : COPY --from=build /app/.venv /app/.venv
+ ---> 0a66bf7aa143
+Step 14/19 : COPY deploy/groups.yaml /app/deploy/groups.yaml
+ ---> 1f4a6f696843
+Step 15/19 : ENV PATH=/app/.venv/bin:$PATH     PYTHONUNBUFFERED=1     NEXIQON_GROUP=control-core
+ ---> Running in b1751702ce31
+ ---> Removed intermediate container b1751702ce31
+ ---> 0a7d7ccd6919
+Step 16/19 : USER 10001
+ ---> Running in edb7cea1a8c2
+ ---> Removed intermediate container edb7cea1a8c2
+ ---> 8e1e68f93b9a
+Step 17/19 : EXPOSE 8000
+ ---> Running in bcd668a03dde
+ ---> Removed intermediate container bcd668a03dde
+ ---> c0c9db7aa11d
+Step 18/19 : HEALTHCHECK --interval=10s --timeout=3s --retries=5   CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"]
+ ---> Running in d6ba62bf394c
+ ---> Removed intermediate container d6ba62bf394c
+ ---> ea78b7d0ab47
+Step 19/19 : ENTRYPOINT ["sh", "-c", "exec nexiqon-run --group \"$NEXIQON_GROUP\" --groups-file /app/deploy/groups.yaml"]
+ ---> Running in a6681f22debd
+ ---> Removed intermediate container a6681f22debd
+ ---> 9c8b7dd4a5d8
+Successfully built 9c8b7dd4a5d8
+Successfully tagged nexiqon/platform:phase3-qa

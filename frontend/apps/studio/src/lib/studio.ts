@@ -226,6 +226,8 @@ export function explainRun(trace: RunTrace): Why[] {
     const evidence = typeof retrieve.evidence === "number" ? Math.round(retrieve.evidence * 100) : null;
     if (!retrieve.passages) out.push({ key: "noSources", tone: "amber" });
     else out.push({ key: "foundSources", values: { count: Number(retrieve.passages), evidence: evidence ?? 0 }, tone: "teal" });
+    const hidden = Number(retrieve.hidden_by_access ?? 0);
+    if (hidden) out.push({ key: "hiddenByAccess", values: { count: hidden }, tone: "violet" });
   }
   const validate = step("validate_evidence");
   if (validate?.outcome === "insufficient") out.push({ key: "weakEvidence", tone: "amber" });

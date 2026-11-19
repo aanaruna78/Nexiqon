@@ -1,0 +1,68 @@
+npx --yes pnpm@12.15.0 --dir frontend build
+$ pnpm -r --if-present build
+apps/studio build$ next build
+apps/widget build$ tsc --noEmit && vite build
+apps/studio build: ▲ Next.js 16.4.5 (Turbopack)
+apps/studio build: ✓ Running next.config.ts took 72ms
+apps/studio build: 
+apps/studio build:   Creating an optimized production build ...
+apps/widget build: vite v8.3.5 building client environment for production...
+apps/widget build: transforming...
+apps/widget build: ✓ 21 modules transformed.
+apps/widget build: rendering chunks...
+apps/widget build: computing gzip size...
+apps/widget build: dist/nexiqon-chat.js  41.31 kB │ gzip: 13.34 kB
+apps/widget build: 
+apps/widget build: ✓ built in 59ms
+apps/widget build: Done
+apps/studio build: ✓ Compiled successfully in 840ms
+apps/studio build:   Running TypeScript ...
+apps/studio build:   Finished TypeScript in 2.2s ...
+apps/studio build:   Collecting page data using 7 workers ...
+apps/studio build:   Generating static pages using 7 workers (0/29) ...
+apps/studio build:   Generating static pages using 7 workers (7/29) 
+apps/studio build:   Generating static pages using 7 workers (14/29) 
+apps/studio build:   Generating static pages using 7 workers (21/29) 
+apps/studio build: ✓ Generating static pages using 7 workers (29/29) in 320ms
+apps/studio build:   Finalizing page optimization ...
+apps/studio build: 
+apps/studio build: Route (app)
+apps/studio build: ┌ ƒ /
+apps/studio build: ├ ƒ /_not-found
+apps/studio build: ├ ƒ /actions
+apps/studio build: ├ ƒ /api/health
+apps/studio build: ├ ƒ /api/locale
+apps/studio build: ├ ƒ /api/nx/[...path]
+apps/studio build: ├ ƒ /api/session
+apps/studio build: ├ ƒ /api/session/tenant
+apps/studio build: ├ ƒ /assistants
+apps/studio build: ├ ƒ /assistants/[name]
+apps/studio build: ├ ƒ /auth/callback
+apps/studio build: ├ ƒ /auth/login
+apps/studio build: ├ ƒ /auth/logout
+apps/studio build: ├ ƒ /conversations
+apps/studio build: ├ ƒ /domain-packs
+apps/studio build: ├ ƒ /domain-packs/[name]
+apps/studio build: ├ ƒ /evaluations
+apps/studio build: ├ ƒ /insights
+apps/studio build: ├ ƒ /knowledge
+apps/studio build: ├ ƒ /knowledge/[id]
+apps/studio build: ├ ƒ /onboarding
+apps/studio build: ├ ƒ /playground
+apps/studio build: ├ ƒ /select-org
+apps/studio build: ├ ƒ /settings
+apps/studio build: ├ ƒ /settings/api-keys
+apps/studio build: ├ ƒ /settings/audit
+apps/studio build: ├ ƒ /settings/configuration
+apps/studio build: ├ ƒ /settings/configuration/[kind]/[name]
+apps/studio build: ├ ƒ /settings/members
+apps/studio build: ├ ƒ /settings/models
+apps/studio build: ├ ƒ /settings/organization
+apps/studio build: └ ƒ /signed-out
+apps/studio build: 
+apps/studio build: 
+apps/studio build: ƒ Proxy (Middleware)
+apps/studio build: 
+apps/studio build: ƒ  (Dynamic)  server-rendered on demand
+apps/studio build: 
+apps/studio build: Done

@@ -306,6 +306,15 @@ test.describe.serial("Studio", () => {
     await expect(page.getByTestId("live-version")).toHaveText("Version 2");
     await page.getByTestId("rollback").click();
     await expect(page.getByTestId("live-version")).toHaveText("Version 1");
+    // v2 is no longer live but can still be tried, without storing a conversation.
+    await page.getByTestId("tab-test").click();
+    await page.getByTestId("test-version").click();
+    await page.getByRole("option", { name: "v2 · not live" }).click();
+    await expect(page.getByText("Not released")).toBeVisible();
+    await page.getByTestId("test-input").fill("How long is each backup kept?");
+    await page.getByTestId("test-send").click();
+    await expect(page.getByTestId("test-chat-log")).toContainText("35 days");
+    await a11y(page, "test a version that is not live");
     await page.getByTestId("tab-workflow").click();
     await expect(page.getByRole("img", { name: /Workflow with 6 steps/ })).toBeVisible();
   });

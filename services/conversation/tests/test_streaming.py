@@ -66,3 +66,38 @@ def test_handoff_button_escalates_with_a_summary(stack: Stack) -> None:
     quiet = events(stream(stack, c["id"], "hello?"))
     assert [k for k, _ in quiet] == ["message"]
     assert quiet[0][1]["reply"] is None  # a person has it now: the assistant stays quiet
+
+
+def test_keys_limited_to_assistants_see_only_their_conversations(stack: Stack) -> None:
+    """QA3-02: a member key limited to another assistant cannot read or list these."""
+    from nexiqon_core.tenancy import CONTEXT_HEADER, TenantContext
+
+    c = stack.start(headers=stack.headers(actor="someone"))
+    stack.say(c["id"], "How do I invite a teammate?", headers=stack.headers(actor="someone"))
+    t = stack.tenants.a.context.tenant_id
+
+    def key(agents: set[str]) -> dict[str, str]:
+        ctx = TenantContext(t, "key:k", "api_key", frozenset({"member"}), agents=frozenset(agents))
+        return {CONTEXT_HEADER: stack.tenants.issuer.issue(ctx)}
+
+    billing = key({"billing"})
+    assert stack.client.get(f"/v1/conversations/{c['id']}", headers=billing).status_code == 404
+    assert ok(stack.client.get("/v1/conversations", headers=billing)) == []
+    support = key({"support"})
+    assert ok(stack.client.get(f"/v1/conversations/{c['id']}", headers=support))["messages"]
+    assert [x["id"] for x in ok(stack.client.get("/v1/conversations", headers=support))] == [
+        c["id"]
+    ]
+
+
+def test_restricted_answers_keep_later_calls_restricted(stack: Stack) -> None:
+    """QA3-04: history carries the strictest label of what the assistant already said."""
+    stack.fakes.passages[0]["classification"] = "restricted"
+    stack.fakes.answer = "Open Settings, then Members, and choose Invite [1]."
+    c = stack.start()
+    first = stack.say(c["id"], "How do I invite a teammate?")
+    assert first["reply"]["contract"]["classification"] == "restricted"
+    stack.say(c["id"], "hi")
+    smalltalk = stack.fakes.chats("smalltalk")[-1]
+    assert any("choose Invite" in str(m.get("content")) for m in smalltalk["messages"])
+    assert smalltalk["classification"] == "restricted"

@@ -91,3 +91,18 @@ def test_tenant_comes_from_token_not_from_caller(tenants: TwoTenants) -> None:
 def test_garbage_header_is_401(tenants: TwoTenants) -> None:
     r = _app(tenants).get("/whoami", headers={CONTEXT_HEADER: "not-a-jwt"})
     assert r.status_code == 401
+
+
+def test_agent_restrictions_round_trip(tenants: TwoTenants) -> None:
+    import dataclasses
+
+    from nexiqon_core.errors import Forbidden
+
+    verifier = ContextTokenVerifier(tenants.settings)
+    assert verifier.verify(tenants.a.token).agents is None  # no claim: any agent
+    limited = dataclasses.replace(tenants.a.context, agents=frozenset({"support"}))
+    ctx = verifier.verify(tenants.issuer.issue(limited))
+    assert ctx.agents == frozenset({"support"})
+    assert ctx.may_use_agent("support")
+    with pytest.raises(Forbidden):
+        ctx.require_agent("billing")

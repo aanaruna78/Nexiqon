@@ -121,6 +121,18 @@
             "pattern": "^[A-Za-z0-9._:-]{1,100}$",
             "title": "Thread Id",
             "type": "string"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
           }
         },
         "required": [

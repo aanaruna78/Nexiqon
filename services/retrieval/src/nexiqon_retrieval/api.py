@@ -16,9 +16,9 @@ from sqlalchemy import delete, func, insert, select
 
 from nexiqon_core.authz import Resource, check_permission, require_permission
 from nexiqon_core.db import TenantSessionFactory
-from nexiqon_core.errors import Conflict, Forbidden, NotFound, ServiceUnavailable
+from nexiqon_core.errors import Conflict, Forbidden, NotFound, ServiceUnavailable, Unauthorized
 from nexiqon_core.profiles import ProfileResolver
-from nexiqon_core.tenancy import TenantContext, require_current_context
+from nexiqon_core.tenancy import ContextTokenVerifier, TenantContext, require_current_context
 from nexiqon_retrieval.adapters.pgvector import visibility
 from nexiqon_retrieval.answer import answer
 from nexiqon_retrieval.citations import Citation, verify
@@ -339,6 +339,28 @@ def _filters(
     return Filters(collection_ids=collection_ids, classifications=allowed, groups=groups)
 
 
+DIAGNOSTICS_HEADER = "x-nexiqon-diagnostics"
+
+
+def _may_explain(request: Request, ctx: TenantContext) -> bool:
+    """Hidden-source counts are staff diagnostics (QA3-06). The caller must manage knowledge, or
+    the request must carry a verified token of a trusted platform service for the same tenant
+    (agent-runtime records the count for the Answer Inspector and never returns it to users)."""
+    settings = request.app.state.settings
+    if ctx.has_role(*settings.acl_bypass_roles):
+        return True
+    proof = request.headers.get(DIAGNOSTICS_HEADER)
+    if not proof:
+        return False
+    try:
+        service = ContextTokenVerifier(settings.context_token).verify(proof)
+    except Unauthorized:
+        return False
+    return service.tenant_id == ctx.tenant_id and service.actor_id in {
+        f"service:{name}" for name in settings.diagnostics_services
+    }
+
+
 def _token(request: Request) -> str:
     token = getattr(request.state, "context_token", None)
     if token is None:
@@ -357,6 +379,8 @@ class SearchIn(BaseModel):
     small_to_big: bool | None = None
     rerank: bool | None = None
     view_as: ViewAs | None = None
+    # Also count passages the caller's access rules hid (a number only; Answer Inspector).
+    explain_access: bool = False
 
 
 class PassageOut(BaseModel):
@@ -424,6 +448,18 @@ async def search(body: SearchIn, request: Request, ctx: Ctx) -> SearchOut:
         )
         theirs = {p.id for p in result.passages}
         hidden = sum(1 for p in own.passages if p.id not in theirs)
+    elif body.explain_access and _may_explain(request, ctx):
+        if ctx.has_role(*settings.acl_bypass_roles):
+            hidden = 0  # nothing is hidden from people who manage knowledge
+        else:
+            everything = Filters(
+                collection_ids=body.collection_ids,
+                classifications=list(CLASSIFICATIONS),
+                groups=None,
+            )
+            unrestricted = await searcher.search(ctx.tenant_id, token, request_for(everything))
+            seen = {p.id for p in result.passages}
+            hidden = sum(1 for p in unrestricted.passages if p.id not in seen)
     return SearchOut(
         hidden=hidden,
         passages=[

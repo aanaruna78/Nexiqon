@@ -66,6 +66,15 @@
           "x-ui": {
             "advanced": true
           }
+        },
+        "snippet_boost": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "How much curated Q&A snippets outrank other content (1 = no boost)",
+          "x-ui": {
+            "advanced": true
+          }
         }
       }
     },

@@ -46,3 +46,14 @@ finishes and is recorded even if the caller disconnects.
 The pack's red-team set (`eval/redteam.yaml`) runs in `tests/test_streaming.py` against a model
 that obeys every injected instruction.
 
+**Testing before release.** `version` on a run uses that version (even a draft) instead of the
+deployed one. It needs `agent.versions.preview` (editors and up). Studio's Test tab uses it for
+drafts.
+
+**Access in traces.** With `explain_access` (default on), retrieval also reports how many matching
+passages the asker's access rules hid. The trace records the count (`hidden_by_access`), and only
+staff can read it. It costs one extra search per turn.
+
+**Keys restricted to assistants.** API and widget keys with `agent_ids` get an `agt` claim. Runs for
+any other assistant are refused, as are conversations and channel settings for them.
+

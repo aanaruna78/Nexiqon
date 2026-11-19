@@ -1,0 +1,30 @@
+usage: model_bakeoff.py [-h] [--gateway GATEWAY] --tenant TENANT [--pack PACK]
+                        --profiles PROFILES
+                        [--retrieval-profile RETRIEVAL_PROFILE] [--out OUT]
+
+Model comparison on a pack's gold set (M-07): answers, citations, abstention, speed, licences.
+
+For each model profile, the pack's eval corpus is indexed into its own collection (embeddings
+differ per profile), then every gold question is answered through ``/retrieval/v1/answer`` and
+scored:
+
+* **correct**: the answer is grounded and contains the gold evidence phrase (or cites a passage
+  that does, when the model paraphrases);
+* **cited right**: at least one citation points at the gold document;
+* **abstained**: on questions the corpus cannot answer, the model said so instead of guessing;
+* latency (p50/p95) and tokens per answer.
+
+    uv run python -m tools.eval.model_bakeoff --tenant <slug> \
+        --profiles cloud-frontier,on-prem-small --out docs/qa/model-bakeoff.md
+    # token: NEXIQON_TOKEN (IdP access token); default gateway http://localhost:8000
+
+Choose defaults from the report, together with the licence column and data-location policy.
+
+options:
+  -h, --help            show this help message and exit
+  --gateway GATEWAY
+  --tenant TENANT       workspace slug
+  --pack PACK
+  --profiles PROFILES   comma-separated model profiles
+  --retrieval-profile RETRIEVAL_PROFILE
+  --out OUT             write the Markdown report here

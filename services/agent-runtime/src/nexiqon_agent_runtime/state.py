@@ -23,7 +23,10 @@ class AgentState(TypedDict, total=False):
     declined: bool
     blocked: str | None  # a blocked topic the question touched (fixed refusal, AG-03)
     handoff_requested: bool  # the user pressed "talk to a person" (no intent guessing)
-    failed_turns: int  # consecutive turns without a grounded answer; carries over (CV-02)
+    failed_turns: int
+    # Strictest classification of anything the assistant has said on this thread; later calls
+    # that include history are labelled at least this strictly (QA3-04). Carries over turns.
+    history_label: str  # consecutive turns without a grounded answer; carries over (CV-02)
     answer: dict[str, Any] | None
     handoff: dict[str, Any] | None
     steps: list[dict[str, Any]]

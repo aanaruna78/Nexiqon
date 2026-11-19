@@ -91,7 +91,7 @@ async def _load(
 ) -> Conversation:
     async with _db(request).session(ctx) as s:
         c = await s.get(Conversation, conversation_id)
-    if c is None:
+    if c is None or not ctx.may_use_agent(c.agent):  # keys limited to assistants (QA3-02)
         raise NotFound("Conversation not found")
     own = c.actor_id == ctx.actor_id
     if (write and not own) or (not write and not own and not await _sees_all(request)):
@@ -154,6 +154,7 @@ def _m(m: Message) -> MessageOut:
 
 @tenant_router.post("/conversations", response_model=ConversationOut, status_code=201)
 async def create_conversation(body: ConversationIn, request: Request, ctx: Ctx) -> ConversationOut:
+    ctx.require_agent(body.agent)
     await check_permission(request, "conversation.messages.create", Resource(type="conversation"))
     async with _db(request).session(ctx) as s:
         c = Conversation(
@@ -184,6 +185,8 @@ async def list_conversations(
     )
     if mine or not await _sees_all(request):
         query = query.where(Conversation.actor_id == ctx.actor_id)
+    if ctx.agents is not None:  # a broad role never widens a key's assistant scope (QA3-02)
+        query = query.where(Conversation.agent.in_(sorted(ctx.agents)))
     async with _db(request).session(ctx) as s:
         return [_c(c) for c in (await s.scalars(query)).all()]
 

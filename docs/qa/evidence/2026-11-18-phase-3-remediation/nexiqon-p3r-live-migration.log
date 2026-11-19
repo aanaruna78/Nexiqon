@@ -1,0 +1,2 @@
+0002
+UNIQUE (tenant_id, tool, agent, actor_id, idempotency_key)

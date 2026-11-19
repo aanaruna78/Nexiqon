@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import secrets
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager, suppress
 from typing import Any, Final
@@ -25,6 +26,7 @@ from nexiqon_core.service_auth import ServiceTokens
 from nexiqon_ingestion import __version__
 from nexiqon_ingestion.api import public_router, tenant_router
 from nexiqon_ingestion.clients import Embedder, IndexClient
+from nexiqon_ingestion.downloads import DownloadSigner
 from nexiqon_ingestion.lifecycle import lifecycle
 from nexiqon_ingestion.models import Outbox
 from nexiqon_ingestion.pipeline import Deps, Pipeline
@@ -189,6 +191,11 @@ def create_app(
     )
     app.state.pipeline = pipeline
     app.state.registry = registry
+    key = settings.download_signing_key
+    app.state.downloads = DownloadSigner(
+        key.get_secret_value().encode() if key else secrets.token_bytes(32),
+        settings.download_link_seconds,
+    )
     app.state.temporal = temporal
     app.state.worker = None
     return app

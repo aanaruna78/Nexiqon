@@ -20,3 +20,6 @@ class ServiceSettings(CoreSettings):
     # < restricted). Unlisted actor types have no limit beyond access groups.
     max_classification: dict[str, str] = Field(default_factory=lambda: {"widget": "internal"})
     hnsw_ef_search: int = 100
+    # Services whose own token (header x-nexiqon-diagnostics) may ask for hidden-source counts on
+    # behalf of the person searching. Only staff get them otherwise (QA3-06).
+    diagnostics_services: list[str] = Field(default_factory=lambda: ["agent-runtime"])

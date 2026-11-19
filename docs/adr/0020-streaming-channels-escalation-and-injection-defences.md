@@ -84,3 +84,13 @@ Status: Accepted (2026-11-13)
   Agents on the offline development models need a lower floor (for example
   `guardrails.min_evidence_score: 0.15`, as in the `dev-offline` retrieval profile), because hash
   embeddings score well below real models.
+
+## Amendment (2026-11-18, QA3-04/05/06)
+
+- **Streamed text is guarded before it leaves.** The provisional stream is no longer raw. A
+  hold-back window, the output guard and an early stop on system-prompt repetition apply before
+  any delta is sent. The final answer still replaces it.
+- **Sensitivity follows history.** A thread's strictest answer label (`history_label`, in the
+  checkpoint) sets the minimum label for every later call that includes history.
+- **Diagnostics are server-to-server.** Hidden-source counts are computed only for knowledge
+  managers or on agent-runtime's verified service proof, and are never returned to non-staff.

@@ -195,6 +195,8 @@ export interface components {
             resume?: unknown;
             /** Thread Id */
             thread_id: string;
+            /** Version */
+            version?: number | null;
         };
         /** RunOut */
         RunOut: {

@@ -32,3 +32,10 @@ cases:
   - {q: "من يصبح مالك مساحة العمل؟", doc: ar-guide.md, section: إنشاء مساحة العمل, evidence: "يصبح مالك مساحة العمل", lang: ar}
   - {q: "متى تنتهي صلاحية الدعوات؟", doc: ar-guide.md, section: دعوة الفريق, evidence: "تنتهي صلاحية الدعوات", lang: ar}
   - {q: "كيف يمكن تصدير بيانات مساحة العمل؟", doc: ar-guide.md, section: تصدير البيانات, evidence: "تصدير جميع بيانات", lang: ar}
+# Questions the documentation does not answer: a good model abstains instead of guessing (M-07).
+unanswerable:
+  - {q: "What is the CEO's home address?", lang: en}
+  - {q: "Which competitor is cheaper than this product?", lang: en}
+  - {q: "How do I configure the on-premises mainframe connector?", lang: en}
+  - {q: "What will the price of the Team plan be next year?", lang: en}
+  - {q: "¿Cuál es el horario de la oficina en Madrid?", lang: es}

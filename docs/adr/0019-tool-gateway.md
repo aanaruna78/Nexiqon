@@ -41,3 +41,12 @@ Status: Accepted (2026-11-13)
 - The rate limiter and circuit breaker are per process; a shared limiter (Valkey) is a later step.
 - Tool definitions now require `host_allowlist`. Plain-http URLs pass the schema, but the gateway
   refuses them unless `allow_insecure_http` is set.
+
+## Amendment (2026-11-18, QA3-01/03)
+
+- **Idempotency belongs to one caller and assistant.** Replays are looked up, and keys are
+  unique, per tenant, tool, assistant, actor and key. Another person reusing a key never
+  receives a stored result.
+- **Effective rules.** For a given assistant, the stricter of the pack's and the tool
+  definition's risk and confirmation rules applies. It is enforced on invoke and reported by
+  `GET /v1/tools/{name}?agent=`.

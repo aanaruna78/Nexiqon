@@ -31,6 +31,7 @@ class FakeServices:
             }
         ]
         self.abstain = False
+        self.hidden = 0  # passages access rules hid from the caller (explain_access)
         self.collections = {"product-docs": str(uuid.uuid4())}
         self.answer = "Open Settings, then Members, and choose Invite [1]."
         # Tool gateway: published tools (public definitions) and what the "model" extracts.
@@ -64,6 +65,10 @@ class FakeServices:
                     "embedding_model": "fake",
                     "reranked": False,
                     "timings_ms": {"total": 5.0},
+                    # Like retrieval: counts only with agent-runtime's own proof (QA3-06).
+                    "hidden": self.hidden
+                    if body.get("explain_access") and request.headers.get("x-nexiqon-diagnostics")
+                    else None,
                 },
             )
         if host == "retrieval" and path == "/v1/citations/verify":

@@ -256,7 +256,7 @@ def test_plugins_are_discovered_from_entry_points_and_validated() -> None:
             eps=[EntryPoint("again", "nexiqon_ingestion.testing:sample_plugins", "nexiqon.plugins")]
         )
     gallery = [m.name for m in registry.manifests(PluginKind.CONNECTOR)]
-    assert gallery == ["git", "s3", "sample", "upload", "web"]
+    assert gallery == ["git", "s3", "sample", "snippets", "upload", "web"]
 
 
 async def test_qa2_02_s3_connections_are_pinned_to_the_checked_address(tmp_path: Path) -> None:

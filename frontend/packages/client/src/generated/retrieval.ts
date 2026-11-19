@@ -242,6 +242,11 @@ export interface components {
             /** Collection Ids */
             collection_ids: string[];
             /**
+             * Explain Access
+             * @default false
+             */
+            explain_access: boolean;
+            /**
              * Max Tokens
              * @default 800
              */
@@ -493,6 +498,11 @@ export interface components {
             classification: "public" | "internal" | "confidential" | "restricted";
             /** Collection Ids */
             collection_ids: string[];
+            /**
+             * Explain Access
+             * @default false
+             */
+            explain_access: boolean;
             /** Model Profile */
             model_profile?: string | null;
             /** Query */

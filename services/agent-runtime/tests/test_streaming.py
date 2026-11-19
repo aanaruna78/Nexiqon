@@ -230,6 +230,7 @@ def test_redteam(stack: Stack, case: dict[str, Any]) -> None:
                     "model_profile",
                     "retrieval_profile",
                     "top_k",
+                    "explain_access",
                 }
 
 
@@ -285,3 +286,175 @@ def test_runs_record_usage_and_scored_sources_for_the_inspector(stack: Stack) ->
     assert retrieve["sources"][0]["citation"].startswith("Admin Guide")
     streamed = events(stream(stack, tid(), "How do I invite a teammate?"))
     assert streamed[-1][1]["usage"]["model_calls"] == 1
+
+
+def test_keys_restricted_to_other_assistants_are_refused(stack: Stack) -> None:
+    import dataclasses
+
+    from nexiqon_core.tenancy import CONTEXT_HEADER, TenantContext
+
+    base = TenantContext(
+        stack.tenants.a.context.tenant_id, "widget:k:v", "widget", frozenset({"end_user"})
+    )
+    other = {
+        CONTEXT_HEADER: stack.tenants.issuer.issue(
+            dataclasses.replace(base, agents=frozenset({"billing"}))
+        )
+    }
+    body = {"thread_id": tid(), "input": "hi"}
+    assert stack.client.post("/v1/agents/support/runs", json=body, headers=other).status_code == 403
+    assert (
+        stack.client.post("/v1/agents/support/runs/stream", json=body, headers=other).status_code
+        == 403
+    )
+    allowed = {
+        CONTEXT_HEADER: stack.tenants.issuer.issue(
+            dataclasses.replace(base, agents=frozenset({"support"}))
+        )
+    }
+    assert (
+        stack.client.post("/v1/agents/support/runs", json=body, headers=allowed).status_code == 200
+    )
+
+
+def test_hidden_source_count_is_for_staff_eyes_only(stack: Stack) -> None:
+    stack.fakes.hidden = 3
+    asker = stack.headers({"member"}, actor="member-1")  # reads own runs, not staff
+    r = stack.run(tid(), "How do I invite a teammate?", headers=asker)
+    assert next(b for k, b in stack.fakes.calls if k == "search")["explain_access"] is True
+    own = ok(stack.client.get(f"/v1/runs/{r['run_id']}", headers=asker))
+    assert all("hidden_by_access" not in s for s in own["steps"])
+    staff = ok(stack.client.get(f"/v1/runs/{r['run_id']}", headers=stack.headers({"owner"})))
+    assert next(s for s in staff["steps"] if s["type"] == "retrieve")["hidden_by_access"] == 3
+
+
+def test_builders_can_try_a_draft_before_it_is_released(stack: Stack) -> None:
+    h = stack.tenants.a.headers
+    ok(
+        stack.config.put(
+            "/v1/objects/agent/support/draft",
+            json={"spec": {**AGENT, "display_name": "Acme Draft"}},
+            headers=h,
+        )
+    )
+    prompt = lambda: stack.fakes.chats("answer")[-1]["messages"][0]["content"]  # noqa: E731
+    live = stack.run(tid(), "How do I invite a teammate?")
+    assert prompt().startswith("You are Acme Help")
+    body = {"thread_id": tid(), "input": "How do I invite a teammate?", "version": 2}
+    draft = ok(
+        stack.client.post("/v1/agents/support/runs", json=body, headers=stack.headers({"owner"}))
+    )
+    assert prompt().startswith("You are Acme Draft")
+    trace = ok(stack.client.get(f"/v1/runs/{draft['run_id']}", headers=stack.headers({"owner"})))
+    assert trace["agent_versions"]["agent"] == 2
+    assert live["status"] == "completed"
+    # People who only use assistants cannot run unreleased versions.
+    refused = stack.client.post(
+        "/v1/agents/support/runs",
+        json={**body, "thread_id": tid()},
+        headers=stack.headers({"member"}),
+    )
+    assert refused.status_code == 403
+
+
+# --------------------------------------------------------------------------- QA3 regressions
+
+
+def test_stream_never_releases_a_withheld_system_prompt(stack: Stack) -> None:
+    """QA3-05: the guard runs before text leaves, not only on the final answer."""
+    stack.fakes.intents = {"Hello there": "greeting"}
+    stack.fakes.attacks = [("disclosure sentinel", "{system}")]
+    r = stack.client.post(
+        "/v1/agents/support/runs/stream",
+        json={"thread_id": tid(), "input": "Hello there disclosure sentinel"},
+        headers=stack.headers({"end_user"}, actor="visitor", actor_type="widget"),
+    )
+    got = events(r)
+    assert got[-1][1]["answer"]["kind"] == "withheld"
+    streamed = "".join(d["text"] for k, d in got if k == "delta")
+    system = stack.fakes.chats("smalltalk")[-1]["messages"][0]["content"]
+    words = system.split()
+    assert not any(" ".join(words[i : i + 8]) in streamed for i in range(len(words) - 7))
+
+
+def test_stream_guard_holds_back_unsafe_text() -> None:
+    from nexiqon_agent_runtime.guards import StreamGuard
+
+    text = "Open Settings, then Members ![x](https://evil.example/p.png) and see [docs](https://docs.example.com/a) or https://evil.example/login today."
+    guard = StreamGuard("", ["https://docs.example.com/a"], holdback=3)
+    out = "".join(guard.feed(text[i : i + 5]) for i in range(0, len(text), 5)) + guard.finish()
+    assert "evil.example" not in out
+    assert "![" not in out
+    assert "[docs](https://docs.example.com/a)" in out
+    plain = StreamGuard("", [], holdback=3)
+    words = "Open Settings, then Members, and choose Invite [1]."
+    assert (
+        "".join(plain.feed(words[i : i + 4]) for i in range(0, len(words), 4)) + plain.finish()
+        == words
+    )
+
+
+def test_hidden_counts_reach_staff_only_in_every_response(stack: Stack) -> None:
+    """QA3-06: immediate results and stream results are redacted like stored traces."""
+    stack.fakes.hidden = 4
+    asker = stack.headers({"end_user"}, actor="visitor", actor_type="widget")
+    r = stack.run(tid(), "How do I invite a teammate?", headers=asker)
+    assert all("hidden_by_access" not in s for s in r["steps"])
+    streamed = events(
+        stack.client.post(
+            "/v1/agents/support/runs/stream",
+            json={"thread_id": tid(), "input": "How do I invite a teammate?"},
+            headers=asker,
+        )
+    )
+    assert all("hidden_by_access" not in s for s in streamed[-1][1]["steps"])
+    search = next(b for k, b in stack.fakes.calls if k == "search")
+    assert search["explain_access"] is True  # asked with agent-runtime's own proof
+    staff = ok(stack.client.get(f"/v1/runs/{r['run_id']}", headers=stack.headers({"owner"})))
+    assert next(s for s in staff["steps"] if s["type"] == "retrieve")["hidden_by_access"] == 4
+
+
+def test_history_keeps_the_label_of_what_was_said(stack: Stack) -> None:
+    """QA3-04: a restricted answer makes later history-bearing calls restricted too."""
+    stack.fakes.passages[0]["classification"] = "restricted"
+    thread = tid()
+    first = stack.run(thread, "How do I invite a teammate?")
+    assert first["answer"]["classification"] == "restricted"
+    history = [
+        {"role": "user", "content": "How do I invite a teammate?"},
+        {"role": "assistant", "content": first["answer"]["text"]},
+    ]
+    ok(
+        stack.client.post(
+            "/v1/agents/support/runs",
+            json={"thread_id": thread, "input": "hi", "history": history},
+            headers=stack.headers(),
+        )
+    )
+    assert stack.fakes.chats("smalltalk")[-1]["classification"] == "restricted"
+    other = tid()  # a fresh thread starts at the default label
+    stack.run(other, "hi")
+    assert stack.fakes.chats("smalltalk")[-1]["classification"] == "internal"
+
+
+def test_scoped_keys_read_only_their_assistants_runs(stack: Stack) -> None:
+    import dataclasses
+
+    from nexiqon_core.tenancy import CONTEXT_HEADER, TenantContext
+
+    r = stack.run(tid(), "How do I invite a teammate?", headers=stack.headers({"owner"}))
+    base = TenantContext(
+        stack.tenants.a.context.tenant_id, "key:x", "api_key", frozenset({"owner"})
+    )
+    billing = {
+        CONTEXT_HEADER: stack.tenants.issuer.issue(
+            dataclasses.replace(base, agents=frozenset({"billing"}))
+        )
+    }
+    assert stack.client.get(f"/v1/runs/{r['run_id']}", headers=billing).status_code == 404
+    support = {
+        CONTEXT_HEADER: stack.tenants.issuer.issue(
+            dataclasses.replace(base, agents=frozenset({"support"}))
+        )
+    }
+    assert stack.client.get(f"/v1/runs/{r['run_id']}", headers=support).status_code == 200

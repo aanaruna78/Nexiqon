@@ -16,3 +16,6 @@ class ServiceSettings(CoreSettings):
     max_steps: int = 40  # LangGraph recursion limit per run (stops loops between nodes)
     run_timeout_seconds: float = 120.0
     history_messages: int = 12
+    # Record how many sources access rules hid from the asker (one extra search per turn; shown
+    # to staff only in the Answer Inspector). Turn off to save that search.
+    explain_access: bool = True

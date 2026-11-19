@@ -1,0 +1,18 @@
+[2m2026-11-18T10:34:17.664279Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mdata[0m [36mservice[0m=[35magent-runtime[0m [36mversion[0m=[35m0.1.0[0m
+[2m2026-11-18T10:34:17.666019Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mcontrol[0m [36mservice[0m=[35mconfig[0m [36mversion[0m=[35m0.1.0[0m
+nonstaff immediate run hidden fields: []
+.[2m2026-11-18T10:34:18.481040Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mconfig[0m
+[2m2026-11-18T10:34:18.483481Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35magent-runtime[0m
+[2m2026-11-18T10:34:18.508532Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mdata[0m [36mservice[0m=[35magent-runtime[0m [36mversion[0m=[35m0.1.0[0m
+[2m2026-11-18T10:34:18.509984Z[0m [[32m[1minfo     [0m] [1mservice_starting              [0m [36mplane[0m=[35mcontrol[0m [36mservice[0m=[35mconfig[0m [36mversion[0m=[35m0.1.0[0m
+final kind: withheld system prompt already streamed: False streamed length: 0
+.[2m2026-11-18T10:34:19.223921Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35mconfig[0m
+[2m2026-11-18T10:34:19.226373Z[0m [[32m[1minfo     [0m] [1mservice_stopped               [0m [36mservice[0m=[35magent-runtime[0m
+
+=============================== warnings summary ===============================
+docs/qa/reproductions/phase3_agent_cases.py::test_nonstaff_run_response_must_not_disclose_hidden_source_counts
+  /home/arun/Documents/Nexiqon/Nexiqon/libs/nexiqon-core/src/nexiqon_core/pytest_plugin.py:52: DeprecationWarning: testcontainers.postgres is deprecated, use testcontainers.community.postgres instead
+    from testcontainers.postgres import PostgresContainer
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+2 passed, 1 warning in 4.31s
