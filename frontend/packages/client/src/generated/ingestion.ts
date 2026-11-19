@@ -122,6 +122,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/collections/{collection_id}/snippets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Snippet
+         * @description Add (or replace, for the same question) a reviewed answer and sync it at once: the fix
+         *     for a bad answer is live as soon as the run finishes (fix loop, ST-14).
+         */
+        post: operations["add_snippet_v1_collections__collection_id__snippets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/collections/{collection_id}/sources": {
         parameters: {
             query?: never;
@@ -178,7 +199,12 @@ export interface paths {
         delete: operations["delete_document_v1_documents__document_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update Document
+         * @description Mark a document outdated: answers stop using it at once, until it is fixed (a new version
+         *     is indexed) or marked current again (fix loop, ST-14).
+         */
+        patch: operations["update_document_v1_documents__document_id__patch"];
         trace?: never;
     };
     "/v1/documents/{document_id}/download-link": {
@@ -413,6 +439,8 @@ export interface components {
             indexed_version: number | null;
             /** Media Type */
             media_type: string | null;
+            /** Outdated At */
+            outdated_at?: string | null;
             /** Scanner */
             scanner: string | null;
             /** Section Count */
@@ -439,6 +467,11 @@ export interface components {
             uri: string;
             /** Version */
             version: number;
+        };
+        /** DocumentPatch */
+        DocumentPatch: {
+            /** Outdated */
+            outdated: boolean;
         };
         /** DownloadLink */
         DownloadLink: {
@@ -492,7 +525,7 @@ export interface components {
          * PluginKind
          * @enum {string}
          */
-        PluginKind: "connector" | "parser" | "chunker";
+        PluginKind: "connector" | "parser" | "chunker" | "evaluator";
         /** RunOut */
         RunOut: {
             /**
@@ -544,6 +577,21 @@ export interface components {
             }[];
             /** Workflow Id */
             workflow_id: string | null;
+        };
+        /** SnippetIn */
+        SnippetIn: {
+            /** Answer */
+            answer: string;
+            /** Question */
+            question: string;
+        };
+        /** SnippetOut */
+        SnippetOut: {
+            /** Replaced */
+            replaced: boolean;
+            /** Run Id */
+            run_id: string | null;
+            source: components["schemas"]["SourceOut"];
         };
         /** SourceIn */
         SourceIn: {
@@ -926,6 +974,41 @@ export interface operations {
             };
         };
     };
+    add_snippet_v1_collections__collection_id__snippets_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                collection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SnippetIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SnippetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_sources_v1_collections__collection_id__sources_get: {
         parameters: {
             query?: never;
@@ -1060,6 +1143,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_document_v1_documents__document_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentOut"];
+                };
             };
             /** @description Validation Error */
             422: {

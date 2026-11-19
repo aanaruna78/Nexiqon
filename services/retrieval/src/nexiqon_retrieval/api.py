@@ -8,11 +8,12 @@ from __future__ import annotations
 
 import re
 import uuid
+from dataclasses import replace
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field, model_validator
-from sqlalchemy import delete, func, insert, select
+from sqlalchemy import delete, func, insert, select, update
 
 from nexiqon_core.authz import Resource, check_permission, require_permission
 from nexiqon_core.db import TenantSessionFactory
@@ -182,6 +183,38 @@ async def put_document(
     )
 
 
+class DocumentFlags(BaseModel):
+    outdated: bool
+
+
+class FlagsOut(BaseModel):
+    document_id: uuid.UUID
+    outdated: bool
+    nodes: int
+
+
+@tenant_router.patch(
+    "/index/documents/{document_id}",
+    response_model=FlagsOut,
+    dependencies=[require_permission("retrieval.index.write", "document")],
+)
+async def flag_document(
+    document_id: uuid.UUID, body: DocumentFlags, request: Request, ctx: Ctx
+) -> FlagsOut:
+    """Mark a document outdated (left out of answers) or current again. Indexing a new version
+    of the document clears the mark."""
+    async with _db(request).session(ctx) as s:
+        result = await s.execute(
+            update(IndexNode)
+            .where(IndexNode.document_id == document_id)
+            .values(outdated=body.outdated)
+        )
+    nodes = int(result.rowcount or 0)  # type: ignore[attr-defined]
+    if not nodes:
+        raise NotFound("Document is not indexed")
+    return FlagsOut(document_id=document_id, outdated=body.outdated, nodes=nodes)
+
+
 class Deleted(BaseModel):
     deleted: int
 
@@ -236,7 +269,7 @@ async def outline(document_id: uuid.UUID, request: Request, ctx: Ctx) -> Outline
         request, "retrieval.index.read", Resource(type="document", id=str(document_id))
     )
     # Same visibility as search: a hidden document's titles and headings are not disclosed (QA2-04).
-    seen = visibility(_filters(request, ctx, []))
+    seen = visibility(replace(_filters(request, ctx, []), include_outdated=True))
     async with _db(request).session(ctx) as s:
         rows = (
             await s.scalars(
@@ -281,7 +314,7 @@ async def stats(collection_id: uuid.UUID, request: Request, ctx: Ctx) -> Collect
         request, "retrieval.index.read", Resource(type="collection", id=str(collection_id))
     )
     n = IndexNode
-    seen = visibility(_filters(request, ctx, []))
+    seen = visibility(replace(_filters(request, ctx, []), include_outdated=True))
     async with _db(request).session(ctx) as s:
         row = (
             await s.execute(

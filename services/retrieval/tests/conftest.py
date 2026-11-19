@@ -32,6 +32,7 @@ ROLES = {
     "admin": ["**"],
     "member": ["**.read", "config.profiles.resolve", "retrieval.search.*"],
     "end_user": ["config.profiles.resolve", "retrieval.search.*", "model.inference.run"],
+    "service:evaluation": ["retrieval.search.*", "config.profiles.resolve"],
     "service:ingestion": [
         "retrieval.index.write",
         "retrieval.index.read",
@@ -55,6 +56,7 @@ class SearchStack:
     models: HashModelClient
     collection: uuid.UUID = field(default_factory=uuid.uuid4)
     runtime: ServiceTokens | None = None  # agent-runtime's identity (diagnostics proof, QA3-06)
+    evaluation: ServiceTokens | None = None  # evaluation runs (QA-01)
 
     def headers(
         self,
@@ -146,9 +148,20 @@ def stack(search_db: PgUrls) -> Iterator[SearchStack]:
     tenants = TwoTenants.create(roles=frozenset({"member"}))
     private, public = make_keypair()
     runtime_private, runtime_public = make_keypair()
+    eval_private, eval_public = make_keypair()
     tokens = ContextTokenSettings(
-        public_keys={**tenants.settings.public_keys, "svc": public, "svc-ar": runtime_public},
-        service_keys={"svc": "ingestion", "svc-ar": "agent-runtime"},
+        public_keys={
+            **tenants.settings.public_keys,
+            "svc": public,
+            "svc-ar": runtime_public,
+            "svc-ev": eval_public,
+        },
+        service_keys={"svc": "ingestion", "svc-ar": "agent-runtime", "svc-ev": "evaluation"},
+    )
+    evaluation = ServiceTokens(
+        "evaluation",
+        tokens,
+        ServiceIdentitySettings(key_id="svc-ev", private_key=eval_private),  # type: ignore[arg-type]
     )
     runtime = ServiceTokens(
         "agent-runtime",
@@ -176,4 +189,4 @@ def stack(search_db: PgUrls) -> Iterator[SearchStack]:
         service_transport=httpx.ASGITransport(app=config_app),
     )
     with TestClient(app) as client:
-        yield SearchStack(client, tenants, service, models, runtime=runtime)
+        yield SearchStack(client, tenants, service, models, runtime=runtime, evaluation=evaluation)

@@ -22,3 +22,4 @@
 | [0018](0018-agent-runtime-on-langgraph-with-tenant-checkpoints.md) | Agent runtime on LangGraph with tenant-scoped checkpoints | Accepted |
 | [0019](0019-tool-gateway.md) | Tool gateway, confirmations and the secrets port | Accepted |
 | [0020](0020-streaming-channels-escalation-and-injection-defences.md) | Streaming, channels, escalation and prompt-injection defences | Accepted |
+| [0021](0021-evaluation-safe-publish-and-the-fix-loop.md) | Evaluation, safe publish and the fix loop | Accepted |

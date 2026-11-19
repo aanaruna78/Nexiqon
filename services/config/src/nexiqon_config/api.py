@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from nexiqon_config import kinds, packs
 from nexiqon_config.diff import diff
+from nexiqon_config.gate import blocked
 from nexiqon_config.models import ENVIRONMENTS, ConfigObject, ConfigVersion
 from nexiqon_config.store import Store, _defaults, canonical_digest, spec_hash
 from nexiqon_core.authz import Resource, check_permission
@@ -198,12 +199,88 @@ async def get_version(
         return VersionDetail(**VersionOut.of(v).model_dump(), spec=v.spec)
 
 
-@tenant_router.post("/objects/{kind}/{name}/versions/{version}/publish", response_model=VersionOut)
-async def publish(kind: str, name: str, version: int, request: Request, ctx: Ctx) -> VersionOut:
-    await _allow(request, _write_action(_kind(kind)), kind, name)
+class PublishIn(BaseModel):
+    # Publish although the release gate did not pass (admins only; recorded with the reason).
+    override_reason: str | None = Field(default=None, min_length=10, max_length=500)
+
+
+class GateOut(BaseModel):
+    """The release-gate answer recorded with a publish (QA-02)."""
+
+    passed: bool
+    overridden: bool = False
+    test_set: str
+    run_id: str | None = None
+    baseline_version: int | None = None
+    reasons: list[dict[str, Any]] = Field(default_factory=list)
+    deltas: dict[str, float] = Field(default_factory=dict)
+
+
+class PublishOut(VersionOut):
+    gate: GateOut | None = None
+
+
+async def _release_gate(
+    request: Request, ctx: TenantContext, name: str, version: int, override: str | None
+) -> GateOut | None:
+    """Ask evaluation whether this agent version may be published (only when its spec has an
+    enabled release gate). Raises when it may not, unless an admin overrides with a reason."""
+    settings = request.app.state.settings
     async with _db(request).session(ctx) as s:
-        v = await Store(s, ctx, request.app.state.settings).publish(kind, name, version)
-        return VersionOut.of(v)
+        store = Store(s, ctx, settings)
+        obj = await store.get_object("agent", name)
+        candidate = await store.version(obj, version)
+        rule = (candidate.spec or {}).get("release_gate") or {}
+        digest = candidate.spec_hash
+        live = (await store.deployments(obj)).get(settings.gate_baseline_environment)
+    if not rule.get("enabled"):
+        return None
+    if override is not None:
+        await _allow(request, "config.release.override", "agent", name)
+    token = str(request.state.context_token)
+    try:
+        result = await request.app.state.gate.check(token, name, version, digest, live, rule)
+    except ServiceUnavailable:
+        if override is None:
+            raise
+        result = {"passed": False, "reasons": [{"code": "evaluation_unavailable"}]}
+    out = GateOut(
+        passed=bool(result.get("passed")),
+        test_set=str(rule["test_set"]),
+        run_id=str(result["run_id"]) if result.get("run_id") else None,
+        baseline_version=live if result.get("baseline_run_id") else None,
+        reasons=list(result.get("reasons") or []),
+        deltas=dict(result.get("deltas") or {}),
+    )
+    if not out.passed:
+        if override is None:
+            raise blocked(result)
+        out.overridden = True
+    return out
+
+
+@tenant_router.post("/objects/{kind}/{name}/versions/{version}/publish", response_model=PublishOut)
+async def publish(
+    kind: str,
+    name: str,
+    version: int,
+    request: Request,
+    ctx: Ctx,
+    body: Annotated[PublishIn | None, Body()] = None,
+) -> PublishOut:
+    """Publish a draft. An assistant with a release gate must first pass its evaluation (QA-02)."""
+    await _allow(request, _write_action(_kind(kind)), kind, name)
+    override = body.override_reason if body else None
+    gate = await _release_gate(request, ctx, name, version, override) if kind == "agent" else None
+    async with _db(request).session(ctx) as s:
+        v = await Store(s, ctx, request.app.state.settings).publish(
+            kind,
+            name,
+            version,
+            gate=gate.model_dump() if gate else None,
+            override_reason=override if gate and gate.overridden else None,
+        )
+        return PublishOut(**VersionOut.of(v).model_dump(), gate=gate)
 
 
 @tenant_router.get("/objects/{kind}/{name}/diff")

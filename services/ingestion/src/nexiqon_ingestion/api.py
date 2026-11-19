@@ -431,6 +431,83 @@ async def update_source(
         return _source_out(src)
 
 
+class SnippetIn(BaseModel):
+    question: str = Field(min_length=3, max_length=500)
+    answer: str = Field(min_length=1, max_length=8000)
+
+
+class SnippetOut(BaseModel):
+    source: SourceOut
+    run_id: uuid.UUID | None
+    replaced: bool
+
+
+SNIPPET_SOURCE = "qa-snippets"
+
+
+@tenant_router.post(
+    "/collections/{collection_id}/snippets", response_model=SnippetOut, status_code=201
+)
+async def add_snippet(
+    collection_id: uuid.UUID, body: SnippetIn, request: Request, ctx: Ctx
+) -> SnippetOut:
+    """Add (or replace, for the same question) a reviewed answer and sync it at once: the fix
+    for a bad answer is live as soon as the run finishes (fix loop, ST-14)."""
+    await _allow(request, "ingestion.sources.write", "source")
+    await _get_collection(request, ctx, collection_id)
+    key = " ".join(body.question.lower().split())
+    try:
+        source_id, replaced, busy = await _save_snippet(request, ctx, collection_id, body, key)
+    except IntegrityError as exc:
+        raise Conflict(f"Another source is named {SNIPPET_SOURCE!r} in this collection") from exc
+    run_id = None
+    if not busy:  # a running sync picks the new snippet up next time; Studio shows the state
+        run_id = (await sync_source(source_id, request, ctx)).id
+    async with _pipeline(request).d.db.session(ctx) as s:
+        fresh = await s.get(Source, source_id)
+        assert fresh is not None
+        return SnippetOut(source=_source_out(fresh), run_id=run_id, replaced=replaced)
+
+
+async def _save_snippet(
+    request: Request, ctx: TenantContext, collection_id: uuid.UUID, body: SnippetIn, key: str
+) -> tuple[uuid.UUID, bool, bool]:
+    registry: Registry = request.app.state.registry
+    async with _pipeline(request).d.db.session(ctx) as s:
+        src = await s.scalar(
+            select(Source)
+            .where(Source.collection_id == collection_id, Source.connector == "snippets")
+            .order_by(Source.created_at)
+            .limit(1)
+        )
+        snippet = {"question": body.question.strip(), "answer": body.answer.strip()}
+        replaced = False
+        if src is None:
+            src = Source(
+                tenant_id=ctx.tenant_id,
+                collection_id=collection_id,
+                created_by=ctx.actor_id,
+                name=SNIPPET_SOURCE,
+                connector="snippets",
+                config={"snippets": [snippet]},
+            )
+            s.add(src)
+        else:
+            items = list((src.config or {}).get("snippets") or [])
+            kept = [i for i in items if " ".join(str(i["question"]).lower().split()) != key]
+            replaced = len(kept) != len(items)
+            config = {**(src.config or {}), "snippets": [*kept, snippet]}
+            errors = registry.validate_config(PluginKind.CONNECTOR, "snippets", config)
+            if errors:
+                problem = BadRequest("Too many snippets in this collection")
+                problem.errors = [{"message": e} for e in errors]
+                raise problem
+            src.config = config
+        await s.flush()
+        await s.refresh(src)
+        return src.id, replaced, src.status == "syncing"
+
+
 @tenant_router.get("/collections/{collection_id}/sources", response_model=list[SourceOut])
 async def list_sources(collection_id: uuid.UUID, request: Request, ctx: Ctx) -> list[SourceOut]:
     await _allow(request, "ingestion.sources.read", "source")
@@ -539,6 +616,7 @@ class DocumentOut(BaseModel):
     token_count: int
     updated_at: datetime
     indexed_at: datetime | None
+    outdated_at: datetime | None = None
 
 
 def _doc_out(d: Document) -> DocumentOut:
@@ -726,6 +804,37 @@ async def download(token: str, request: Request, ctx: Ctx) -> Response:
             "cache-control": "private, no-store",
         },
     )
+
+
+class DocumentPatch(BaseModel):
+    outdated: bool
+
+
+@tenant_router.patch("/documents/{document_id}", response_model=DocumentOut)
+async def update_document(
+    document_id: uuid.UUID, body: DocumentPatch, request: Request, ctx: Ctx
+) -> DocumentOut:
+    """Mark a document outdated: answers stop using it at once, until it is fixed (a new version
+    is indexed) or marked current again (fix loop, ST-14)."""
+    await _allow(request, "ingestion.documents.write", "document", document_id)
+    pipeline = _pipeline(request)
+    async with pipeline.d.db.session(ctx) as s:
+        doc = await s.get(Document, document_id)
+    if doc is None or doc.status == "deleted":
+        raise NotFound("Document not found")
+    await _get_collection(request, ctx, doc.collection_id)
+    if doc.indexed_version is None:
+        raise Conflict("The document is not indexed yet")
+    # Index first: once this returns, the mark is in force for every answer.
+    await pipeline.d.index.flag_document(ctx.tenant_id, document_id, outdated=body.outdated)
+    async with pipeline.d.db.session(ctx) as s:
+        doc = await s.get(Document, document_id)
+        assert doc is not None
+        doc.outdated_at = datetime.now(UTC) if body.outdated else None
+        doc.outdated_by = ctx.actor_id if body.outdated else None
+        await s.flush()
+        await s.refresh(doc)
+        return _doc_out(doc)
 
 
 @tenant_router.delete("/documents/{document_id}", status_code=204)

@@ -11,7 +11,7 @@ from typing import Any
 from uuid import UUID
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Integer, String, Text
+from sqlalchemy import Boolean, Integer, String, Text, false
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.types import UserDefinedType
@@ -53,5 +53,7 @@ class IndexNode(TenantScopedMixin, Base):
     source_uri: Mapped[str | None] = mapped_column(String(2000), default=None)
     acl_groups: Mapped[list[str]] = mapped_column(ARRAY(String(200)), default=list)
     classification: Mapped[str] = mapped_column(String(16), default="internal")
+    # Marked outdated by a content manager (ST-14): left out of answers until re-indexed.
+    outdated: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     embedding_model: Mapped[str | None] = mapped_column(String(200), default=None)
     embedding: Mapped[list[float] | None] = mapped_column(Vector(DIMENSIONS), default=None)

@@ -133,7 +133,12 @@ export interface paths {
         delete: operations["delete_document_v1_index_documents__document_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Flag Document
+         * @description Mark a document outdated (left out of answers) or current again. Indexing a new version
+         *     of the document clears the mark.
+         */
+        patch: operations["flag_document_v1_index_documents__document_id__patch"];
         trace?: never;
     };
     "/v1/index/documents/{document_id}/outline": {
@@ -312,6 +317,11 @@ export interface components {
             /** Deleted */
             deleted: number;
         };
+        /** DocumentFlags */
+        DocumentFlags: {
+            /** Outdated */
+            outdated: boolean;
+        };
         /** DocumentIn */
         DocumentIn: {
             /** Acl Groups */
@@ -337,6 +347,18 @@ export interface components {
             title?: string | null;
             /** Version */
             version: number;
+        };
+        /** FlagsOut */
+        FlagsOut: {
+            /**
+             * Document Id
+             * Format: uuid
+             */
+            document_id: string;
+            /** Nodes */
+            nodes: number;
+            /** Outdated */
+            outdated: boolean;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -810,6 +832,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Deleted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    flag_document_v1_index_documents__document_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentFlags"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlagsOut"];
                 };
             };
             /** @description Validation Error */

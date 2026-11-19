@@ -3,10 +3,11 @@ name = "nexiqon-evaluation"
 version = "0.1.0"
 description = "Test sets, evaluation runs, scorecards and release gates"
 requires-python = ">=3.12,<3.14"
-dependencies = ["nexiqon-core"]
+dependencies = ["nexiqon-core", "nexiqon-sdk", "pyyaml>=6.0"]
 
 [tool.uv.sources]
 nexiqon-core = { workspace = true }
+nexiqon-sdk = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

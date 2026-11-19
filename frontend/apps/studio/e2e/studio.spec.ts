@@ -5,6 +5,8 @@ const ORG = `E2E ${Date.now().toString(36)}`;
 const SLUG = ORG.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
 async function a11y(page: Page, label: string) {
+  // Next streams page metadata: scan once the title has arrived, not mid-navigation.
+  await expect(page).toHaveTitle(/\S/);
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
@@ -384,13 +386,96 @@ test.describe.serial("Studio", () => {
     await expect(page.getByTestId("diff")).toContainText("widget");
   });
 
+  test("evaluations: a test set, a run and its scorecard", async () => {
+    await page.goto("/evaluations");
+    await a11y(page, "evaluations empty");
+    await page.getByTestId("new-test-set").click();
+    await page.getByRole("button", { name: "Empty", exact: true }).click();
+    await page.getByTestId("set-name").fill("ops-checks");
+    await pick(page, "Assistant", /ops-helper/);
+    await a11y(page, "new test set");
+    await page.getByTestId("create-test-set").click();
+    await page.waitForURL(/\/evaluations\/[0-9a-f-]+$/);
+    await page.getByTestId("add-case").click();
+    await page.getByTestId("case-question").fill("How long is each backup kept?");
+    await page.getByTestId("case-phrases").fill("35 days");
+    await a11y(page, "case editor");
+    await page.getByTestId("save-case").click();
+    await page.getByTestId("add-case").click();
+    await page.getByTestId("case-question").fill("What is the CEO's home address?");
+    await page.getByLabel("The documentation does not answer this").check();
+    await page.getByTestId("save-case").click();
+    await expect(page.getByTestId("cases").getByRole("listitem")).toHaveCount(2);
+    await page.getByTestId("start-run").click();
+    const sheet = page.getByTestId("run-sheet");
+    await expect(sheet.getByTestId("scorecard")).toBeVisible({ timeout: 60_000 });
+    await expect(sheet.locator('[data-testid^="result-"]')).toHaveCount(2);
+    await expect(sheet.getByTestId("scorecard")).toContainText("Knows when it does not know");
+    await a11y(page, "evaluation run");
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("eval-runs")).toContainText("ops-helper v");
+  });
+
+  test("fix loop: teach the right answer, check a source, ask again and keep it fixed", async () => {
+    await page.goto("/assistants/ops-helper?tab=test");
+    await page.getByTestId("test-input").fill("How long is each backup kept?");
+    await page.getByTestId("test-send").click();
+    const log = page.getByTestId("test-chat-log");
+    await expect(log.getByTestId("fix")).toBeVisible();
+    await log.getByTestId("fix").last().click();
+    const fix = page.getByTestId("fix-answer");
+    await expect(fix).toContainText("How long is each backup kept?");
+    await a11y(page, "fix answer");
+    await fix.getByTestId("fix-snippet-answer").fill("Each backup is kept for 35 days, in two regions.");
+    await fix.getByTestId("fix-add-snippet").click();
+    await expect(fix.getByText("Live", { exact: true })).toBeVisible({ timeout: 60_000 });
+    const source = fix.getByTestId("fix-sources").getByRole("listitem").filter({ hasText: "Backups" }).first();
+    await expect(source).toContainText("Cited");
+    await source.getByTestId("fix-outdated").click();
+    await expect(source).toContainText("Outdated");
+    await source.getByTestId("fix-outdated").click();
+    await expect(source).not.toContainText("Outdated");
+    await fix.getByTestId("fix-retest").click();
+    await expect(fix.getByTestId("fix-retest-answer")).toContainText("35 days");
+    await fix.getByTestId("fix-phrases").fill("35 days");
+    await fix.getByTestId("fix-save-case").click();
+    await expect(fix).toContainText("Saved in ops-helper-regressions");
+    await page.keyboard.press("Escape");
+  });
+
+  test("safe publish: a gated version is released only after it passes its evaluation", async () => {
+    await page.goto("/assistants/ops-helper?tab=quality");
+    await page.getByTestId("gate-enabled").click();
+    await pick(page, "Test set", /ops-checks/);
+    await page.getByLabel("Pass at least (%)").fill("0");
+    await page.getByLabel("Allowed drop vs live (points)").fill("100");
+    await a11y(page, "quality");
+    await page.getByTestId("save-gate").click();
+    await expect(page.getByText(/Draft v\d+ not released/)).toBeVisible();
+    await page.getByTestId("tab-versions").click();
+    await page.getByTestId("release").click();
+    const blocked = page.getByTestId("gate-blocked");
+    await expect(blocked).toContainText("has not been evaluated");
+    await a11y(page, "release blocked");
+    await page.getByRole("link", { name: "Open the quality check" }).click();
+    const check = page.getByTestId("release-check");
+    await check.getByTestId("run-gate-evaluation").click();
+    await expect(check).toContainText("Ready", { timeout: 60_000 });
+    await expect(check.getByTestId("scorecard")).toBeVisible();
+    await expect(page.getByTestId("version-scores")).toContainText("ops-checks");
+    await page.getByTestId("tab-versions").click();
+    await page.getByTestId("release").click();
+    await expect(page.getByTestId("live-version")).toHaveText(/Version \d+/);
+    await expect(page.getByTestId("gate-blocked")).toHaveCount(0);
+  });
+
   test("knowledge: delete shows the impact first", async () => {
     await page.goto("/knowledge");
     await page.getByTestId("collection-product-docs").click();
     await page.getByRole("button", { name: "Delete: product-docs" }).click();
     const dialog = page.getByRole("alertdialog");
-    await expect(dialog).toContainText("2 documents");
-    await expect(dialog).toContainText("1 connected source");
+    await expect(dialog).toContainText("3 documents"); // two files and the reviewed answer
+    await expect(dialog).toContainText("2 connected sources");
     await dialog.getByTestId("confirm-delete-collection").click();
     await page.waitForURL(/\/knowledge$/);
     await expect(page.getByRole("heading", { name: "Add your first collection" })).toBeVisible();

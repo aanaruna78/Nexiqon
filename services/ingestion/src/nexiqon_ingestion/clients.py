@@ -99,6 +99,14 @@ class IndexClient(ServiceClient):
         )
         _raise_for(response, "index_failed")
 
+    async def flag_document(
+        self, tenant_id: uuid.UUID, document_id: uuid.UUID, *, outdated: bool
+    ) -> None:
+        response = await self.request(
+            tenant_id, "PATCH", f"/v1/index/documents/{document_id}", json={"outdated": outdated}
+        )
+        _raise_for(response, "index_failed")
+
     async def delete_document(self, tenant_id: uuid.UUID, document_id: uuid.UUID) -> None:
         response = await self.request(tenant_id, "DELETE", f"/v1/index/documents/{document_id}")
         _raise_for(response, "index_failed")

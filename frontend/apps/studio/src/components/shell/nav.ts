@@ -48,7 +48,7 @@ export const NAV: NavGroup[] = [
     items: [
       { key: "conversations", href: "/conversations", icon: MessagesSquare, tone: "sky", phase: "Phase 4" },
       { key: "insights", href: "/insights", icon: ChartLine, tone: "violet", phase: "Phase 4" },
-      { key: "evaluations", href: "/evaluations", icon: ClipboardCheck, tone: "amber", phase: "Phase 4" },
+      { key: "evaluations", href: "/evaluations", icon: ClipboardCheck, tone: "amber" },
       { key: "actions", href: "/actions", icon: Blocks, tone: "rose" },
     ],
   },

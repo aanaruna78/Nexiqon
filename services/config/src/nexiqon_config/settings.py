@@ -20,3 +20,7 @@ class ServiceSettings(CoreSettings):
     snapshot_signing: SigningSettings = Field(default_factory=SigningSettings)
     # Ready-made Domain Packs offered in Studio's setup guide (ST-13): <dir>/<name>/pack.yaml.
     pack_gallery_dir: Path = Path("packs")
+    # Safe publish (QA-02): the evaluation service answers release-gate checks; derived from
+    # deploy/groups.yaml when unset. A gated version is compared with the one live here.
+    evaluation_url: str | None = None
+    gate_baseline_environment: str = "dev"

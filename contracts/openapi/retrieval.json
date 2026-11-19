@@ -362,6 +362,19 @@
         "title": "Deleted",
         "type": "object"
       },
+      "DocumentFlags": {
+        "properties": {
+          "outdated": {
+            "title": "Outdated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "outdated"
+        ],
+        "title": "DocumentFlags",
+        "type": "object"
+      },
       "DocumentIn": {
         "properties": {
           "acl_groups": {
@@ -446,6 +459,30 @@
           "nodes"
         ],
         "title": "DocumentIn",
+        "type": "object"
+      },
+      "FlagsOut": {
+        "properties": {
+          "document_id": {
+            "format": "uuid",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "nodes": {
+            "title": "Nodes",
+            "type": "integer"
+          },
+          "outdated": {
+            "title": "Outdated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "document_id",
+          "outdated",
+          "nodes"
+        ],
+        "title": "FlagsOut",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -1418,6 +1455,58 @@
           }
         },
         "summary": "Delete Document",
+        "tags": [
+          "retrieval"
+        ]
+      },
+      "patch": {
+        "description": "Mark a document outdated (left out of answers) or current again. Indexing a new version\nof the document clears the mark.",
+        "operationId": "flag_document_v1_index_documents__document_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentFlags"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlagsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Flag Document",
         "tags": [
           "retrieval"
         ]

@@ -100,8 +100,18 @@ export function useRelease(kind: string, name: string) {
     },
   });
   const publish = useMutation({
-    mutationFn: (version: number) => api(`config/v1/objects/${kind}/${name}/versions/${version}/publish`, { method: "POST" }),
-    onSuccess: refresh,
+    // An override reason publishes past a failed release gate (admins only, QA-02).
+    mutationFn: (arg: number | { version: number; override_reason?: string }) => {
+      const { version, override_reason } = typeof arg === "number" ? { version: arg, override_reason: undefined } : arg;
+      return api(`config/v1/objects/${kind}/${name}/versions/${version}/publish`, {
+        method: "POST",
+        json: override_reason ? { override_reason } : undefined,
+      });
+    },
+    onSuccess: async () => {
+      await refresh();
+      await client.invalidateQueries({ queryKey: ["gate"] });
+    },
   });
   const deploy = useMutation({
     mutationFn: ({ version, environment = "dev", reason = "" }: { version: number; environment?: string; reason?: string }) =>

@@ -1,9 +1,10 @@
 "use client";
 
-import { MessageSquarePlus, ScanSearch, Send, UserRound } from "lucide-react";
+import { MessageSquarePlus, ScanSearch, Send, UserRound, Wrench } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { type FormEvent, type KeyboardEvent, useRef, useState } from "react";
 
+import { FixAnswer, type FixTarget } from "@/components/fix/fix-answer";
 import { AnswerInspector } from "@/components/inspector/answer-inspector";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -79,6 +80,7 @@ export function TestChat({ agent, liveVersion, versions }: { agent: string; live
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState("");
   const [inspect, setInspect] = useState<string | null>(null);
+  const [fix, setFix] = useState<FixTarget | null>(null);
   const log = useRef<HTMLOListElement>(null);
   const preview = version !== null && version !== liveVersion;
 
@@ -235,6 +237,17 @@ export function TestChat({ agent, liveVersion, versions }: { agent: string; live
                     {t("inspect")}
                   </Button>
                 ) : null}
+                {m.run_id && messages[i - 1]?.role === "user" ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFix({ agent, question: messages[i - 1].content, answer: m.content, runId: m.run_id, version: preview ? version : null, lang: locale.slice(0, 2) })}
+                    data-testid="fix"
+                  >
+                    <Wrench className="size-4" aria-hidden="true" />
+                    {t("fix")}
+                  </Button>
+                ) : null}
               </div>
             ) : null}
           </li>
@@ -259,6 +272,7 @@ export function TestChat({ agent, liveVersion, versions }: { agent: string; live
         </Button>
       </form>
       <AnswerInspector runId={inspect} onClose={() => setInspect(null)} />
+      <FixAnswer target={fix} onClose={() => setFix(null)} />
     </div>
   );
 }

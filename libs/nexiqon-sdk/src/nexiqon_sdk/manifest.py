@@ -10,6 +10,7 @@ class PluginKind(StrEnum):
     CONNECTOR = "connector"
     PARSER = "parser"
     CHUNKER = "chunker"
+    EVALUATOR = "evaluator"
 
 
 class Manifest(BaseModel):

@@ -66,6 +66,18 @@ role_permissions := {
 		"config.agent.read",
 		"ingestion.collections.read",
 	],
+	# Asks an assistant version each test question (QA-01). Runs see what content managers see
+	# (retrieval's acl_bypass_roles) and may not invoke tools: evaluations never change anything.
+	"service:evaluation": [
+		"agent.query.run",
+		"agent.versions.preview",
+		"model.inference.run",
+		"retrieval.search.run",
+		"retrieval.search.verify",
+		"config.profiles.resolve",
+		"config.agent.read",
+		"tool.definitions.read",
+	],
 	# Reads the agent's pack (widget title, greeting, colour) to answer channel settings requests.
 	"service:channel": ["config.agent.read"],
 	# Reads tool definitions and agents' tool allowlists; invocations run as the calling user.
@@ -90,6 +102,8 @@ admin_only := {
 	"audit.chain.verify",
 	"tool.invoke.high",
 	"tool.credentials.read",
+	# Publishing an assistant version that failed its release gate (QA-02).
+	"config.release.override",
 }
 
 admin_roles := {"owner", "admin", "service"}

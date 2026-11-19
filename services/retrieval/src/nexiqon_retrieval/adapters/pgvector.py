@@ -42,6 +42,8 @@ def _ctx(tenant: uuid.UUID) -> TenantContext:
 def visibility(filters: Filters) -> list[Any]:
     """SQL predicates for what a caller may see: classification ceiling and access groups."""
     clauses: list[Any] = [N.classification.in_(filters.classifications)]
+    if not filters.include_outdated:
+        clauses.append(N.outdated.is_(False))
     if filters.groups is not None:
         clauses.append(
             or_(func.cardinality(N.acl_groups) == 0, N.acl_groups.overlap(filters.groups))

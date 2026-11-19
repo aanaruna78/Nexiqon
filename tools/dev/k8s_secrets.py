@@ -24,6 +24,7 @@ KEY_FILES = {
     "identity-agent-runtime.yaml": "dev-secrets-agent-runtime.yaml",
     "identity-channel.yaml": "dev-secrets-channel.yaml",
     "identity-tool-gateway.yaml": "dev-secrets-tool-gateway.yaml",
+    "identity-evaluation.yaml": "dev-secrets-evaluation.yaml",
 }
 
 

@@ -7,6 +7,7 @@ import type { Tone } from "@/components/visual/icon-tile";
 export interface VersionInfo {
   version: number;
   status: "draft" | "published";
+  spec_hash?: string;
   notes?: string;
   created_by?: string;
   created_at?: string;

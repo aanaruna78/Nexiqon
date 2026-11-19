@@ -19,12 +19,14 @@ from nexiqon_core.testing import make_keypair
 CONFIG = Path(__file__).resolve().parents[2] / "deploy" / "compose" / "config"
 OUT = CONFIG / "dev-secrets.yaml"
 # Services that sign their own tenant-scoped tokens -> the settings key their private key goes
-# under. Channel shares a process with agent-runtime in the grouped topology, so it has its own key.
+# under. Channel shares a process with agent-runtime in the grouped topology, so it has its own key;
+# evaluation likewise (control-ops).
 SERVICE_IDENTITIES = {
     "ingestion": "service_identity",
     "agent-runtime": "service_identity",
     "tool-gateway": "service_identity",
     "channel": "channel_identity",
+    "evaluation": "evaluation_identity",
 }
 
 

@@ -1504,10 +1504,16 @@ version = "0.1.0"
 source = { editable = "services/evaluation" }
 dependencies = [
     { name = "nexiqon-core" },
+    { name = "nexiqon-sdk" },
+    { name = "pyyaml" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "nexiqon-core", editable = "libs/nexiqon-core" }]
+requires-dist = [
+    { name = "nexiqon-core", editable = "libs/nexiqon-core" },
+    { name = "nexiqon-sdk", editable = "libs/nexiqon-sdk" },
+    { name = "pyyaml", specifier = ">=6.0" },
+]
 
 [[package]]
 name = "nexiqon-governance"

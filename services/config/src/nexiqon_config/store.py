@@ -185,7 +185,15 @@ class Store:
         )
         return await self._new_draft(obj, int(latest or 0) + 1, spec, notes)
 
-    async def publish(self, kind: str, name: str, number: int) -> ConfigVersion:
+    async def publish(
+        self,
+        kind: str,
+        name: str,
+        number: int,
+        *,
+        gate: dict[str, Any] | None = None,
+        override_reason: str | None = None,
+    ) -> ConfigVersion:
         obj = await self.get_object(kind, name)
         v = await self.version(obj, number)
         if v.status != "draft":
@@ -196,7 +204,14 @@ class Store:
             await self.resolve_agent(name, "dev", agent_version=v)
         v.status, v.published_by, v.published_at = "published", self.ctx.actor_id, datetime.now(UTC)
         await self.s.flush()
-        self._event("version.published", f"{kind}/{name}", version=number, spec_hash=v.spec_hash)
+        extra: dict[str, Any] = {}
+        if gate is not None:  # the release-gate answer, and who overrode it and why (QA-02)
+            extra["gate"] = gate
+        if override_reason:
+            extra["override_reason"] = override_reason
+        self._event(
+            "version.published", f"{kind}/{name}", version=number, spec_hash=v.spec_hash, **extra
+        )
         return v
 
     async def archive(self, kind: str, name: str) -> None:

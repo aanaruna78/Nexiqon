@@ -11,6 +11,7 @@ from nexiqon_core.db import TenantSessionFactory, create_engine
 from nexiqon_core.tenancy import CONTEXT_HEADER, TenantContext
 from nexiqon_ingestion.models import Outbox
 from nexiqon_ingestion.testing import EICAR
+from nexiqon_retrieval.models import IndexNode
 
 from .conftest import Stack
 from .docs import MARKDOWN, docx, pdf
@@ -469,3 +470,79 @@ async def test_download_links_are_personal_tenant_bound_and_short_lived(stack: S
     s.app.state.downloads.ttl = -1
     expired = (await s.ok("POST", f"/v1/documents/{doc}/download-link", headers=as_()))["url"]
     assert (await s.api.get(expired.removeprefix("/ingestion"), headers=as_())).status_code == 403
+
+
+async def test_fix_loop_outdated_documents_leave_answers_until_fixed(stack: Stack) -> None:
+    """ST-14: marking a page outdated takes it out of search at once; a new version brings it back."""
+    s = stack
+    c = await s.collection()
+    up = await s.upload(
+        c["id"], "plans.md", b"# Plans\n\nThe Team plan costs 10 dollars.", "text/markdown"
+    )
+    await s.wait(await s.ok("GET", f"/v1/runs/{up['run_id']}"))
+    doc = up["document"]["id"]
+
+    async def found() -> set[str]:
+        """Documents a search may return: indexed and not marked outdated."""
+        engine = create_engine(s.app.state.settings.database.url.get_secret_value())
+        try:
+            async with TenantSessionFactory(engine).session(s.tenants.a.context) as session:
+                rows = await session.scalars(
+                    select(IndexNode.document_id).where(IndexNode.outdated.is_(False)).distinct()
+                )
+                return {str(r) for r in rows}
+        finally:
+            await engine.dispose()
+
+    assert doc in await found()
+    marked = await s.ok("PATCH", f"/v1/documents/{doc}", json={"outdated": True})
+    assert marked["outdated_at"] is not None
+    assert doc not in await found()
+    # People who manage knowledge still see its outline and count it.
+    assert (
+        await s.retrieval.get(f"/v1/index/documents/{doc}/outline", headers=s.h)
+    ).status_code == 200
+
+    fixed = await s.upload(
+        c["id"], "plans.md", b"# Plans\n\nThe Team plan costs 12 dollars.", "text/markdown"
+    )
+    await s.wait(await s.ok("GET", f"/v1/runs/{fixed['run_id']}"))
+    assert (await s.ok("GET", f"/v1/documents/{doc}"))["outdated_at"] is None
+    assert doc in await found()
+
+    await s.ok("PATCH", f"/v1/documents/{doc}", json={"outdated": True})
+    await s.ok("PATCH", f"/v1/documents/{doc}", json={"outdated": False})
+    assert doc in await found()
+    member = {
+        CONTEXT_HEADER: s.tenants.issuer.issue(
+            TenantContext(s.tenants.a.context.tenant_id, "u-9", "user", frozenset({"member"}))
+        )
+    }
+    await s.ok("PATCH", f"/v1/documents/{doc}", 403, json={"outdated": True}, headers=member)
+
+
+async def test_fix_loop_snippets_are_added_and_replaced_in_one_call(stack: Stack) -> None:
+    """ST-14: a reviewed answer goes live from the answer that needed it, without editing YAML."""
+    s = stack
+    c = await s.collection()
+    first = await s.ok(
+        "POST",
+        f"/v1/collections/{c['id']}/snippets",
+        201,
+        json={"question": "How long are backups kept?", "answer": "35 days."},
+    )
+    assert first["source"]["name"] == "qa-snippets"
+    assert not first["replaced"]
+    await s.wait(await s.ok("GET", f"/v1/runs/{first['run_id']}"))
+    again = await s.ok(
+        "POST",
+        f"/v1/collections/{c['id']}/snippets",
+        201,
+        json={"question": "how long are  BACKUPS kept?", "answer": "90 days."},
+    )
+    assert again["replaced"]
+    assert again["source"]["id"] == first["source"]["id"]
+    assert [x["answer"] for x in again["source"]["config"]["snippets"]] == ["90 days."]
+    await s.wait(await s.ok("GET", f"/v1/runs/{again['run_id']}"))
+    docs = await s.ok("GET", f"/v1/collections/{c['id']}/documents")
+    assert [d["title"] for d in docs] == ["how long are BACKUPS kept?"]

@@ -173,7 +173,10 @@ services:
     ports: ["8101:8000"]
   control-ops:
     <<: *app
-    environment: { <<: *app-env, NEXIQON_GROUP: control-ops }
+    environment:
+      <<: *app-env
+      NEXIQON_GROUP: control-ops
+      NEXIQON_CONFIG_FILES: /app/config/dev.yaml,/app/config/dev-secrets.yaml,/app/config/dev-service-keys.yaml,/app/config/dev-secrets-evaluation.yaml,/app/config/control-ops.yaml
     ports: ["8102:8000"]
   knowledge:
     <<: *app

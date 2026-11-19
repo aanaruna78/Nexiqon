@@ -6,6 +6,7 @@ import uuid
 
 import pytest
 
+from nexiqon_core.tenancy import CONTEXT_HEADER
 from nexiqon_retrieval.search import SEPARATOR, SearchRequest
 from nexiqon_retrieval.store import Filters
 
@@ -375,3 +376,44 @@ def test_hidden_counts_are_staff_diagnostics(stack: SearchStack) -> None:
     assert stack.search(query, headers=ingestion, explain_access=True)["hidden"] is None
     forged = {**outsider, "x-nexiqon-diagnostics": stack.headers({"admin"})["X-Nexiqon-Context"]}
     assert stack.search(query, headers=forged, explain_access=True)["hidden"] is None
+
+
+def test_outdated_documents_leave_answers_until_reindexed(stack: SearchStack) -> None:
+    """ST-14: a page marked outdated is never retrieved; its outline still shows to managers."""
+    doc = stack.index(GUIDE, "upload://ops-guide.md")
+    query = "When do backups run every night?"
+    assert stack.search(query)["passages"]
+    ingestion = {CONTEXT_HEADER: stack.service.for_tenant(stack.tenants.a.context.tenant_id)}
+    flagged = stack.client.patch(
+        f"/v1/index/documents/{doc}", json={"outdated": True}, headers=ingestion
+    )
+    assert flagged.status_code == 200, flagged.text
+    assert flagged.json()["outdated"] is True
+    assert all("ops-guide" not in p["source_uri"] for p in stack.search(query)["passages"])
+    admin = stack.headers({"admin"})
+    assert all(
+        "ops-guide" not in p["source_uri"] for p in stack.search(query, headers=admin)["passages"]
+    )
+    outline = stack.client.get(f"/v1/index/documents/{doc}/outline", headers=admin)
+    assert outline.status_code == 200
+    # Index writes are for ingestion's identity (service-only in the policy); people go through
+    # ingestion, which checks their own permission.
+    denied = stack.client.patch(
+        f"/v1/index/documents/{doc}", json={"outdated": False}, headers=stack.headers({"member"})
+    )
+    assert denied.status_code == 403
+    missing = stack.client.patch(
+        f"/v1/index/documents/{uuid.uuid4()}", json={"outdated": True}, headers=ingestion
+    )
+    assert missing.status_code == 404
+    stack.client.patch(f"/v1/index/documents/{doc}", json={"outdated": False}, headers=ingestion)
+    assert stack.search(query)["passages"]
+
+
+def test_evaluation_runs_see_what_content_managers_see(stack: SearchStack) -> None:
+    stack.index(SECRET, "upload://payroll.md", acl=["payroll"])
+    assert stack.evaluation is not None
+    token = stack.evaluation.for_tenant(stack.tenants.a.context.tenant_id)
+    evaluation = {CONTEXT_HEADER: token}
+    r = stack.search("payroll backups encrypted", headers=evaluation)
+    assert r["passages"][0]["source_uri"] == "upload://payroll.md"

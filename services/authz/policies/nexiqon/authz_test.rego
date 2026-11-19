@@ -143,3 +143,23 @@ test_only_builders_run_unreleased_assistant_versions if {
 	not authz.allow with input as {"actor": actor(["member"]), "action": "agent.versions.preview", "resource": {"type": "agent"}}
 	not authz.allow with input as {"actor": actor(["end_user"]), "action": "agent.versions.preview", "resource": {"type": "agent"}}
 }
+
+test_evaluation_identity_asks_assistants_but_never_invokes_tools if {
+	svc := {"tenant_id": "t-a", "id": "service:evaluation", "type": "service", "roles": ["service:evaluation"], "groups": []}
+	authz.allow with input as {"actor": svc, "action": "agent.query.run", "resource": {"type": "agent"}}
+	authz.allow with input as {"actor": svc, "action": "agent.versions.preview", "resource": {"type": "agent"}}
+	authz.allow with input as {"actor": svc, "action": "retrieval.search.run", "resource": {"type": "collection"}}
+	not authz.allow with input as {"actor": svc, "action": "tool.invoke.read", "resource": {"type": "tool"}}
+	not authz.allow with input as {"actor": svc, "action": "tool.invoke.write", "resource": {"type": "tool"}}
+	not authz.allow with input as {"actor": svc, "action": "config.agent.write", "resource": {"type": "agent"}}
+	not authz.allow with input as {"actor": svc, "action": "agent.query.run", "resource": {"type": "agent", "tenant_id": "t-b"}}
+}
+
+test_evaluation_answers_and_release_overrides if {
+	authz.allow with input as {"actor": actor(["editor"]), "action": "evaluation.results.view", "resource": {"type": "evaluation_run"}}
+	not authz.allow with input as {"actor": actor(["member"]), "action": "evaluation.results.view", "resource": {"type": "evaluation_run"}}
+	not authz.allow with input as {"actor": actor(["member"]), "action": "evaluation.cases.view", "resource": {"type": "test_set"}}
+	authz.allow with input as {"actor": actor(["member"]), "action": "evaluation.runs.read", "resource": {"type": "agent"}}
+	not authz.allow with input as {"actor": actor(["editor"]), "action": "config.release.override", "resource": {"type": "agent"}}
+	authz.allow with input as {"actor": actor(["admin"]), "action": "config.release.override", "resource": {"type": "agent"}}
+}

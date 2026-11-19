@@ -294,6 +294,37 @@
         }
       },
       "description": "This assistant's widget text and colour; each field overrides the Domain Pack's channels.widget."
+    },
+    "release_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Safe publish (QA-02): a new version is published only after it passes an evaluation on this test set without falling behind the live version.",
+      "required": [
+        "enabled",
+        "test_set"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "test_set": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+          "description": "Name of the evaluation test set"
+        },
+        "min_pass_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Share of cases that must pass (default 0.8)"
+        },
+        "max_drop": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Largest allowed fall against the live version (default 0.05)"
+        }
+      }
     }
   }
 }

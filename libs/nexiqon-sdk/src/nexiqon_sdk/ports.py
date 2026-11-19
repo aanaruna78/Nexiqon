@@ -4,7 +4,16 @@ from collections.abc import AsyncIterator, Mapping
 from typing import Any, Protocol
 
 from nexiqon_sdk.manifest import Manifest
-from nexiqon_sdk.types import Block, ChunkDraft, Content, Item, ParsedDocument
+from nexiqon_sdk.types import (
+    Block,
+    ChunkDraft,
+    Content,
+    EvalCase,
+    EvalObservation,
+    Item,
+    ParsedDocument,
+    Score,
+)
 
 
 class FetchResponse(Protocol):
@@ -62,3 +71,18 @@ class Chunker(Protocol):
     uses_headings: bool
 
     def chunk(self, blocks: list[Block], options: Mapping[str, Any]) -> list[ChunkDraft]: ...
+
+
+class Evaluator(Protocol):
+    """Scores one evaluation case (QA-01). Deterministic evaluators need nothing else; ones that
+    ask a model use the platform's model gateway through ``judge`` (never a vendor SDK)."""
+
+    manifest: Manifest
+
+    def applies(self, case: EvalCase) -> bool:
+        """False when this evaluator has nothing to say about the case (e.g. no expected source)."""
+        ...
+
+    async def score(
+        self, case: EvalCase, seen: EvalObservation, config: Mapping[str, Any]
+    ) -> Score: ...

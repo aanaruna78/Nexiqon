@@ -198,7 +198,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Publish */
+        /**
+         * Publish
+         * @description Publish a draft. An assistant with a release gate must first pass its evaluation (QA-02).
+         */
         post: operations["publish_v1_objects__kind___name__versions__version__publish_post"];
         delete?: never;
         options?: never;
@@ -479,6 +482,33 @@ export interface components {
             /** Version */
             version: string;
         };
+        /**
+         * GateOut
+         * @description The release-gate answer recorded with a publish (QA-02).
+         */
+        GateOut: {
+            /** Baseline Version */
+            baseline_version?: number | null;
+            /** Deltas */
+            deltas?: {
+                [key: string]: number;
+            };
+            /**
+             * Overridden
+             * @default false
+             */
+            overridden: boolean;
+            /** Passed */
+            passed: boolean;
+            /** Reasons */
+            reasons?: {
+                [key: string]: unknown;
+            }[];
+            /** Run Id */
+            run_id?: string | null;
+            /** Test Set */
+            test_set: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -545,6 +575,34 @@ export interface components {
             name: string;
             /** Versions */
             versions: components["schemas"]["VersionOut"][];
+        };
+        /** PublishIn */
+        PublishIn: {
+            /** Override Reason */
+            override_reason?: string | null;
+        };
+        /** PublishOut */
+        PublishOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Created By */
+            created_by: string;
+            gate?: components["schemas"]["GateOut"] | null;
+            /** Notes */
+            notes: string;
+            /** Published At */
+            published_at: string | null;
+            /** Published By */
+            published_by: string | null;
+            /** Spec Hash */
+            spec_hash: string;
+            /** Status */
+            status: string;
+            /** Version */
+            version: number;
         };
         /** ValidationError */
         ValidationError: {
@@ -1023,7 +1081,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PublishIn"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -1031,7 +1093,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["VersionOut"];
+                    "application/json": components["schemas"]["PublishOut"];
                 };
             };
             /** @description Validation Error */

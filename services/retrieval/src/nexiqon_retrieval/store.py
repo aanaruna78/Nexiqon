@@ -26,6 +26,8 @@ class Filters:
     # None: no access-group restriction (bypass roles). Otherwise: nodes with no groups, or any
     # group the caller has.
     groups: list[str] | None = field(default_factory=list)
+    # Management views (outline, stats) include documents marked outdated; answers never do.
+    include_outdated: bool = False
 
 
 @dataclass

@@ -360,6 +360,7 @@ class Pipeline:
             doc.status, doc.error_code, doc.error_detail = "ready", None, None
             doc.title = title
             doc.indexed_version, doc.indexed_at = int(snapshot["version"]), datetime.now(UTC)
+            doc.outdated_at = None  # a new version is indexed: the outdated mark no longer applies
             doc.chunk_count, doc.token_count = len(chunks), sum(n.token_count for n in chunks)
             doc.section_count = sum(1 for n in nodes if n.kind == "section")
             await self._bump(s, run_id, processed=1)

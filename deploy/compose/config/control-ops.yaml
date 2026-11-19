@@ -1,0 +1,5 @@
+# Control-ops group (evaluation, metering, governance, notification) on the local stack.
+# Evaluation runs are Temporal workflows (QA-01).
+workflows:
+  enabled: true
+  address: temporal:7233

@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { QualityTab } from "@/components/evaluations/quality-tab";
 import { GraphView } from "@/components/graph/graph-view";
 import { ProfileSelect } from "@/components/knowledge/profile-select";
 import { PageHeader } from "@/components/page-header";
@@ -33,7 +34,7 @@ import { TestChat } from "./test-chat";
 import { ViewAs } from "./view-as";
 import { WidgetSettings } from "./widget-settings";
 
-const TABS = ["setup", "test", "widget", "access", "versions", "workflow"] as const;
+const TABS = ["setup", "test", "widget", "access", "quality", "versions", "workflow"] as const;
 const TONES = ["friendly", "formal", "concise"] as const;
 
 export function AssistantDetail({ name }: { name: string }) {
@@ -86,8 +87,11 @@ export function AssistantDetail({ name }: { name: string }) {
         <TabsContent value="access" className="pt-4">
           <ViewAs collections={spec.knowledge?.collections ?? []} retrievalProfile={spec.retrieval_profile} modelProfile={spec.model_profile} />
         </TabsContent>
+        <TabsContent value="quality" className="pt-4">
+          <QualityTab object={object.data} spec={spec} onSaved={() => router.replace(`/assistants/${name}?tab=quality`)} />
+        </TabsContent>
         <TabsContent value="versions" className="pt-4">
-          <VersionsPanel kind="agent" object={object.data} />
+          <VersionsPanel kind="agent" object={object.data} qualityHref={`/assistants/${name}?tab=quality`} />
         </TabsContent>
         <TabsContent value="workflow" className="pt-4">
           <Workflow name={name} pack={spec.pack.name} />

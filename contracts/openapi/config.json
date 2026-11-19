@@ -167,6 +167,67 @@
         "title": "GalleryPack",
         "type": "object"
       },
+      "GateOut": {
+        "description": "The release-gate answer recorded with a publish (QA-02).",
+        "properties": {
+          "baseline_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Version"
+          },
+          "deltas": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Deltas",
+            "type": "object"
+          },
+          "overridden": {
+            "default": false,
+            "title": "Overridden",
+            "type": "boolean"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "reasons": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "test_set": {
+            "title": "Test Set",
+            "type": "string"
+          }
+        },
+        "required": [
+          "passed",
+          "test_set"
+        ],
+        "title": "GateOut",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -323,6 +384,99 @@
           "deployments"
         ],
         "title": "ObjectOut",
+        "type": "object"
+      },
+      "PublishIn": {
+        "properties": {
+          "override_reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "minLength": 10,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override Reason"
+          }
+        },
+        "title": "PublishIn",
+        "type": "object"
+      },
+      "PublishOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "title": "Created By",
+            "type": "string"
+          },
+          "gate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GateOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "published_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published By"
+          },
+          "spec_hash": {
+            "title": "Spec Hash",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "status",
+          "spec_hash",
+          "notes",
+          "created_by",
+          "created_at",
+          "published_by",
+          "published_at"
+        ],
+        "title": "PublishOut",
         "type": "object"
       },
       "ValidationError": {
@@ -1143,6 +1297,7 @@
     },
     "/v1/objects/{kind}/{name}/versions/{version}/publish": {
       "post": {
+        "description": "Publish a draft. An assistant with a release gate must first pass its evaluation (QA-02).",
         "operationId": "publish_v1_objects__kind___name__versions__version__publish_post",
         "parameters": [
           {
@@ -1173,12 +1328,29 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/PublishIn"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/VersionOut"
+                  "$ref": "#/components/schemas/PublishOut"
                 }
               }
             },

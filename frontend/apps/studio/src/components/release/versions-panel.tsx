@@ -1,23 +1,27 @@
 "use client";
 
-import { GitCompareArrows, History, Rocket, RotateCcw, Undo2 } from "lucide-react";
+import { GitCompareArrows, History, Rocket, RotateCcw, ShieldX, Undo2 } from "lucide-react";
+import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { GateReasons } from "@/components/evaluations/quality-tab";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/visual/status-badge";
 import { ApiError } from "@/lib/api";
+import type { GateReason } from "@/lib/evaluation";
 import { useErrorToast } from "@/lib/hooks";
 import { type Change, type ConfigObject, pathWords, preview, releaseState } from "@/lib/studio";
 import { useDiff, useHistory, useRelease } from "@/lib/studio-hooks";
 
 /** Versions, a readable diff against what is live, publish + deploy, and one-click rollback (ST-06). */
-export function VersionsPanel({ kind, object }: { kind: string; object: ConfigObject }) {
+export function VersionsPanel({ kind, object, qualityHref }: { kind: string; object: ConfigObject; qualityHref?: string }) {
   const t = useTranslations("release");
   const format = useFormatter();
   const onError = useErrorToast();
@@ -29,15 +33,22 @@ export function VersionsPanel({ kind, object }: { kind: string; object: ConfigOb
   const base = state.live ?? versions.find((v) => v.status === "published" && v.version !== compareTo)?.version;
   const diff = useDiff(kind, object.name, base, compareTo);
   const [blocked, setBlocked] = useState<string | null>(null);
+  const [gate, setGate] = useState<{ version: number; reasons: GateReason[] } | null>(null);
+  const [override, setOverride] = useState("");
 
-  async function release(version: number) {
+  async function release(version: number, overrideReason?: string) {
     setBlocked(null);
     try {
-      if (object.versions.find((v) => v.version === version)?.status === "draft") await publish.mutateAsync(version);
+      if (object.versions.find((v) => v.version === version)?.status === "draft") {
+        await publish.mutateAsync(overrideReason ? { version, override_reason: overrideReason } : version);
+      }
+      setGate(null);
+      setOverride("");
       await deploy.mutateAsync({ version, reason: state.live ? `from v${state.live}` : "first release" });
       toast.success(t("released", { version }));
     } catch (error) {
       if (error instanceof ApiError && error.problem.code === "security_floor_violation") setBlocked(error.problem.detail ?? "");
+      else if (error instanceof ApiError && error.problem.code === "release_gate_failed") setGate({ version, reasons: (error.problem.errors ?? []) as GateReason[] });
       else onError(error);
     }
   }
@@ -84,6 +95,37 @@ export function VersionsPanel({ kind, object }: { kind: string; object: ConfigOb
         <Alert variant="destructive">
           <AlertTitle>{t("blocked")}</AlertTitle>
           <AlertDescription>{blocked}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      {gate ? (
+        <Alert data-testid="gate-blocked">
+          <ShieldX className="size-4" aria-hidden="true" />
+          <AlertTitle>{t("gateBlocked", { version: gate.version })}</AlertTitle>
+          <AlertDescription className="space-y-3">
+            <GateReasons reasons={gate.reasons} />
+            {qualityHref ? (
+              <Button asChild variant="outline" size="sm">
+                <Link href={qualityHref}>{t("gateOpenQuality")}</Link>
+              </Button>
+            ) : null}
+            <form
+              className="flex flex-wrap items-end gap-2 pt-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (override.trim().length >= 10) void release(gate.version, override.trim());
+              }}
+            >
+              <div className="min-w-64 flex-1 space-y-1">
+                <Label htmlFor="gate-override">{t("gateOverride")}</Label>
+                <Input id="gate-override" value={override} onChange={(e) => setOverride(e.target.value)} placeholder={t("gateOverridePlaceholder")} maxLength={500} />
+              </div>
+              <Button type="submit" variant="destructive" disabled={override.trim().length < 10 || busy} data-testid="gate-override">
+                {t("gateOverrideButton")}
+              </Button>
+            </form>
+            <p className="text-xs text-muted-foreground">{t("gateOverrideHelp")}</p>
+          </AlertDescription>
         </Alert>
       ) : null}
 

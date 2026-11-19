@@ -293,6 +293,18 @@
             ],
             "title": "Media Type"
           },
+          "outdated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outdated At"
+          },
           "scanner": {
             "anyOf": [
               {
@@ -371,6 +383,19 @@
           "indexed_at"
         ],
         "title": "DocumentOut",
+        "type": "object"
+      },
+      "DocumentPatch": {
+        "properties": {
+          "outdated": {
+            "title": "Outdated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "outdated"
+        ],
+        "title": "DocumentPatch",
         "type": "object"
       },
       "DownloadLink": {
@@ -480,7 +505,8 @@
         "enum": [
           "connector",
           "parser",
-          "chunker"
+          "chunker",
+          "evaluator"
         ],
         "title": "PluginKind",
         "type": "string"
@@ -633,6 +659,58 @@
           "finished_at"
         ],
         "title": "RunOut",
+        "type": "object"
+      },
+      "SnippetIn": {
+        "properties": {
+          "answer": {
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Answer",
+            "type": "string"
+          },
+          "question": {
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question",
+          "answer"
+        ],
+        "title": "SnippetIn",
+        "type": "object"
+      },
+      "SnippetOut": {
+        "properties": {
+          "replaced": {
+            "title": "Replaced",
+            "type": "boolean"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceOut"
+          }
+        },
+        "required": [
+          "source",
+          "run_id",
+          "replaced"
+        ],
+        "title": "SnippetOut",
         "type": "object"
       },
       "SourceIn": {
@@ -1304,6 +1382,60 @@
         ]
       }
     },
+    "/v1/collections/{collection_id}/snippets": {
+      "post": {
+        "description": "Add (or replace, for the same question) a reviewed answer and sync it at once: the fix\nfor a bad answer is live as soon as the run finishes (fix loop, ST-14).",
+        "operationId": "add_snippet_v1_collections__collection_id__snippets_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "collection_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Collection Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SnippetIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnippetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Snippet",
+        "tags": [
+          "ingestion"
+        ]
+      }
+    },
     "/v1/collections/{collection_id}/sources": {
       "get": {
         "operationId": "list_sources_v1_collections__collection_id__sources_get",
@@ -1497,6 +1629,58 @@
           }
         },
         "summary": "Get Document",
+        "tags": [
+          "ingestion"
+        ]
+      },
+      "patch": {
+        "description": "Mark a document outdated: answers stop using it at once, until it is fixed (a new version\nis indexed) or marked current again (fix loop, ST-14).",
+        "operationId": "update_document_v1_documents__document_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Document",
         "tags": [
           "ingestion"
         ]

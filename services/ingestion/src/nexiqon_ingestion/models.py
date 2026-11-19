@@ -87,6 +87,9 @@ class Document(TenantScopedMixin, Base):
     token_count: Mapped[int] = mapped_column(Integer, default=0)
     last_seen_run_id: Mapped[UUID | None] = mapped_column(default=None)
     indexed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    # Marked outdated in the fix loop (ST-14): left out of answers until a new version is indexed.
+    outdated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    outdated_by: Mapped[str | None] = mapped_column(String(200), default=None)
 
 
 class Run(TenantScopedMixin, Base):

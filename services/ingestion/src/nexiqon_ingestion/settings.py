@@ -35,6 +35,8 @@ class ServiceSettings(CoreSettings):
     concurrency: int = 4
     # Roles that manage knowledge and see every collection regardless of its access groups.
     # Must match retrieval's ``acl_bypass_roles``.
-    content_manager_roles: list[str] = Field(default_factory=lambda: ["owner", "admin", "editor"])
+    content_manager_roles: list[str] = Field(
+        default_factory=lambda: ["owner", "admin", "editor", "service:evaluation"]
+    )
     # Operator-provisioned connector secrets, keyed "<tenant_id>/<name>" (from OpenBao in production).
     connector_credentials: dict[str, dict[str, str]] = Field(default_factory=dict)
