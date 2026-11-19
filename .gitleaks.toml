@@ -8,4 +8,7 @@ paths = [
   '''deploy/compose/.*''',
   '''libs/nexiqon-core/tests/.*''',
   '''frontend/apps/studio/test/.*''',
+  # QA file-hash manifests: SHA-256 digests keyed by file paths such as "...context-token.md",
+  # which the generic-api-key rule mistakes for secrets. Kept byte-for-byte as QA evidence.
+  '''docs/qa/evidence/[^/]+/[^/]+-initial-files\.json''',
 ]
