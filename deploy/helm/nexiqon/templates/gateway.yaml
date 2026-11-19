@@ -1,7 +1,11 @@
 {{- if .Values.gateway.enabled }}
 {{- $port := int .Values.topology.port }}
 {{- $identity := include "nexiqon.hostFor" (list . "identity") }}
-{{- $internal := list "authz" "model-gateway" }}
+{{- $cp := .Values.controlPlane }}
+{{- $remote := and (not $identity) $cp.host }}
+{{- $link := .Values.gateway.dataPlaneLink }}
+{{- $cells := .Values.cells | default dict }}
+{{- $internal := list "authz" "model-gateway" "config-mirror" }}
 {{- $streaming := list "agent-runtime" "conversation" }}
 {{- $widget := list "conversation" "channel" }}
 {{- $hosts := dict }}
@@ -52,19 +56,27 @@ data:
                             - match: { prefix: /identity/internal/ }
                               direct_response: { status: 404 }
                               typed_per_filter_config: *no_authz
+                            {{- range $cell, $c := $cells }}
+                            # DV-07: tenants of the {{ $cell }} region are served by their own cell.
+                            - match: { prefix: /, headers: [{ name: x-nexiqon-region, string_match: { exact: {{ $cell | quote }} } }] }
+                              route: { cluster: {{ printf "cell-%s" $cell }}, timeout: 180s, auto_host_rewrite: true }
+                            {{- end }}
                             {{- range $svc := $internal }}
                             - match: { prefix: /{{ $svc }}/ }
                               direct_response: { status: 404 }
                               typed_per_filter_config: *no_authz
                             {{- end }}
-                            {{- range $p := list "/identity/v1/session/" "/identity/v1/webhooks/" "/identity/.well-known/" }}
+                            {{- /* Unauthenticated identity and config paths; on a hybrid data plane they are
+                                   the control plane's, reached over the link. */}}
+                            {{- $config := include "nexiqon.hostFor" (list $ "config") }}
+                            {{- range $p := list "/identity/v1/session/" "/identity/v1/webhooks/" "/identity/.well-known/" "/config/.well-known/" }}
+                            {{- $to := ternary $config $identity (hasPrefix "/config/" $p) }}
+                            {{- if or $to (and $remote (ne $p "/identity/v1/webhooks/")) }}
                             - match: { prefix: {{ $p }} }
-                              route: { cluster: {{ $identity }} }
+                              route: { cluster: {{ $to | default "control-plane" }}{{ if not $to }}, auto_host_rewrite: true{{ end }} }
                               typed_per_filter_config: *no_authz
                             {{- end }}
-                            - match: { prefix: /config/.well-known/ }
-                              route: { cluster: {{ include "nexiqon.hostFor" (list $ "config") }} }
-                              typed_per_filter_config: *no_authz
+                            {{- end }}
                             {{- range $name, $g := .Values.groups }}
                             {{- if $g.enabled }}
                             {{- range $svc := $g.services }}
@@ -114,16 +126,26 @@ data:
                             request_mutations:
                               - remove: x-nexiqon-context
                               - remove: x-nexiqon-diagnostics
+                              - remove: x-nexiqon-region
                       - name: envoy.filters.http.ext_authz
                         typed_config:
                           "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
                           transport_api_version: V3
                           failure_mode_allow: false
+                          {{- if $cells }}
+                          clear_route_cache: true   # route again once the tenant's region is known
+                          {{- end }}
                           http_service:
                             server_uri:
+                              {{- if $remote }}
+                              uri: https://{{ $cp.host }}:{{ $cp.port }}
+                              cluster: control-plane
+                              timeout: 5s
+                              {{- else }}
                               uri: http://{{ $identity }}:{{ $port }}
                               cluster: {{ $identity }}
                               timeout: 2s
+                              {{- end }}
                             path_prefix: /identity/internal/ext-authz
                             authorization_request:
                               allowed_headers:
@@ -136,11 +158,83 @@ data:
                               allowed_upstream_headers:
                                 patterns:
                                   - exact: x-nexiqon-context
+                                  - exact: x-nexiqon-region
                       - name: envoy.filters.http.router
                         typed_config:
                           "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        {{- if $remote }}
+        # Hybrid data plane (DV-04): in-cluster only. Data-plane services reach the control plane
+        # through here; Envoy adds this data plane's client certificate (mTLS) and connects out.
+        - name: control-link
+          address: { socket_address: { address: 0.0.0.0, port_value: 8081 } }
+          filter_chains:
+            - filters:
+                - name: envoy.filters.network.http_connection_manager
+                  typed_config:
+                    "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                    stat_prefix: control_link
+                    route_config:
+                      virtual_hosts:
+                        - name: control-plane
+                          domains: ["*"]
+                          routes:
+                            - match: { prefix: / }
+                              route: { cluster: control-plane, timeout: 30s, auto_host_rewrite: true }
+                    http_filters:
+                      - name: envoy.filters.http.router
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        {{- end }}
+        {{- if $link.enabled }}
+        # Control plane (DV-04): the link data planes connect to. Mutual TLS, client certificates from
+        # the data planes' CA only, and only the paths a data plane needs.
+        - name: data-plane-link
+          address: { socket_address: { address: 0.0.0.0, port_value: 8443 } }
+          filter_chains:
+            - transport_socket:
+                name: envoy.transport_sockets.tls
+                typed_config:
+                  "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+                  require_client_certificate: true
+                  common_tls_context:
+                    tls_certificates:
+                      - certificate_chain: { filename: /etc/nexiqon/link-server/tls.crt }
+                        private_key: { filename: /etc/nexiqon/link-server/tls.key }
+                    validation_context:
+                      trusted_ca: { filename: /etc/nexiqon/link-server/ca.crt }
+              filters:
+                - name: envoy.filters.network.http_connection_manager
+                  typed_config:
+                    "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                    stat_prefix: data_plane_link
+                    route_config:
+                      virtual_hosts:
+                        - name: link
+                          domains: ["*"]
+                          routes:
+                            {{- range $p := list "/identity/internal/ext-authz/" "/identity/v1/session/" "/identity/.well-known/" "/config/v1/snapshots/" "/config/v1/resolve/" "/config/.well-known/" "/notification/v1/emails" }}
+                            {{- $svc := index (splitList "/" $p) 1 }}
+                            - match: { prefix: {{ $p }} }
+                              route: { cluster: {{ include "nexiqon.hostFor" (list $ $svc) }} }
+                            {{- end }}
+                            - match: { prefix: / }
+                              direct_response: { status: 404 }
+                    http_filters:
+                      - name: envoy.filters.http.router
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        {{- end }}
       clusters:
-        {{- $_ := set $hosts $identity true }}
+        {{- if $identity }}{{ $_ := set $hosts $identity true }}{{ end }}
+        {{- if $link.enabled }}
+        {{- range $svc := list "identity" "config" "notification" }}{{ $_ := set $hosts (include "nexiqon.hostFor" (list $ $svc)) true }}{{ end }}
+        {{- end }}
+        {{- if $remote }}
+        {{- include "nexiqon.tlsCluster" (list "control-plane" $cp.host $cp.port "/etc/nexiqon/link" true) | nindent 8 }}
+        {{- end }}
+        {{- range $cell, $c := $cells }}
+        {{- include "nexiqon.tlsCluster" (list (printf "cell-%s" $cell) $c.host ($c.port | default 443) "/etc/nexiqon/cells" false) | nindent 8 }}
+        {{- end }}
         {{- range $host, $_ := $hosts }}
         - name: {{ $host }}
           type: STRICT_DNS
@@ -177,6 +271,12 @@ spec:
           args: ["-c", "/etc/envoy/envoy.yaml", "--log-level", "warn"]
           ports:
             - { name: http, containerPort: 8080 }
+            {{- if $remote }}
+            - { name: control-link, containerPort: 8081 }
+            {{- end }}
+            {{- if $link.enabled }}
+            - { name: dp-link, containerPort: 8443 }
+            {{- end }}
           readinessProbe:
             httpGet: { path: /gateway/healthz, port: http }
           resources: {{- toYaml .Values.gateway.resources | nindent 12 }}
@@ -184,11 +284,32 @@ spec:
           volumeMounts:
             - { name: config, mountPath: /etc/envoy, readOnly: true }
             - { name: tmp, mountPath: /tmp }
+            {{- if $remote }}
+            - { name: link, mountPath: /etc/nexiqon/link, readOnly: true }
+            {{- end }}
+            {{- if $link.enabled }}
+            - { name: link-server, mountPath: /etc/nexiqon/link-server, readOnly: true }
+            {{- end }}
+            {{- if $cells }}
+            - { name: cells, mountPath: /etc/nexiqon/cells, readOnly: true }
+            {{- end }}
       volumes:
         - name: config
           configMap: { name: nexiqon-gateway }
         - name: tmp
           emptyDir: {}
+        {{- if $remote }}
+        - name: link   # tls.crt, tls.key (this data plane's client certificate), ca.crt (the control plane's)
+          secret: { secretName: {{ $cp.tls.secretName }} }
+        {{- end }}
+        {{- if $link.enabled }}
+        - name: link-server   # tls.crt, tls.key (the link's server certificate), ca.crt (the data planes' CA)
+          secret: { secretName: {{ $link.tls.secretName }} }
+        {{- end }}
+        {{- if $cells }}
+        - name: cells   # ca.crt that signs the cells' gateway certificates
+          secret: { secretName: {{ .Values.cellsCaSecret }} }
+        {{- end }}
 ---
 apiVersion: v1
 kind: Service
@@ -200,6 +321,34 @@ spec:
   selector: {{- include "nexiqon.selector" (dict "root" . "name" "gateway") | nindent 4 }}
   ports:
     - { name: http, port: {{ .Values.gateway.service.port }}, targetPort: http }
+{{- if $remote }}
+---
+# In-cluster only: data-plane services' way to the control plane (never exposed).
+apiVersion: v1
+kind: Service
+metadata:
+  name: control-link
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector: {{- include "nexiqon.selector" (dict "root" . "name" "gateway") | nindent 4 }}
+  ports:
+    - { name: http, port: 8081, targetPort: control-link }
+{{- end }}
+{{- if $link.enabled }}
+---
+# The link data planes connect to (mTLS; expose with a TCP load balancer, TLS passthrough).
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-plane-link
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+spec:
+  type: {{ $link.service.type }}
+  selector: {{- include "nexiqon.selector" (dict "root" . "name" "gateway") | nindent 4 }}
+  ports:
+    - { name: https, port: 8443, targetPort: dp-link }
+{{- end }}
 {{- with .Values.gateway.ingress }}
 {{- if .enabled }}
 ---

@@ -5,16 +5,22 @@ import { getLocale } from "next-intl/server";
 
 import { Providers } from "@/components/providers";
 import { direction } from "@/i18n/config";
+import { DATA_ORIGIN_META } from "@/lib/split";
 
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  title: { default: "Nexiqon Studio", template: "%s · Nexiqon Studio" },
-  description: "Configure, test and operate Nexiqon assistants",
-};
+export function generateMetadata(): Metadata {
+  // Split-origin (DV-08): tells the browser code where the data-plane Studio is (no secret).
+  const dataOrigin = process.env.NEXIQON_DATA_ORIGIN ? new URL(process.env.NEXIQON_DATA_ORIGIN).origin : null;
+  return {
+    title: { default: "Nexiqon Studio", template: "%s · Nexiqon Studio" },
+    description: "Configure, test and operate Nexiqon assistants",
+    ...(dataOrigin ? { other: { [DATA_ORIGIN_META]: dataOrigin } } : {}),
+  };
+}
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const locale = await getLocale();

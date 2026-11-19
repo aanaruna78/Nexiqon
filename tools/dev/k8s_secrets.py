@@ -18,7 +18,8 @@ import yaml
 CONFIG = Path(__file__).resolve().parents[2] / "deploy" / "compose" / "config"
 # Secret file name in the chart -> local development file.
 KEY_FILES = {
-    "secrets.yaml": "dev-secrets.yaml",
+    "secrets.yaml": "dev-secrets.yaml",  # signing private keys: control-core only
+    "public-keys.yaml": "dev-public-keys.yaml",  # what every other group needs
     "service-keys.yaml": "dev-service-keys.yaml",
     "identity-ingestion.yaml": "dev-secrets-ingestion.yaml",
     "identity-agent-runtime.yaml": "dev-secrets-agent-runtime.yaml",
@@ -28,6 +29,7 @@ KEY_FILES = {
     "identity-conversation.yaml": "dev-secrets-conversation.yaml",
     "identity-metering.yaml": "dev-secrets-metering.yaml",
     "identity-governance.yaml": "dev-secrets-governance.yaml",
+    "identity-config-mirror.yaml": "dev-secrets-config-mirror.yaml",
 }
 
 

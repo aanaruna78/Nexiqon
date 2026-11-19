@@ -28,7 +28,10 @@ spec:
         - name: migrate
           image: {{ include "nexiqon.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["nexiqon-migrate", "all"]
+          {{- $svcs := list }}
+          {{- range $g := .Values.groups }}{{ if $g.enabled }}{{ $svcs = concat $svcs $g.services }}{{ end }}{{ end }}
+          # Only the services this release runs (a hybrid data plane has no control-plane schemas).
+          command: ["nexiqon-migrate", "all", "--only", {{ join "," $svcs | quote }}]
           env:
             - name: NEXIQON_DATABASE__MIGRATION_URL
               valueFrom: { secretKeyRef: { name: {{ .Values.database.existingSecret }}, key: migrationUrl } }

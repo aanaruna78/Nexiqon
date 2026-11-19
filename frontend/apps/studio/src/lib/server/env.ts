@@ -23,6 +23,10 @@ export interface StudioEnv {
   oidcClientSecret?: string;
   sessionSecret: string;
   secureCookies: boolean;
+  /** Split-origin (DV-08), on the control-plane Studio: the data-plane Studio's origin. */
+  dataOrigin: string | null;
+  /** Split-origin, on the data-plane Studio: the control-plane Studio allowed to call it. */
+  peerOrigin: string | null;
 }
 
 export function studioEnv(): StudioEnv {
@@ -44,5 +48,16 @@ export function studioEnv(): StudioEnv {
     oidcClientSecret: process.env.OIDC_CLIENT_SECRET || undefined,
     sessionSecret,
     secureCookies: baseUrl.startsWith("https://"),
+    dataOrigin: origin(process.env.NEXIQON_DATA_ORIGIN),
+    peerOrigin: origin(process.env.NEXIQON_PEER_ORIGIN),
   };
+}
+
+function origin(value: string | undefined): string | null {
+  if (!value) return null;
+  try {
+    return new URL(value).origin;
+  } catch {
+    return null;
+  }
 }

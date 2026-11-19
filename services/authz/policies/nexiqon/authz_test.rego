@@ -209,3 +209,11 @@ test_webhooks_are_for_admins_and_the_inbox_for_everyone_in_studio if {
 	widget := {"tenant_id": "t-a", "id": "k-1", "type": "widget", "roles": ["end_user"], "groups": []}
 	not authz.allow with input as {"actor": widget, "action": "notification.inbox.read", "resource": {"type": "inbox"}}
 }
+
+test_the_config_mirror_only_pulls_snapshots if {
+	svc := {"tenant_id": "t-a", "id": "service:config-mirror", "type": "service", "roles": ["service:config-mirror"], "groups": []}
+	authz.allow with input as {"actor": svc, "action": "config.snapshots.read", "resource": {"type": "snapshot"}}
+	not authz.allow with input as {"actor": svc, "action": "config.snapshots.read", "resource": {"type": "snapshot", "tenant_id": "t-b"}}
+	not authz.allow with input as {"actor": svc, "action": "config.agent.write", "resource": {"type": "agent"}}
+	not authz.allow with input as {"actor": svc, "action": "conversation.all.read", "resource": {"type": "conversation"}}
+}

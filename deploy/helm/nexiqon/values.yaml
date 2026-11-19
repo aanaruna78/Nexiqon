@@ -15,7 +15,8 @@ topology:
   port: 8000
 
 # Deployment groups. Moving a service between groups is configuration only. `keyFiles` names the
-# files from keys.existingSecret this group needs (service identities stay with their service).
+# files from keys.existingSecret this group needs: service identities stay with their service, and
+# the signing private keys (secrets.yaml) only with identity and config; the rest get public-keys.yaml.
 groups:
   control-core:
     enabled: true
@@ -29,7 +30,7 @@ groups:
     plane: control
     services: [evaluation, metering, governance, notification]
     replicas: 1
-    keyFiles: [secrets.yaml, service-keys.yaml, identity-evaluation.yaml, identity-metering.yaml, identity-governance.yaml]
+    keyFiles: [public-keys.yaml, service-keys.yaml, identity-evaluation.yaml, identity-metering.yaml, identity-governance.yaml]
     # Outgoing email (notification): "memory" sends nothing; set smtp for a real relay and put
     # its password in the nexiqon-smtp Secret (key: password).
     settings:
@@ -45,7 +46,7 @@ groups:
     plane: data
     services: [ingestion, retrieval]
     replicas: 2
-    keyFiles: [secrets.yaml, service-keys.yaml, identity-ingestion.yaml]
+    keyFiles: [public-keys.yaml, service-keys.yaml, identity-ingestion.yaml]
     settings:
       blobs: { backend: s3, endpoint: "http://objectstore:8333", bucket: nexiqon, region: us-east-1 }
       scan: { backend: clamav, clamd_host: clamav, clamd_port: 3310 }
@@ -58,14 +59,14 @@ groups:
     plane: data
     services: [agent-runtime, conversation, channel]
     replicas: 2
-    keyFiles: [secrets.yaml, service-keys.yaml, identity-agent-runtime.yaml, identity-channel.yaml, identity-conversation.yaml]
+    keyFiles: [public-keys.yaml, service-keys.yaml, identity-agent-runtime.yaml, identity-channel.yaml, identity-conversation.yaml]
     resources: { requests: { cpu: 250m, memory: 512Mi }, limits: { memory: 1Gi } }
   tool-gateway:
     enabled: true
     plane: data
     services: [tool-gateway]
     replicas: 2
-    keyFiles: [secrets.yaml, service-keys.yaml, identity-tool-gateway.yaml]
+    keyFiles: [public-keys.yaml, service-keys.yaml, identity-tool-gateway.yaml]
     settings:
       secrets: { backend: openbao, address: "http://openbao:8200", mount: secret }
     env:
@@ -76,7 +77,7 @@ groups:
     plane: data
     services: [model-gateway]
     replicas: 2
-    keyFiles: [secrets.yaml, service-keys.yaml]
+    keyFiles: [public-keys.yaml, service-keys.yaml]
     env:  # model provider keys; providers without a key fail closed
       - { name: NEXIQON_PROVIDERS__OPENAI_API_KEY, valueFrom: { secretKeyRef: { name: nexiqon-providers, key: OPENAI_API_KEY, optional: true } } }
       - { name: NEXIQON_PROVIDERS__ANTHROPIC_API_KEY, valueFrom: { secretKeyRef: { name: nexiqon-providers, key: ANTHROPIC_API_KEY, optional: true } } }
@@ -101,6 +102,18 @@ settings:
 # nexiqon-openbao (token), nexiqon-providers (OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY).
 database:
   existingSecret: nexiqon-database   # keys: url (application role), migrationUrl (owner role)
+
+# Hybrid data plane (DV-04): the control plane this release connects out to. Set on a data-plane-only
+# install (values/hybrid-data.yaml); empty everywhere else.
+controlPlane:
+  host: ""
+  port: 8443
+  tls: { secretName: nexiqon-control-plane-link }   # tls.crt, tls.key (client), ca.crt
+
+# Region cells (DV-07): tenants whose region is listed are sent to that region's gateway, so their
+# data stays in their region. Example: { eu: { host: eu.api.example.com, port: 443 } }
+cells: {}
+cellsCaSecret: nexiqon-cells-ca
 
 # Default-deny network policies (S-02): pods take traffic only from this release (and the
 # gateway and Studio from the ingress), and no pod can reach the cloud metadata address.
@@ -152,6 +165,11 @@ gateway:
   image: envoyproxy/envoy:v1.40.0
   hsts: false   # on where TLS ends at or before the gateway (the SaaS and private profiles)
   rateLimit: { enabled: true, perSecond: 200, burst: 400 }   # per gateway pod
+  # Control plane only (DV-04): the mutual-TLS link hybrid data planes connect to.
+  dataPlaneLink:
+    enabled: false
+    tls: { secretName: nexiqon-data-plane-link }   # tls.crt, tls.key, ca.crt (the data planes' CA)
+    service: { type: LoadBalancer }
   replicas: 2
   service: { type: ClusterIP, port: 8080 }
   # Origins for the widget's CORS preflight; which origins a widget key may use is still checked

@@ -83,14 +83,18 @@ proves it. "Residual" lists what is accepted and why.
 - **Data plane** (ingestion, retrieval, agent-runtime, conversation, channel, tool-gateway,
   model-gateway):
   - handles tenant content and talks to outside systems (B5, B6);
-  - in hybrid mode (DV-04, Phase 4 slice 7) it runs in the customer's cluster, and only
-    redacted telemetry and configuration snapshots cross the boundary.
+  - in hybrid mode (DV-04, ADR 0026) it runs in the customer's cluster. The link is outbound
+    mTLS with a path allowlist on the control side (ext_authz, session exchange, snapshots,
+    profile resolution, public keys, transcript email); no content crosses it (egress test
+    `services/conversation/tests/test_hybrid.py`). The data plane holds verification keys only.
 
 ## Residual risks (accepted)
 
 - **No per-key request rate limit on answers.** There is a per-pod ceiling at the gateway, and
   model budgets bound cost, but one noisy key can use a pod's share. A global rate-limit service
-  keyed by key id is planned with the hybrid edge (DV-04).
+  keyed by key id is planned.
+- **Hybrid data planes do not yet forward audit events** to the central audit chain (ADR 0026);
+  their actions are audited on their own NATS until the leaf-node bridge ships.
 
 - **The platform image is Debian-slim, not distroless.** The Git connector needs the git binary.
   Mitigations: no package manager use at runtime, no pip, no setuid binaries, read-only

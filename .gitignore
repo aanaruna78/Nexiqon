@@ -31,6 +31,7 @@ coverage/
 deploy/compose/config/dev-secrets.yaml
 deploy/compose/config/dev-secrets-*.yaml
 deploy/compose/config/dev-service-keys.yaml
+deploy/compose/config/dev-public-keys.yaml
 
 # Studio test and build artifacts
 frontend/apps/studio/test-results/

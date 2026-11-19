@@ -103,13 +103,21 @@ jobs:
           $H template t . -f values/kind.yaml --set topology.mode=split > /tmp/render/kind-split.yaml
           $H template t . -f values/saas.yaml > /tmp/render/saas.yaml
           $H template t . -f values/private.yaml --set studio.baseUrl=https://studio.example --set studio.oidc.issuer=https://login.example > /tmp/render/private.yaml
+          $H lint . -f values/hybrid-data.yaml --set studio.baseUrl=https://data.example --set studio.oidc.issuer=https://login.example
+          $H template t . -f values/hybrid-data.yaml --set studio.baseUrl=https://data.example --set studio.oidc.issuer=https://login.example > /tmp/render/hybrid-data.yaml
+          # The control plane with the data-plane link and one region cell (DV-04, DV-07).
+          $H template t . -f values/saas.yaml --set gateway.dataPlaneLink.enabled=true --set cells.eu.host=eu.api.example > /tmp/render/saas-cells.yaml
       - name: Kubernetes schemas
         run: docker run --rm -v /tmp/render:/m:ro ghcr.io/yannh/kubeconform:v0.7.0 -strict -summary -kubernetes-version 1.31.0 /m
       - name: Generated gateway config is valid Envoy
         run: |
-          for f in kind-grouped kind-split; do
+          # Throwaway certificates where the link and cell Secrets would be mounted.
+          C=/tmp/certs; mkdir -p $C
+          openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -keyout $C/tls.key -out $C/tls.crt -days 1 -subj /CN=ci
+          cp $C/tls.crt $C/ca.crt; chmod a+r $C/*
+          for f in kind-grouped kind-split hybrid-data saas-cells; do
             python3 -c "import sys, yaml; [print(d['data']['envoy.yaml']) for d in yaml.safe_load_all(open(sys.argv[1])) if d and d['kind'] == 'ConfigMap' and d['metadata']['name'] == 'nexiqon-gateway']" /tmp/render/$f.yaml > /tmp/render/$f-envoy.yaml
-            docker run --rm -v /tmp/render/$f-envoy.yaml:/e.yaml:ro envoyproxy/envoy:v1.40.0 --mode validate -c /e.yaml
+            docker run --rm -v /tmp/render/$f-envoy.yaml:/e.yaml:ro -v $C:/etc/nexiqon/link:ro -v $C:/etc/nexiqon/link-server:ro -v $C:/etc/nexiqon/cells:ro envoyproxy/envoy:v1.40.0 --mode validate -c /e.yaml
           done
       - name: Alert rules pass their unit tests (S-03)
         run: |

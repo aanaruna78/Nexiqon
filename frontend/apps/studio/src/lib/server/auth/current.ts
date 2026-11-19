@@ -17,7 +17,7 @@ export async function currentSession(options: { persist?: boolean } = {}): Promi
   const renewed = await refresh(env, session);
   if (renewed && options.persist) {
     // Cookies can only be written from Route Handlers and Server Actions.
-    store.set(SESSION_COOKIE, await seal(renewed, env.sessionSecret), cookieOptions(env.secureCookies));
+    store.set(SESSION_COOKIE, await seal(renewed, env.sessionSecret), cookieOptions(env.secureCookies, undefined, env.peerOrigin !== null));
   }
   return renewed;
 }

@@ -577,11 +577,29 @@ class Store:
             name: await self.resolve_agent(name, environment)
             for name in await self._deployed_names("agent", environment)
         }
+        # Profiles as resolve_profile returns them (floors applied), so a data plane can answer
+        # for them without the control plane; ones the floors forbid are listed as blocked.
+        profiles: dict[str, dict[str, Any]] = {}
+        blocked: dict[str, dict[str, list[str]]] = {}
+        for kind in PROFILE_KINDS:
+            names = set(await self._deployed_names(kind, environment))
+            names |= set(_defaults("profiles").get(kind, {}))
+            for name in sorted(names):
+                try:
+                    profiles.setdefault(kind, {})[name] = await self.resolve_profile(
+                        kind, name, environment
+                    )
+                except FloorViolation as exc:
+                    blocked.setdefault(kind, {})[name] = [
+                        str(e.get("message")) for e in exc.errors or []
+                    ]
         body = {
             "tenant_id": str(self.ctx.tenant_id),
             "environment": environment,
             "objects": objects,
             "agents": agents,
+            "profiles": profiles,
+            "blocked_profiles": blocked,
         }
         return body
 

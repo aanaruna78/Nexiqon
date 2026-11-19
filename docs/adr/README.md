@@ -27,3 +27,4 @@
 | [0023](0023-metering-insights-and-the-review-queue.md) | Metering, insights and the review queue | Accepted |
 | [0024](0024-tenant-lifecycle-retention-backups-and-notifications.md) | Tenant lifecycle, retention, backups and notifications | Accepted |
 | [0025](0025-security-hardening-alerting-and-signed-images.md) | Security hardening, alerting and signed images | Accepted |
+| [0026](0026-hybrid-data-plane-split-origin-and-region-cells.md) | Hybrid data plane, split-origin Studio and region cells | Accepted |

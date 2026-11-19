@@ -106,12 +106,18 @@ def main() -> None:
     parser.add_argument("service", help="service name, or 'all' for every service with migrations")
     parser.add_argument("action", nargs="?", default="upgrade", choices=["upgrade", "downgrade"])
     parser.add_argument("--revision", default=None)
+    parser.add_argument(
+        "--only",
+        default="",
+        help="with 'all': limit to these comma-separated services (a release running some groups)",
+    )
     args = parser.parse_args()
     settings = CoreSettings(service_name="migrate")
     if settings.database.migration_url is None:
         raise SystemExit("NEXIQON_DATABASE__MIGRATION_URL is not set")
     url = settings.database.migration_url.get_secret_value()
-    services = services_with_migrations(settings) if args.service == "all" else [args.service]
+    only = {s.strip() for s in args.only.split(",") if s.strip()} or None
+    services = services_with_migrations(settings, only) if args.service == "all" else [args.service]
     for service in services:
         print(f"migrating {service} ({args.action})", flush=True)
         if args.action == "upgrade":
@@ -120,7 +126,7 @@ def main() -> None:
             downgrade(service, url, settings.database.app_role, args.revision or "-1")
 
 
-def services_with_migrations(settings: Any) -> list[str]:
+def services_with_migrations(settings: Any, only: set[str] | None = None) -> list[str]:
     import importlib.util
 
     from nexiqon_core.directory import Topology
@@ -129,6 +135,8 @@ def services_with_migrations(settings: Any) -> list[str]:
     found: list[str] = []
     for group in topology.groups.values():
         for service in group.services:
+            if only is not None and service not in only:
+                continue
             try:
                 spec = importlib.util.find_spec(f"{module_for(service)}.migrations")
             except ModuleNotFoundError:

@@ -45,12 +45,22 @@ export async function unseal<T>(token: string | undefined, secret: string): Prom
   }
 }
 
-export function cookieOptions(secure: boolean, maxAge = SESSION_MAX_AGE) {
-  return { httpOnly: true, secure, sameSite: "lax" as const, path: "/", maxAge };
+export function cookieOptions(secure: boolean, maxAge = SESSION_MAX_AGE, crossSite = false) {
+  // A data-plane Studio (split origin, DV-08) is called from the control-plane Studio's pages:
+  // its cookies must be sent cross-site, which browsers allow only with SameSite=None; Secure.
+  const sameSite = crossSite && secure ? ("none" as const) : ("lax" as const);
+  return { httpOnly: true, secure, sameSite, path: "/", maxAge };
 }
 
 /** Only same-site relative paths are valid post-login destinations (no open redirects). */
-export function safeReturnTo(value: string | null | undefined): string {
+export function safeReturnTo(value: string | null | undefined, peerOrigin: string | null = null): string {
+  // Back to the control-plane Studio after signing in here (split origin), and nowhere else.
+  if (value && peerOrigin && value.startsWith(`${peerOrigin}/`)) return value;
   if (!value || !value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) return "/";
   return value;
+}
+
+/** Where to send the browser after sign-in: a path here, or the peer Studio's absolute URL. */
+export function afterLogin(baseUrl: string, returnTo: string): string {
+  return returnTo.startsWith("/") ? `${baseUrl}${returnTo}` : returnTo;
 }

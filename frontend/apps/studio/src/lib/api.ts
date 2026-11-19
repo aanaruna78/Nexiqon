@@ -1,4 +1,7 @@
-/** Client-side API helper: every call goes through Studio's BFF (/api/nx/...), never to the gateway. */
+/** Client-side API helper: every call goes through a Studio BFF (/api/nx/...), never to the gateway.
+ * In split-origin mode (DV-08), calls for data-plane services go to the data-plane Studio. */
+
+import { dataOrigin, routeFor } from "./split";
 
 export interface Problem {
   title?: string;
@@ -29,15 +32,20 @@ export async function api<T>(
     headers.set("content-type", "application/json");
     body = JSON.stringify(init.json);
   }
-  const response = await fetch(`/api/nx/${path.replace(/^\//, "")}`, {
+  const route = routeFor(path, dataOrigin());
+  const response = await fetch(route.url, {
     ...init,
     headers,
     body,
-    credentials: "same-origin",
+    credentials: route.crossOrigin ? "include" : "same-origin",
   });
   if (response.status === 401 && typeof window !== "undefined") {
     const problem = (await response.json().catch(() => ({}))) as Problem;
-    if (problem.code === "signed_out") {
+    if (problem.code === "signed_out" && route.crossOrigin) {
+      // Sign in at the data-plane Studio too (same identity provider), then come back here.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- another origin
+      window.location.assign(`${new URL(route.url).origin}/auth/login?returnTo=${encodeURIComponent(window.location.href)}`);
+    } else if (problem.code === "signed_out") {
       // Full navigation on purpose: sign-in starts in a route handler that redirects to the IdP.
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.assign(`/auth/login?returnTo=${encodeURIComponent(window.location.pathname)}`);

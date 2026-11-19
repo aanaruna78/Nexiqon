@@ -1,6 +1,7 @@
 """Generate git-ignored local keys in deploy/compose/config:
 
-* dev-secrets.yaml: context-token and snapshot signing keys (identity, config)
+* dev-secrets.yaml: context-token and snapshot signing keys (identity, config): control-core only
+* dev-public-keys.yaml: the matching public keys, for every other group
 * dev-service-keys.yaml: public keys of per-service identities, readable by every service (ADR 0017)
 * dev-secrets-<service>.yaml: that service's private key, mounted into its group only
 
@@ -30,6 +31,7 @@ SERVICE_IDENTITIES = {
     "conversation": "conversation_identity",
     "metering": "metering_identity",
     "governance": "governance_identity",
+    "config-mirror": "mirror_identity",  # hybrid data plane only (DV-04)
 }
 
 
@@ -69,11 +71,38 @@ def service_keys(force: bool) -> None:
         )
 
 
+def public_keys() -> None:
+    """dev-public-keys.yaml: what every group but control-core needs (verification only). The
+    signing private keys in dev-secrets.yaml stay with identity and config (control-core)."""
+    from cryptography.hazmat.primitives import serialization
+
+    data = yaml.safe_load(OUT.read_text())
+    snapshot = {}
+    for kid, pem in (data.get("snapshot_signing") or {}).get("private_keys", {}).items():
+        key = serialization.load_pem_private_key(pem.encode(), password=None)
+        snapshot[kid] = (
+            key.public_key()
+            .public_bytes(
+                serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo
+            )
+            .decode()
+        )
+    _write(
+        CONFIG / "dev-public-keys.yaml",
+        {
+            "context_token": {"public_keys": data["context_token"]["public_keys"]},
+            # The data-plane config mirror verifies configuration snapshots with these (DV-04).
+            "snapshot_public_keys": snapshot,
+        },
+    )
+
+
 def main() -> int:
     force = "--force" in sys.argv
     service_keys(force)
     if OUT.exists() and not force:
         print(f"{OUT} exists (use --force to rotate)")
+        public_keys()
         return 0
     private_pem, public_pem = make_keypair()
     snapshot_private, _ = make_keypair()
@@ -86,6 +115,7 @@ def main() -> int:
         },
     }
     _write(OUT, data)
+    public_keys()
     return 0
 
 

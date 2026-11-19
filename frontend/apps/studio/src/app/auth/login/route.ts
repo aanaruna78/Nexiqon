@@ -12,9 +12,9 @@ export async function GET(request: NextRequest): Promise<Response> {
       { status: 501 },
     );
   }
-  const returnTo = safeReturnTo(request.nextUrl.searchParams.get("returnTo"));
+  const returnTo = safeReturnTo(request.nextUrl.searchParams.get("returnTo"), env.peerOrigin);
   const { url, flow } = await startLogin(env, returnTo);
   const response = NextResponse.redirect(url);
-  response.cookies.set(FLOW_COOKIE, await seal(flow, env.sessionSecret, 600), cookieOptions(env.secureCookies, 600));
+  response.cookies.set(FLOW_COOKIE, await seal(flow, env.sessionSecret, 600), cookieOptions(env.secureCookies, 600, env.peerOrigin !== null));
   return response;
 }

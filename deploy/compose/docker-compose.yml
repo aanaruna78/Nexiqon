@@ -176,14 +176,14 @@ services:
     environment:
       <<: *app-env
       NEXIQON_GROUP: control-ops
-      NEXIQON_CONFIG_FILES: /app/config/dev.yaml,/app/config/dev-secrets.yaml,/app/config/dev-service-keys.yaml,/app/config/dev-secrets-evaluation.yaml,/app/config/dev-secrets-metering.yaml,/app/config/dev-secrets-governance.yaml,/app/config/control-ops.yaml
+      NEXIQON_CONFIG_FILES: /app/config/dev.yaml,/app/config/dev-public-keys.yaml,/app/config/dev-service-keys.yaml,/app/config/dev-secrets-evaluation.yaml,/app/config/dev-secrets-metering.yaml,/app/config/dev-secrets-governance.yaml,/app/config/control-ops.yaml
     ports: ["8102:8000"]
   knowledge:
     <<: *app
     environment:
       <<: *app-env
       NEXIQON_GROUP: knowledge
-      NEXIQON_CONFIG_FILES: /app/config/dev.yaml,/app/config/dev-secrets.yaml,/app/config/dev-service-keys.yaml,/app/config/dev-secrets-ingestion.yaml,/app/config/knowledge.yaml
+      NEXIQON_CONFIG_FILES: /app/config/dev.yaml,/app/config/dev-public-keys.yaml,/app/config/dev-service-keys.yaml,/app/config/dev-secrets-ingestion.yaml,/app/config/knowledge.yaml
       # ClamAV runs in the "scan" profile; without it, set NEXIQON_SCAN_BACKEND=none (dev only).
       NEXIQON_SCAN__BACKEND: ${NEXIQON_SCAN_BACKEND:-none}
     ports: ["8103:8000"]
@@ -192,14 +192,14 @@ services:
     environment:
       <<: *app-env
       NEXIQON_GROUP: agent
-      NEXIQON_CONFIG_FILES: /app/config/dev.yaml,/app/config/dev-secrets.yaml,/app/config/dev-service-keys.yaml,/app/config/dev-secrets-agent-runtime.yaml,/app/config/dev-secrets-channel.yaml,/app/config/dev-secrets-conversation.yaml
+      NEXIQON_CONFIG_FILES: /app/config/dev.yaml,/app/config/dev-public-keys.yaml,/app/config/dev-service-keys.yaml,/app/config/dev-secrets-agent-runtime.yaml,/app/config/dev-secrets-channel.yaml,/app/config/dev-secrets-conversation.yaml
     ports: ["8104:8000"]
   tool-gateway:
     <<: *app
     environment:
       <<: *app-env
       NEXIQON_GROUP: tool-gateway
-      NEXIQON_CONFIG_FILES: /app/config/dev.yaml,/app/config/dev-secrets.yaml,/app/config/dev-service-keys.yaml,/app/config/dev-secrets-tool-gateway.yaml,/app/config/tool-gateway.yaml
+      NEXIQON_CONFIG_FILES: /app/config/dev.yaml,/app/config/dev-public-keys.yaml,/app/config/dev-service-keys.yaml,/app/config/dev-secrets-tool-gateway.yaml,/app/config/tool-gateway.yaml
     ports: ["8105:8000"]
   mailpit:
     # Catches every email the local stack sends (transcripts); read them at http://localhost:8025.

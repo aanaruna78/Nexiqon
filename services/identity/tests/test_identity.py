@@ -428,3 +428,27 @@ def test_qa02_expiry_needs_a_timezone(env: Env) -> None:
         headers=h(owner),
     )
     assert aware.status_code == 201
+
+
+def test_the_gateway_learns_each_tenants_region(env: Env) -> None:
+    """DV-07: ext_authz returns the tenant's region, so the gateway can send it to its cell."""
+    s = slug()
+    idp_token, _ = env.signup("cell-user", "cell@a.example.com", s)
+    r = env.client.post(
+        "/internal/ext-authz/x",
+        headers={"Authorization": f"Bearer {idp_token}", "X-Nexiqon-Tenant": s},
+    )
+    assert r.status_code == 200
+    assert r.headers["x-nexiqon-region"] == "default"
+    eu = slug()
+    created = env.client.post(
+        "/v1/session/tenants",
+        json={"name": "Eu", "slug": eu, "region": "eu"},
+        headers={"Authorization": f"Bearer {idp_token}"},
+    )
+    assert created.status_code == 201, created.text
+    r = env.client.post(
+        "/internal/ext-authz/x",
+        headers={"Authorization": f"Bearer {idp_token}", "X-Nexiqon-Tenant": eu},
+    )
+    assert r.headers["x-nexiqon-region"] == "eu"

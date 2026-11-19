@@ -1,0 +1,45 @@
+# Hybrid data plane (DV-04): installed in the customer's cluster, next to their data. The control
+# plane (identity, policy of record, configuration, audit, evaluation, metering, governance,
+# notification) stays in Nexiqon's cloud. What crosses the link, always outbound from here:
+#   * ext_authz checks (the API key or session token, never request bodies);
+#   * signed configuration snapshot pulls by the config mirror;
+#   * Studio's control-plane calls (settings, users, publishing), which never carry documents or
+#     conversations: those stay on this plane's own origin (split origin, DV-08).
+# Customer content (documents, embeddings, conversations, tool results, model calls) stays here.
+#
+#   helm install nexiqon deploy/helm/nexiqon -f deploy/helm/nexiqon/values/hybrid-data.yaml \
+#     --set controlPlane.host=link.eu.nexiqon.example --set studio.baseUrl=https://data.example.com ...
+#
+# The keys Secret holds public-keys.yaml (verification and snapshot keys), service-keys.yaml and
+# the identity-*.yaml of the services below; never the control plane's signing keys.
+controlPlane:
+  host: link.nexiqon.example      # the control plane's data-plane-link endpoint (mTLS, port 8443)
+  port: 8443
+  tls: { secretName: nexiqon-control-plane-link }
+
+groups:
+  control-core: { enabled: false }
+  control-ops: { enabled: false }
+  # This plane's own policy decisions and its copy of the configuration.
+  data-core:
+    enabled: true
+    plane: data
+    services: [authz, config-mirror]
+    replicas: 2
+    keyFiles: [public-keys.yaml, service-keys.yaml, identity-config-mirror.yaml]
+    settings:
+      control_config_url: http://control-link:8081/config
+      config_environment: prod
+      cache_dir: /tmp/config-mirror   # survives restarts of the process, not of the pod
+      refresh_seconds: 60
+    resources: { requests: { cpu: 100m, memory: 256Mi }, limits: { memory: 512Mi } }
+
+gateway:
+  hsts: true
+  dataPlaneLink: { enabled: false }   # this is the data plane: it dials out, it takes no link
+
+# The data plane's Studio serves the content pages (documents, conversations, answers) from this
+# origin; the control plane's Studio links here. Set both origins.
+studio:
+  extraEnv:
+    - { name: NEXIQON_PEER_ORIGIN, value: "https://studio.nexiqon.example" }

@@ -19,7 +19,12 @@ from nexiqon_core.db import TenantSessionFactory
 from nexiqon_core.errors import BadRequest, Conflict, Forbidden, NotFound, Unauthorized
 from nexiqon_core.events import add_event
 from nexiqon_core.ids import uuid7
-from nexiqon_core.tenancy import CONTEXT_HEADER, TenantContext, require_current_context
+from nexiqon_core.tenancy import (
+    CONTEXT_HEADER,
+    ContextTokenVerifier,
+    TenantContext,
+    require_current_context,
+)
 from nexiqon_identity import apikeys, keys
 from nexiqon_identity.access import SOURCE, AccessService
 from nexiqon_identity.models import (
@@ -93,9 +98,23 @@ async def ext_authz(
     origin: Annotated[str | None, Header()] = None,
     visitor: Annotated[str | None, Header(alias="x-nexiqon-visitor")] = None,
 ) -> Response:
-    """Envoy ext_authz check: 200 + X-Nexiqon-Context, or 401/403. Not routed by the gateway."""
+    """Envoy ext_authz check: 200 + X-Nexiqon-Context, or 401/403. Not routed by the gateway.
+    Also returns the tenant's region (``X-Nexiqon-Region``), which the gateway uses to send the
+    request to that region's cell (DV-07): a tenant's data stays in its region."""
     token = await _access(request).context_for(authorization, tenant, origin, visitor)
-    return Response(status_code=200, headers={CONTEXT_HEADER: token})
+    region = _verifier(request).verify(token).region or "default"
+    return Response(status_code=200, headers={CONTEXT_HEADER: token, REGION_HEADER: region})
+
+
+REGION_HEADER = "x-nexiqon-region"
+
+
+def _verifier(request: Request) -> ContextTokenVerifier:
+    verifier: ContextTokenVerifier | None = getattr(request.app.state, "region_verifier", None)
+    if verifier is None:
+        verifier = ContextTokenVerifier(request.app.state.settings.context_token)
+        request.app.state.region_verifier = verifier
+    return verifier
 
 
 class SessionMembership(BaseModel):

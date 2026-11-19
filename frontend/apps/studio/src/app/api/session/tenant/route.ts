@@ -13,6 +13,6 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ title: "Invalid tenant" }, { status: 400 });
   }
   const response = NextResponse.json({ tenant });
-  response.cookies.set(TENANT_COOKIE, tenant, cookieOptions(env.secureCookies, 30 * 24 * 3600));
+  response.cookies.set(TENANT_COOKIE, tenant, cookieOptions(env.secureCookies, 30 * 24 * 3600, env.peerOrigin !== null));
   return response;
 }

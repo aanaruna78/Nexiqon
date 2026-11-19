@@ -88,6 +88,8 @@ role_permissions := {
 	"service:conversation": ["notification.email.send"],
 	# Reads the agent's pack (widget title, greeting, colour) to answer channel settings requests.
 	"service:channel": ["config.agent.read"],
+	# The hybrid data plane's copy of the configuration (DV-04): pulls signed snapshots, nothing else.
+	"service:config-mirror": ["config.snapshots.read"],
 	# Reads tool definitions and agents' tool allowlists; invocations run as the calling user.
 	"service:tool-gateway": [
 		"config.tool.read",
