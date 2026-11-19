@@ -102,6 +102,22 @@ settings:
 database:
   existingSecret: nexiqon-database   # keys: url (application role), migrationUrl (owner role)
 
+# Default-deny network policies (S-02): pods take traffic only from this release (and the
+# gateway and Studio from the ingress), and no pod can reach the cloud metadata address.
+networkPolicy:
+  enabled: true
+  # Where the ingress controller runs, for the gateway and Studio; empty = from anywhere.
+  ingressNamespace: ""
+  # Where Prometheus (or the OTel collector) runs, to scrape every pod; empty = none.
+  monitoringNamespace: ""
+
+# Alert rules (S-03) as a PrometheusRule, for the Prometheus Operator; runbooks in
+# docs/runbooks/alerts.md. Without the operator, load files/prometheus-rules.yaml directly.
+monitoring:
+  prometheusRule:
+    enabled: false
+    labels: {}
+
 # Nightly logical backup of the platform database to a volume (G-03). Managed databases have their
 # own backups and point-in-time recovery: keep this off there, or on as a second, portable copy.
 # Restore and the timed drill: docs/runbooks/backup-restore.md.
@@ -134,6 +150,8 @@ securityContext:
 gateway:
   enabled: true
   image: envoyproxy/envoy:v1.40.0
+  hsts: false   # on where TLS ends at or before the gateway (the SaaS and private profiles)
+  rateLimit: { enabled: true, perSecond: 200, burst: 400 }   # per gateway pod
   replicas: 2
   service: { type: ClusterIP, port: 8080 }
   # Origins for the widget's CORS preflight; which origins a widget key may use is still checked

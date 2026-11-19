@@ -1,0 +1,131 @@
+# promtool test rules deploy/observability/prometheus-rules.test.yaml (CI): every alert fires on
+# the condition it describes and stays quiet otherwise.
+rule_files: [prometheus-rules.yaml]
+evaluation_interval: 1m
+tests:
+  - name: a group with no ready pods pages; a healthy one does not
+    interval: 1m
+    input_series:
+      - series: kube_deployment_status_replicas_available{deployment="agent"}
+        values: 0x5
+      - series: kube_deployment_status_replicas_available{deployment="knowledge"}
+        values: 2x5
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: NexiqonDeploymentDown
+        exp_alerts:
+          - exp_labels: { severity: critical, deployment: agent }
+            exp_annotations:
+              summary: agent has no ready pods
+              runbook_url: docs/runbooks/alerts.md#nexiqondeploymentdown
+
+  - name: restarts
+    interval: 1m
+    input_series:
+      - series: kube_pod_container_status_restarts_total{pod="agent-1", container="app"}
+        values: 0 1 2 3 4 5 6 7 8 9 10
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: NexiqonPodRestarting
+        exp_alerts:
+          - exp_labels: { severity: warning, pod: agent-1, container: app }
+            exp_annotations:
+              summary: agent-1 restarted 10 times in 30 minutes
+              runbook_url: docs/runbooks/alerts.md#nexiqonpodrestarting
+
+  - name: error rates (10% warns, 50% pages, 1% is fine)
+    interval: 1m
+    input_series:
+      - series: http_server_request_duration_seconds_count{job="conversation", http_response_status_code="200"}
+        values: 0+540x30
+      - series: http_server_request_duration_seconds_count{job="conversation", http_response_status_code="500"}
+        values: 0+60x30
+      - series: http_server_request_duration_seconds_count{job="model-gateway", http_response_status_code="200"}
+        values: 0+300x30
+      - series: http_server_request_duration_seconds_count{job="model-gateway", http_response_status_code="503"}
+        values: 0+300x30
+      - series: http_server_request_duration_seconds_count{job="config", http_response_status_code="200"}
+        values: 0+990x30
+      - series: http_server_request_duration_seconds_count{job="config", http_response_status_code="500"}
+        values: 0+10x30
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: NexiqonHighErrorRate
+        exp_alerts:
+          - exp_labels: { severity: warning, job: conversation }
+            exp_annotations:
+              summary: "conversation: 10% of requests fail"
+              runbook_url: docs/runbooks/alerts.md#nexiqonhigherrorrate
+          - exp_labels: { severity: warning, job: model-gateway }
+            exp_annotations:
+              summary: "model-gateway: 50% of requests fail"
+              runbook_url: docs/runbooks/alerts.md#nexiqonhigherrorrate
+      - eval_time: 20m
+        alertname: NexiqonVeryHighErrorRate
+        exp_alerts:
+          - exp_labels: { severity: critical, job: model-gateway }
+            exp_annotations:
+              summary: "model-gateway: 50% of requests fail"
+              runbook_url: docs/runbooks/alerts.md#nexiqonhigherrorrate
+
+  - name: slow answers and slow search
+    interval: 1m
+    input_series:
+      - series: http_server_request_duration_seconds_bucket{job="agent", http_route="/agent-runtime/v1/agents/{agent}/runs", le="10"}
+        values: 0+1x40
+      - series: http_server_request_duration_seconds_bucket{job="agent", http_route="/agent-runtime/v1/agents/{agent}/runs", le="30"}
+        values: 0+10x40
+      - series: http_server_request_duration_seconds_bucket{job="agent", http_route="/agent-runtime/v1/agents/{agent}/runs", le="+Inf"}
+        values: 0+10x40
+      - series: nexiqon_retrieval_search_duration_milliseconds_bucket{le="50"}
+        values: 0+90x30
+      - series: nexiqon_retrieval_search_duration_milliseconds_bucket{le="100"}
+        values: 0+99x30
+      - series: nexiqon_retrieval_search_duration_milliseconds_bucket{le="+Inf"}
+        values: 0+100x30
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: NexiqonSlowAnswers
+        exp_alerts:
+          - exp_labels: { severity: warning }
+            exp_annotations:
+              summary: 95% of answers take up to 28.89s
+              runbook_url: docs/runbooks/alerts.md#nexiqonslowanswers
+      - eval_time: 25m
+        alertname: NexiqonSlowSearch
+        exp_alerts: []
+
+  - name: a missing backup pages after 26 hours; a recent one is fine
+    interval: 1m
+    input_series:
+      - series: kube_cronjob_status_last_successful_time{cronjob="nexiqon-backup"}
+        values: 0x1700
+    alert_rule_test:
+      - eval_time: 12h
+        alertname: NexiqonBackupMissing
+        exp_alerts: []
+      - eval_time: 28h
+        alertname: NexiqonBackupMissing
+        exp_alerts:
+          - exp_labels: { severity: critical, cronjob: nexiqon-backup }
+            exp_annotations:
+              summary: No successful database backup for 1d 4h 0m 0s
+              runbook_url: docs/runbooks/alerts.md#nexiqonbackupmissing
+
+  - name: database connections
+    interval: 1m
+    input_series:
+      - series: pg_stat_activity_count{state="active"}
+        values: 70x20
+      - series: pg_stat_activity_count{state="idle"}
+        values: 15x20
+      - series: pg_settings_max_connections
+        values: 100x20
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: NexiqonDatabaseConnectionsHigh
+        exp_alerts:
+          - exp_labels: { severity: warning }
+            exp_annotations:
+              summary: PostgreSQL connections at 85% of the limit
+              runbook_url: docs/runbooks/alerts.md#nexiqondatabaseconnectionshigh

@@ -111,6 +111,10 @@ jobs:
             python3 -c "import sys, yaml; [print(d['data']['envoy.yaml']) for d in yaml.safe_load_all(open(sys.argv[1])) if d and d['kind'] == 'ConfigMap' and d['metadata']['name'] == 'nexiqon-gateway']" /tmp/render/$f.yaml > /tmp/render/$f-envoy.yaml
             docker run --rm -v /tmp/render/$f-envoy.yaml:/e.yaml:ro envoyproxy/envoy:v1.40.0 --mode validate -c /e.yaml
           done
+      - name: Alert rules pass their unit tests (S-03)
+        run: |
+          docker run --rm -v $PWD/deploy/observability:/r:ro -w /r --entrypoint promtool prom/prometheus:v3.5.0 check rules prometheus-rules.yaml
+          docker run --rm -v $PWD/deploy/observability:/r:ro -w /r --entrypoint promtool prom/prometheus:v3.5.0 test rules prometheus-rules.test.yaml
       - name: OpenTofu format and validate (no backend, no credentials)
         run: |
           T="ghcr.io/opentofu/opentofu:1.10.6"
@@ -169,7 +173,7 @@ jobs:
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0 (pinned by SHA)
         with:
           image-ref: nexiqon/platform:ci
-          severity: CRITICAL
+          severity: HIGH,CRITICAL
           exit-code: "1"
           ignore-unfixed: true
       - name: Build the Studio image (with the widget bundle)
@@ -190,6 +194,55 @@ jobs:
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0 (pinned by SHA)
         with:
           image-ref: nexiqon/studio:ci
-          severity: CRITICAL
+          severity: HIGH,CRITICAL
           exit-code: "1"
           ignore-unfixed: true
+
+  # DV-01: publish signed images with SBOMs. Off until the repository variable PUBLISH_IMAGES is
+  # "true" (Settings > Secrets and variables > Actions > Variables); then on every push to main.
+  publish:
+    name: Publish signed images
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PUBLISH_IMAGES == 'true'
+    needs: [python, frontend, helm, security, image]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+      id-token: write   # keyless signing with the workflow's identity (Sigstore)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Image names
+        run: echo "REGISTRY=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - id: platform
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/platform:${{ github.sha }}
+          cache-from: type=gha
+      - id: studio
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          file: deploy/docker/studio.Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/studio:${{ github.sha }}
+          cache-from: type=gha,scope=studio
+      - uses: sigstore/cosign-installer@v3.8.1
+      - name: Sign, and attach an SBOM to, each image
+        env:
+          PLATFORM: ${{ env.REGISTRY }}/platform@${{ steps.platform.outputs.digest }}
+          STUDIO: ${{ env.REGISTRY }}/studio@${{ steps.studio.outputs.digest }}
+        run: |
+          for ref in "$PLATFORM" "$STUDIO"; do
+            cosign sign --yes "$ref"
+            docker run --rm -v "$HOME/.docker:/root/.docker:ro" aquasec/trivy:0.64.1 image --quiet --format cyclonedx "$ref" > sbom.json
+            cosign attest --yes --type cyclonedx --predicate sbom.json "$ref"
+          done

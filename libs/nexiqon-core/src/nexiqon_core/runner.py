@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import importlib
+import os
 from collections.abc import AsyncIterator, Callable, Sequence
 from contextlib import AsyncExitStack, asynccontextmanager
 from pathlib import Path
@@ -75,13 +76,21 @@ def build_group_app(
 
 def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Run a Nexiqon deployment group")
-    target = parser.add_mutually_exclusive_group(required=True)
-    target.add_argument("--group", help="group name from the groups file")
+    target = parser.add_mutually_exclusive_group()
+    target.add_argument(
+        "--group",
+        default=os.environ.get("NEXIQON_GROUP"),
+        help="group name from the groups file (default: $NEXIQON_GROUP)",
+    )
     target.add_argument("--services", help="comma-separated services to run together")
     parser.add_argument("--groups-file", type=Path, default=Path("deploy/groups.yaml"))
     parser.add_argument("--host", default="0.0.0.0")  # noqa: S104 - containers bind all interfaces
     parser.add_argument("--port", type=int, default=None)
     args = parser.parse_args(argv)
+    if args.services:
+        args.group = None
+    elif not args.group:
+        parser.error("give --group, --services, or set NEXIQON_GROUP")
 
     topology = Topology.load(args.groups_file)
     if args.group:
@@ -89,8 +98,6 @@ def main(argv: Sequence[str] | None = None) -> None:
     else:
         services = tuple(s.strip() for s in args.services.split(",") if s.strip())
         name = "+".join(services)
-
-    import os
 
     import uvicorn
 

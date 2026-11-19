@@ -94,6 +94,18 @@ test.describe.serial("Studio", () => {
     await a11y(page, "home");
   });
 
+  test("security headers: a strict content policy, no framing, no sniffing", async () => {
+    const r = await page.request.get("/");
+    const h = r.headers();
+    expect(h["content-security-policy"]).toContain("default-src 'self'");
+    expect(h["content-security-policy"]).toContain("frame-ancestors 'none'");
+    expect(h["content-security-policy"]).toContain("object-src 'none'");
+    expect(h["x-frame-options"]).toBe("DENY");
+    expect(h["x-content-type-options"]).toBe("nosniff");
+    expect(h["cross-origin-opener-policy"]).toBe("same-origin");
+    expect(h["x-powered-by"]).toBeUndefined();
+  });
+
   test("skip link is the first stop for keyboard users", async () => {
     await page.goto("/");
     await page.keyboard.press("Tab");

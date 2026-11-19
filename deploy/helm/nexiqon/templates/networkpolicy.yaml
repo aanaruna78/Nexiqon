@@ -1,0 +1,51 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- $release := dict "app.kubernetes.io/instance" .Release.Name }}
+# S-02: nothing reaches a Nexiqon pod unless allowed below.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: nexiqon-default-deny
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {{- toYaml $release | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    # Platform pods talk to each other (service calls, databases, the event bus).
+    - from:
+        - podSelector:
+            matchLabels: {{- toYaml $release | nindent 14 }}
+    {{- with .Values.networkPolicy.monitoringNamespace }}
+    - from:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: {{ . | quote }} }
+    {{- end }}
+  egress:
+    # Anywhere (model providers, websites being indexed, customer APIs, webhooks) except the
+    # cloud metadata endpoint: a fetch that slipped past the SSRF checks still cannot read it.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except: [169.254.169.254/32]
+---
+# The public entry points: the gateway (API, widget) and Studio, from the ingress controller.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: nexiqon-public-entry
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchExpressions:
+      - { key: app.kubernetes.io/instance, operator: In, values: [{{ .Release.Name | quote }}] }
+      - { key: app.kubernetes.io/name, operator: In, values: [gateway, studio] }
+  policyTypes: [Ingress]
+  ingress:
+    {{- if .Values.networkPolicy.ingressNamespace }}
+    - from:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: {{ .Values.networkPolicy.ingressNamespace | quote }} }
+    {{- else }}
+    - {}
+    {{- end }}
+{{- end }}

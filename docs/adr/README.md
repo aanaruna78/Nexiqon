@@ -26,3 +26,4 @@
 | [0022](0022-widget-product-and-transcript-email.md) | Widget product and transcript email | Accepted |
 | [0023](0023-metering-insights-and-the-review-queue.md) | Metering, insights and the review queue | Accepted |
 | [0024](0024-tenant-lifecycle-retention-backups-and-notifications.md) | Tenant lifecycle, retention, backups and notifications | Accepted |
+| [0025](0025-security-hardening-alerting-and-signed-images.md) | Security hardening, alerting and signed images | Accepted |

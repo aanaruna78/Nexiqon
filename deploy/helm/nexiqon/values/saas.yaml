@@ -18,6 +18,7 @@ groups:
       scan: { backend: clamav, clamd_host: clamav.nexiqon-infra, clamd_port: 3310 }
       workflows: { enabled: true, address: "temporal-frontend.nexiqon-infra:7233" }
 gateway:
+  hsts: true
   ingress: { enabled: true, className: nginx, host: api.example.com, tls: { secretName: api-tls } }
 studio:
   image: { repository: registry.digitalocean.com/nexiqon/studio }

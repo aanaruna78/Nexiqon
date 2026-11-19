@@ -1,0 +1,73 @@
+# Nexiqon alert rules (S-03), Prometheus format: Prometheus, Mimir or Grafana Cloud.
+# Every alert has a runbook (docs/runbooks/alerts.md) and a unit test (prometheus-rules.test.yaml,
+# run in CI with promtool). Metrics: OpenTelemetry HTTP server metrics from every service
+# (job = the service), kube-state-metrics, and postgres_exporter.
+groups:
+  - name: nexiqon-availability
+    rules:
+      - alert: NexiqonDeploymentDown
+        expr: kube_deployment_status_replicas_available{deployment=~"control-core|control-ops|knowledge|agent|tool-gateway|model-gateway|gateway|studio"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "{{ $labels.deployment }} has no ready pods"
+          runbook_url: docs/runbooks/alerts.md#nexiqondeploymentdown
+      - alert: NexiqonPodRestarting
+        expr: increase(kube_pod_container_status_restarts_total{container="app"}[30m]) > 3
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "{{ $labels.pod }} restarted {{ $value | humanize }} times in 30 minutes"
+          runbook_url: docs/runbooks/alerts.md#nexiqonpodrestarting
+
+  - name: nexiqon-errors-and-latency
+    rules:
+      - record: nexiqon:http_requests:rate5m
+        expr: sum by (job) (rate(http_server_request_duration_seconds_count[5m]))
+      - record: nexiqon:http_errors:rate5m
+        expr: sum by (job) (rate(http_server_request_duration_seconds_count{http_response_status_code=~"5.."}[5m]))
+      - alert: NexiqonHighErrorRate
+        expr: (nexiqon:http_errors:rate5m / nexiqon:http_requests:rate5m) > 0.05 and nexiqon:http_requests:rate5m > 0.1
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "{{ $labels.job }}: {{ $value | humanizePercentage }} of requests fail"
+          runbook_url: docs/runbooks/alerts.md#nexiqonhigherrorrate
+      - alert: NexiqonVeryHighErrorRate
+        expr: (nexiqon:http_errors:rate5m / nexiqon:http_requests:rate5m) > 0.25 and nexiqon:http_requests:rate5m > 0.1
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: "{{ $labels.job }}: {{ $value | humanizePercentage }} of requests fail"
+          runbook_url: docs/runbooks/alerts.md#nexiqonhigherrorrate
+      - alert: NexiqonSlowAnswers
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_server_request_duration_seconds_bucket{job=~".*agent.*", http_route=~".*/runs.*"}[10m]))) > 20
+        for: 15m
+        labels: { severity: warning }
+        annotations:
+          summary: "95% of answers take up to {{ $value | humanizeDuration }}"
+          runbook_url: docs/runbooks/alerts.md#nexiqonslowanswers
+      - alert: NexiqonSlowSearch
+        expr: histogram_quantile(0.95, sum by (le) (rate(nexiqon_retrieval_search_duration_milliseconds_bucket[5m]))) > 100
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Retrieval P95 is {{ $value | humanize }} ms (budget 100 ms, RT-08)"
+          runbook_url: docs/runbooks/alerts.md#nexiqonslowsearch
+
+  - name: nexiqon-data
+    rules:
+      - alert: NexiqonBackupMissing
+        expr: time() - kube_cronjob_status_last_successful_time{cronjob="nexiqon-backup"} > 26 * 3600
+        for: 10m
+        labels: { severity: critical }
+        annotations:
+          summary: "No successful database backup for {{ $value | humanizeDuration }}"
+          runbook_url: docs/runbooks/alerts.md#nexiqonbackupmissing
+      - alert: NexiqonDatabaseConnectionsHigh
+        expr: sum(pg_stat_activity_count) / max(pg_settings_max_connections) > 0.8
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "PostgreSQL connections at {{ $value | humanizePercentage }} of the limit"
+          runbook_url: docs/runbooks/alerts.md#nexiqondatabaseconnectionshigh

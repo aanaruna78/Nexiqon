@@ -16,6 +16,7 @@ SOURCES = {
     "flags.json": ROOT / "deploy/compose/flags/flags.json",
     "seaweedfs-s3.json": ROOT / "deploy/compose/seaweedfs-s3.json",
     "keycloak-realm.json": ROOT / "deploy/compose/keycloak/nexiqon-realm.json",
+    "prometheus-rules.yaml": ROOT / "deploy/observability/prometheus-rules.yaml",
 }
 
 

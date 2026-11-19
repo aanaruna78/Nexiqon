@@ -11,4 +11,5 @@ groups:
   model-gateway:
     env: []   # no cloud provider keys: cloud profiles fail closed
 gateway:
+  hsts: true
   service: { type: LoadBalancer }
