@@ -28,6 +28,7 @@ SERVICE_IDENTITIES = {
     "channel": "channel_identity",
     "evaluation": "evaluation_identity",
     "conversation": "conversation_identity",
+    "metering": "metering_identity",
 }
 
 

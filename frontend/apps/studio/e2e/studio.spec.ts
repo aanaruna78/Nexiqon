@@ -461,6 +461,47 @@ test.describe.serial("Studio", () => {
     server.close();
   });
 
+  test("conversations: a handover waits in the queue, is claimed, answered and resolved", async () => {
+    await page.goto("/assistants/ops-helper?tab=test");
+    await page.getByRole("button", { name: "Ask for a person" }).click();
+    await expect(page.getByTestId("test-chat-log")).toContainText(/person|team/i);
+    await page.goto("/conversations");
+    await a11y(page, "escalation queue");
+    const row = page.getByTestId("conversation-list").getByTestId("conversation-row").first();
+    await expect(row).toContainText("Waiting");
+    await row.click();
+    const reader = page.getByTestId("conversation-reader");
+    await expect(reader.getByTestId("handoff-card")).toBeVisible();
+    await expect(reader.getByTestId("transcript")).toContainText("Visitor");
+    await a11y(page, "conversation reader");
+    await reader.getByTestId("claim").click();
+    await expect(reader.getByTestId("handoff-card")).toContainText("Claimed");
+    await reader.getByTestId("staff-reply").fill("Hi, this is the team. We are looking into it.");
+    await reader.getByTestId("send-staff-reply").click();
+    await expect(reader.getByTestId("transcript")).toContainText("Hi, this is the team.");
+    await expect(reader.getByTestId("transcript")).toContainText("Team:");
+    await reader.getByTestId("resolve").click();
+    await expect(reader.getByTestId("handoff-card")).toContainText("Resolved");
+    await page.keyboard.press("Escape");
+    await page.getByTestId("view-all").click();
+    await expect(page.getByTestId("conversation-list")).toContainText("Resolved");
+  });
+
+  test("insights: quality, content gaps, cost and a budget", async () => {
+    await page.goto("/insights");
+    await expect(page.getByTestId("quality-rates")).toContainText("Answered");
+    await expect(page.getByTestId("month-cost")).toBeVisible();
+    await a11y(page, "insights");
+    await page.getByTestId("insights-agent").click();
+    await page.getByRole("option", { name: "ops-helper" }).click();
+    await expect(page.getByTestId("quality-rates")).toBeVisible();
+    await page.getByTestId("budget-limit").fill("100");
+    await page.getByTestId("save-budget").click();
+    await expect(page.getByTestId("budgets")).toContainText("Whole organization");
+    await expect(page.getByTestId("budgets")).toContainText("of $100.00");
+    await a11y(page, "budgets");
+  });
+
   test("evaluations: a test set, a run and its scorecard", async () => {
     await page.goto("/evaluations");
     await a11y(page, "evaluations empty");
@@ -564,15 +605,10 @@ test.describe.serial("Studio", () => {
     await page.waitForURL(/settings\/audit$/);
   });
 
-  test("planned sections have designed placeholders, not dead ends", async () => {
-    await page.goto("/conversations");
-    await expect(page.getByRole("heading", { name: "Conversations is coming" })).toBeVisible();
-    await a11y(page, "coming soon");
-  });
-
-  test("sidebar explains each section in a tooltip and shows planned ones as Soon", async () => {
+  test("sidebar explains each section in a tooltip, and every section is live", async () => {
     await page.goto("/");
-    await expect(page.getByRole("link", { name: /Conversations/ }).first()).toContainText("Soon");
+    await expect(page.getByRole("link", { name: /Conversations/ }).first()).not.toContainText("Soon");
+    await expect(page.getByRole("link", { name: /Insights/ }).first()).not.toContainText("Soon");
     await expect(page.getByRole("link", { name: /Assistants/ }).first()).not.toContainText("Soon");
     await expect(page.getByRole("link", { name: /Knowledge/ }).first()).not.toContainText("Soon");
     await page.getByRole("link", { name: /API keys/ }).first().hover();

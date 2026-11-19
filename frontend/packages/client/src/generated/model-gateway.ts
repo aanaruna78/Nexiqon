@@ -148,6 +148,8 @@ export interface components {
     schemas: {
         /** ChatIn */
         ChatIn: {
+            /** Agent */
+            agent?: string | null;
             /**
              * Classification
              * @default internal

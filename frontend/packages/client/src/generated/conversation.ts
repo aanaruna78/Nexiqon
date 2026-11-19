@@ -48,7 +48,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Conversations */
+        /**
+         * List Conversations
+         * @description Newest first. ``queue=waiting`` is the escalation queue: open or claimed (ST-16).
+         */
         get: operations["list_conversations_v1_conversations_get"];
         put?: never;
         /** Create Conversation */
@@ -164,6 +167,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/conversations/{conversation_id}/queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Queue Action
+         * @description Claim a handed-over conversation, give it back, resolve it, or reopen it.
+         */
+        post: operations["queue_action_v1_conversations__conversation_id__queue_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/conversations/{conversation_id}/staff-messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Staff Reply
+         * @description A person from the team answers in a handed-over conversation. The visitor sees it in the
+         *     widget; the assistant stays quiet in that conversation.
+         */
+        post: operations["staff_reply_v1_conversations__conversation_id__staff_messages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/conversations/{conversation_id}/transcript": {
         parameters: {
             query?: never;
@@ -179,6 +223,28 @@ export interface paths {
          *     as conversation's own identity, with a cooldown per conversation; the address is not kept.
          */
         post: operations["email_transcript_v1_conversations__conversation_id__transcript_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/insights/gap-questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Gap Questions
+         * @description Questions the assistant could not answer, that were handed to a person, or whose answer
+         *     was rated unhelpful: the raw material for the content-gap report (insights). Question text
+         *     only, never the answers.
+         */
+        get: operations["gap_questions_v1_insights_gap_questions_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -226,6 +292,8 @@ export interface components {
             actor_id: string;
             /** Agent */
             agent: string;
+            /** Assignee */
+            assignee?: string | null;
             /** Channel */
             channel: string;
             /**
@@ -246,6 +314,10 @@ export interface components {
             locale: string;
             /** Messages */
             messages: components["schemas"]["MessageOut"][];
+            /** Queue Status */
+            queue_status?: string | null;
+            /** Resolved At */
+            resolved_at?: string | null;
             /** Retain Until */
             retain_until: string | null;
             /** Status */
@@ -275,6 +347,8 @@ export interface components {
             actor_id: string;
             /** Agent */
             agent: string;
+            /** Assignee */
+            assignee?: string | null;
             /** Channel */
             channel: string;
             /**
@@ -293,6 +367,10 @@ export interface components {
             last_message_at: string | null;
             /** Locale */
             locale: string;
+            /** Queue Status */
+            queue_status?: string | null;
+            /** Resolved At */
+            resolved_at?: string | null;
             /** Retain Until */
             retain_until: string | null;
             /** Status */
@@ -309,6 +387,30 @@ export interface components {
              * @enum {string}
              */
             rating: "up" | "down";
+        };
+        /** GapQuestion */
+        GapQuestion: {
+            /** Agent */
+            agent: string;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /**
+             * Conversation Id
+             * Format: uuid
+             */
+            conversation_id: string;
+            /** Locale */
+            locale: string;
+            /** Question */
+            question: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "unanswered" | "escalated" | "not_helpful";
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -342,6 +444,19 @@ export interface components {
             role: string;
             /** Run Id */
             run_id: string | null;
+        };
+        /** QueueAction */
+        QueueAction: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "claim" | "release" | "resolve" | "reopen";
+        };
+        /** StaffMessageIn */
+        StaffMessageIn: {
+            /** Content */
+            content: string;
         };
         /** TranscriptIn */
         TranscriptIn: {
@@ -433,6 +548,10 @@ export interface operations {
             query?: {
                 mine?: boolean;
                 limit?: number;
+                agent?: string | null;
+                status?: string | null;
+                queue?: ("open" | "claimed" | "resolved" | "waiting") | null;
+                before?: string | null;
             };
             header?: never;
             path?: never;
@@ -689,6 +808,76 @@ export interface operations {
             };
         };
     };
+    queue_action_v1_conversations__conversation_id__queue_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QueueAction"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    staff_reply_v1_conversations__conversation_id__staff_messages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffMessageIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     email_transcript_v1_conversations__conversation_id__transcript_post: {
         parameters: {
             query?: never;
@@ -711,6 +900,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TranscriptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    gap_questions_v1_insights_gap_questions_get: {
+        parameters: {
+            query?: {
+                agent?: string | null;
+                days?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GapQuestion"][];
                 };
             };
             /** @description Validation Error */

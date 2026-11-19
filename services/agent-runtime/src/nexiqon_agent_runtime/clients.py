@@ -86,6 +86,7 @@ class Models(Http):
         max_tokens: int,
         response_schema: dict[str, Any] | None = None,
         conversation_id: str | None = None,
+        agent: str | None = None,
     ) -> dict[str, Any]:
         body: dict[str, Any] = {
             "profile": profile,
@@ -94,6 +95,8 @@ class Models(Http):
             "max_tokens": max_tokens,
             "conversation_id": conversation_id,
         }
+        if agent:
+            body["agent"] = agent  # usage and cost are attributed to the assistant (MT-01)
         if response_schema is not None:
             body["response_schema"] = (
                 response_schema  # the gateway picks json_schema or guided JSON
@@ -112,17 +115,20 @@ class Models(Http):
         messages: list[dict[str, str]],
         max_tokens: int,
         conversation_id: str | None = None,
+        agent: str | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
         """Yields ``{"text": ...}`` pieces, then one ``{"done": True, "route": ..., "usage": ...}``."""
         if self.base is None:
             raise ServiceUnavailable("Service URL for /v1/chat/stream is not configured")
-        body = {
+        body: dict[str, Any] = {
             "profile": profile,
             "messages": messages,
             "classification": classification,
             "max_tokens": max_tokens,
             "conversation_id": conversation_id,
         }
+        if agent:
+            body["agent"] = agent
         try:
             async with self.client.stream(
                 "POST",

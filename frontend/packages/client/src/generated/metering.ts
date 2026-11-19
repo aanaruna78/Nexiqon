@@ -21,6 +21,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Alerts */
+        get: operations["list_alerts_v1_alerts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/alerts/{alert_id}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Acknowledge */
+        post: operations["acknowledge_v1_alerts__alert_id__acknowledge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/budgets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Budgets */
+        get: operations["list_budgets_v1_budgets_get"];
+        /**
+         * Set Budget
+         * @description Create or change the budget for the organization or one assistant.
+         */
+        put: operations["set_budget_v1_budgets_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/budgets/{budget_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Budget */
+        delete: operations["delete_budget_v1_budgets__budget_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/context": {
         parameters: {
             query?: never;
@@ -30,9 +102,111 @@ export interface paths {
         };
         /**
          * Context
-         * @description Echo the verified tenant context (skeleton endpoint used by isolation smoke tests).
+         * @description Echo the verified tenant context (used by isolation smoke tests).
          */
         get: operations["context_v1_context_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/insights/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Active Agents
+         * @description Assistants with any recorded activity or usage.
+         */
+        get: operations["active_agents_v1_insights_agents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/insights/gaps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Gaps
+         * @description What people asked that the knowledge does not answer, grouped into topics (UX G3).
+         *     The questions are visitors' own words, so this needs ``metering.gaps.view``.
+         */
+        get: operations["gaps_v1_insights_gaps_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/insights/kpis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Kpis
+         * @description The pack's own KPIs (``analytics.kpis``): the share of conversations in which an event
+         *     happened. ``conversation.resolved`` means answered and never handed to a person.
+         */
+        get: operations["kpis_v1_insights_kpis_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/insights/quality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Quality
+         * @description Answer rate, citations, handoffs, satisfaction and tool errors over time.
+         */
+        get: operations["quality_v1_insights_quality_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/usage/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Usage Summary
+         * @description A month's tokens and cost, by assistant, model and profile, with a daily series.
+         */
+        get: operations["usage_summary_v1_usage_summary_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -45,6 +219,60 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AlertOut */
+        AlertOut: {
+            /** Acknowledged At */
+            acknowledged_at: string | null;
+            /** Agent */
+            agent: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Limit Usd */
+            limit_usd: string;
+            /** Month */
+            month: string;
+            /** Spent Usd */
+            spent_usd: string;
+            /** Threshold */
+            threshold: number;
+        };
+        /** BudgetIn */
+        BudgetIn: {
+            /** Agent */
+            agent?: string | null;
+            /** Monthly Usd */
+            monthly_usd: number | string;
+            /** Thresholds */
+            thresholds?: number[];
+        };
+        /** BudgetOut */
+        BudgetOut: {
+            /** Agent */
+            agent: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Month */
+            month: string;
+            /** Monthly Usd */
+            monthly_usd: string;
+            /** Spent Usd */
+            spent_usd: string;
+            /** Thresholds */
+            thresholds: number[];
+            /** Used */
+            used: number;
+        };
         /** ContextEcho */
         ContextEcho: {
             /** Actor Id */
@@ -53,6 +281,148 @@ export interface components {
             actor_type: string;
             /** Tenant Id */
             tenant_id: string;
+        };
+        /** DayActivity */
+        DayActivity: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Metrics */
+            metrics: {
+                [key: string]: number;
+            };
+        };
+        /** DayCost */
+        DayCost: {
+            /** Calls */
+            calls: number;
+            /** Cost Usd */
+            cost_usd: string;
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Tokens */
+            tokens: number;
+        };
+        /** GapReport */
+        GapReport: {
+            /** Agent */
+            agent: string | null;
+            /** Days */
+            days: number;
+            /** Questions */
+            questions: number;
+            /** Topics */
+            topics: components["schemas"]["GapTopic"][];
+        };
+        /** GapTopic */
+        GapTopic: {
+            /** Conversations */
+            conversations: string[];
+            /** Count */
+            count: number;
+            /** Example */
+            example: string;
+            /** Examples */
+            examples: string[];
+            /** Label */
+            label: string[];
+            /** Reasons */
+            reasons: {
+                [key: string]: number;
+            };
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
+        };
+        /** Kpi */
+        Kpi: {
+            /** Conversations */
+            conversations: number;
+            /** Count */
+            count: number;
+            /** Description */
+            description: string;
+            /** Event */
+            event: string;
+            /** Name */
+            name: string;
+            /** Value */
+            value: number | null;
+        };
+        /** Quality */
+        Quality: {
+            /** Agent */
+            agent: string | null;
+            /** Daily */
+            daily: components["schemas"]["DayActivity"][];
+            /** Days */
+            days: number;
+            /** Previous Rates */
+            previous_rates: {
+                [key: string]: number | null;
+            };
+            /** Rates */
+            rates: {
+                [key: string]: number | null;
+            };
+            /** Totals */
+            totals: {
+                [key: string]: number;
+            };
+        };
+        /** UsageGroup */
+        UsageGroup: {
+            /** Calls */
+            calls: number;
+            /** Cost Usd */
+            cost_usd: string;
+            /** Input Tokens */
+            input_tokens: number;
+            /** Key */
+            key: string;
+            /** Output Tokens */
+            output_tokens: number;
+        };
+        /** UsageSummary */
+        UsageSummary: {
+            /** By Agent */
+            by_agent: components["schemas"]["UsageGroup"][];
+            /** By Model */
+            by_model: components["schemas"]["UsageGroup"][];
+            /** By Profile */
+            by_profile: components["schemas"]["UsageGroup"][];
+            /** Calls */
+            calls: number;
+            /** Cost Usd */
+            cost_usd: string;
+            /** Daily */
+            daily: components["schemas"]["DayCost"][];
+            /** Input Tokens */
+            input_tokens: number;
+            /** Month */
+            month: string;
+            /** Output Tokens */
+            output_tokens: number;
+        };
+        /** ValidationError */
+        ValidationError: {
+            /** Context */
+            ctx?: Record<string, never>;
+            /** Input */
+            input?: unknown;
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
         };
     };
     responses: never;
@@ -85,6 +455,161 @@ export interface operations {
             };
         };
     };
+    list_alerts_v1_alerts_get: {
+        parameters: {
+            query?: {
+                open_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    acknowledge_v1_alerts__alert_id__acknowledge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alert_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_budgets_v1_budgets_get: {
+        parameters: {
+            query?: {
+                month?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_budget_v1_budgets_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BudgetIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_budget_v1_budgets__budget_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                budget_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     context_v1_context_get: {
         parameters: {
             query?: never;
@@ -101,6 +626,154 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContextEcho"];
+                };
+            };
+        };
+    };
+    active_agents_v1_insights_agents_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
+                };
+            };
+        };
+    };
+    gaps_v1_insights_gaps_get: {
+        parameters: {
+            query?: {
+                agent?: string | null;
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GapReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    kpis_v1_insights_kpis_get: {
+        parameters: {
+            query: {
+                agent: string;
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Kpi"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    quality_v1_insights_quality_get: {
+        parameters: {
+            query?: {
+                days?: number;
+                agent?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Quality"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    usage_summary_v1_usage_summary_get: {
+        parameters: {
+            query?: {
+                month?: string | null;
+                agent?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsageSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

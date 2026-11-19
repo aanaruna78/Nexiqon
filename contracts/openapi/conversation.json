@@ -47,6 +47,17 @@
             "title": "Agent",
             "type": "string"
           },
+          "assignee": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignee"
+          },
           "channel": {
             "title": "Channel",
             "type": "string"
@@ -94,6 +105,29 @@
             },
             "title": "Messages",
             "type": "array"
+          },
+          "queue_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Queue Status"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
           },
           "retain_until": {
             "anyOf": [
@@ -180,6 +214,17 @@
             "title": "Agent",
             "type": "string"
           },
+          "assignee": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignee"
+          },
           "channel": {
             "title": "Channel",
             "type": "string"
@@ -220,6 +265,29 @@
           "locale": {
             "title": "Locale",
             "type": "string"
+          },
+          "queue_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Queue Status"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
           },
           "retain_until": {
             "anyOf": [
@@ -292,6 +360,51 @@
           "rating"
         ],
         "title": "FeedbackIn",
+        "type": "object"
+      },
+      "GapQuestion": {
+        "properties": {
+          "agent": {
+            "title": "Agent",
+            "type": "string"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "conversation_id": {
+            "format": "uuid",
+            "title": "Conversation Id",
+            "type": "string"
+          },
+          "locale": {
+            "title": "Locale",
+            "type": "string"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "unanswered",
+              "escalated",
+              "not_helpful"
+            ],
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question",
+          "reason",
+          "conversation_id",
+          "agent",
+          "locale",
+          "at"
+        ],
+        "title": "GapQuestion",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -369,6 +482,40 @@
           "created_at"
         ],
         "title": "MessageOut",
+        "type": "object"
+      },
+      "QueueAction": {
+        "properties": {
+          "action": {
+            "enum": [
+              "claim",
+              "release",
+              "resolve",
+              "reopen"
+            ],
+            "title": "Action",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "QueueAction",
+        "type": "object"
+      },
+      "StaffMessageIn": {
+        "properties": {
+          "content": {
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Content",
+            "type": "string"
+          }
+        },
+        "required": [
+          "content"
+        ],
+        "title": "StaffMessageIn",
         "type": "object"
       },
       "TranscriptIn": {
@@ -536,6 +683,7 @@
     },
     "/v1/conversations": {
       "get": {
+        "description": "Newest first. ``queue=waiting`` is the escalation queue: open or claimed (ST-16).",
         "operationId": "list_conversations_v1_conversations_get",
         "parameters": [
           {
@@ -556,6 +704,79 @@
               "default": 50,
               "title": "Limit",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "agent",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agent"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[a-z_]{1,24}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "queue",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "open",
+                    "claimed",
+                    "resolved",
+                    "waiting"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Queue"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
             }
           }
         ],
@@ -910,6 +1131,114 @@
         ]
       }
     },
+    "/v1/conversations/{conversation_id}/queue": {
+      "post": {
+        "description": "Claim a handed-over conversation, give it back, resolve it, or reopen it.",
+        "operationId": "queue_action_v1_conversations__conversation_id__queue_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueueAction"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Queue Action",
+        "tags": [
+          "conversation"
+        ]
+      }
+    },
+    "/v1/conversations/{conversation_id}/staff-messages": {
+      "post": {
+        "description": "A person from the team answers in a handed-over conversation. The visitor sees it in the\nwidget; the assistant stays quiet in that conversation.",
+        "operationId": "staff_reply_v1_conversations__conversation_id__staff_messages_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffMessageIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Staff Reply",
+        "tags": [
+          "conversation"
+        ]
+      }
+    },
     "/v1/conversations/{conversation_id}/transcript": {
       "post": {
         "description": "Email the person a copy of their own conversation. Sent through the notification service\nas conversation's own identity, with a cooldown per conversation; the address is not kept.",
@@ -959,6 +1288,85 @@
           }
         },
         "summary": "Email Transcript",
+        "tags": [
+          "conversation"
+        ]
+      }
+    },
+    "/v1/insights/gap-questions": {
+      "get": {
+        "description": "Questions the assistant could not answer, that were handed to a person, or whose answer\nwas rated unhelpful: the raw material for the content-gap report (insights). Question text\nonly, never the answers.",
+        "operationId": "gap_questions_v1_insights_gap_questions_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "agent",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agent"
+            }
+          },
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 365,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 1000,
+              "maximum": 2000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GapQuestion"
+                  },
+                  "title": "Response Gap Questions V1 Insights Gap Questions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Gap Questions",
         "tags": [
           "conversation"
         ]

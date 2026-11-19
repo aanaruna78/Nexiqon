@@ -29,7 +29,7 @@ import { direction, fill, lang2, strings, type Strings } from "./i18n";
  * an answer contains can change the page.
  */
 
-type Kind = "user" | "assistant" | "notice";
+type Kind = "user" | "assistant" | "staff" | "notice";
 
 interface Line {
   role: Kind;
@@ -267,6 +267,17 @@ export class NexiqonChat extends LitElement {
       color: var(--nx-warn);
       margin-bottom: 2px;
     }
+    .staff {
+      background: var(--nx-surface);
+      border: 2px solid var(--nx-accent);
+      align-self: flex-start;
+    }
+    .who {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--nx-muted);
+    }
     .user {
       background: var(--nx-accent);
       color: var(--nx-on-accent);
@@ -473,6 +484,9 @@ export class NexiqonChat extends LitElement {
   client?: ChatClient;
   private loaded = false;
   private lastText = "";
+  private poll?: ReturnType<typeof setInterval>;
+  /** How often to look for a team member's reply while the conversation is with a person. */
+  static pollMs = 8000;
 
   get t(): Strings {
     return strings(this.locale, this.settings?.labels ?? {});
@@ -494,11 +508,41 @@ export class NexiqonChat extends LitElement {
 
   disconnectedCallback(): void {
     this.removeEventListener("keydown", this.onEscape);
+    this.stopPolling();
     super.disconnectedCallback();
   }
 
   protected updated(changed: Map<string, unknown>): void {
     if (changed.has("theme") || changed.has("settings")) this.applyMode();
+    if (changed.has("conversation") || changed.has("open")) this.syncPolling();
+  }
+
+  /** While a person has the conversation, check for their replies (no socket needed). */
+  private syncPolling(): void {
+    const waiting = this.open && this.conversation?.status === "escalated";
+    if (waiting && !this.poll) this.poll = setInterval(() => void this.refresh(), NexiqonChat.pollMs);
+    if (!waiting) this.stopPolling();
+  }
+
+  private stopPolling(): void {
+    if (this.poll) clearInterval(this.poll);
+    this.poll = undefined;
+  }
+
+  async refresh(): Promise<void> {
+    if (!this.conversation || this.busy) return;
+    try {
+      const past = await this.api().history(this.conversation.id);
+      const known = new Set(this.lines.map((l) => l.id).filter(Boolean));
+      const fresh = past.messages.filter((m) => !known.has(m.id) && m.role === "staff");
+      if (!fresh.length) return;
+      this.lines = [...this.lines, ...fresh.map((m) => this.line(m))];
+      const last = fresh.at(-1)!;
+      this.announce = `${this.t.team}: ${last.content}`;
+      this.scrollDown();
+    } catch {
+      /* try again on the next tick */
+    }
   }
 
   private onEscape = (e: KeyboardEvent): void => {
@@ -574,7 +618,7 @@ export class NexiqonChat extends LitElement {
 
   private line(m: StoredMessage): Line {
     return {
-      role: m.role,
+      role: m.role as Kind,
       text: m.content,
       citations: m.contract?.citations ?? [],
       kind: m.contract?.kind,
@@ -776,6 +820,9 @@ export class NexiqonChat extends LitElement {
           </ul>`
         : nothing}
     </div>`;
+    if (l.role === "staff") {
+      return html`<div class="msg staff"><span class="who">${this.t.team}</span>${l.text}</div>`;
+    }
     if (l.role !== "assistant") return bubble;
     return html`<div class="turn">
       ${bubble}

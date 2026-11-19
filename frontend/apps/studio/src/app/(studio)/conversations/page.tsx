@@ -1,5 +1,11 @@
-import { ComingSoon } from "@/components/coming-soon";
+import { Suspense } from "react";
+
+import { ConversationsPage } from "@/components/operate/conversations-page";
 
 export default function Page() {
-  return <ComingSoon section="conversations" />;
+  return (
+    <Suspense>
+      <ConversationsPage />
+    </Suspense>
+  );
 }

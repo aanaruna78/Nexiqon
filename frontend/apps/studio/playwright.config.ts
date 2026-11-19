@@ -12,6 +12,8 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   reporter: [["list"]],
+  // Outside the app, so `next dev` does not see test output appear and reload the page mid-test.
+  outputDir: "../../node_modules/.cache/studio-e2e",
   use: {
     baseURL: process.env.STUDIO_BASE_URL ?? "http://localhost:3100",
     channel: process.env.PLAYWRIGHT_CHANNEL ?? "chrome",

@@ -53,6 +53,7 @@ async def _caller(
     profile: str | None,
     classification: Classification,
     conversation_id: str | None = None,
+    agent: str | None = None,
 ) -> Caller:
     await check_permission(
         request, "model.inference.run", Resource(type="model_profile", id=profile)
@@ -60,7 +61,7 @@ async def _caller(
     token = getattr(request.state, "context_token", None)
     if token is None:
         raise Unauthorized("Missing tenant context")
-    return Caller(ctx, token, classification, conversation_id)
+    return Caller(ctx, token, classification, conversation_id, agent)
 
 
 class Route(BaseModel):
@@ -105,6 +106,8 @@ class ChatIn(BaseModel):
     temperature: float | None = Field(default=None, ge=0, le=2)
     classification: Classification = "internal"
     conversation_id: str | None = Field(default=None, max_length=200)
+    # The assistant this call is for: usage and cost are attributed to it (MT-01).
+    agent: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9-]{1,62}$")
 
 
 class ChatOut(BaseModel):
@@ -119,7 +122,9 @@ class ChatOut(BaseModel):
 @tenant_router.post("/chat", response_model=ChatOut)
 async def chat(body: ChatIn, request: Request, ctx: Ctx) -> ChatOut:
     """Chat completion through the tenant's model profile (routing, floors, budgets, redaction)."""
-    caller = await _caller(request, ctx, body.profile, body.classification, body.conversation_id)
+    caller = await _caller(
+        request, ctx, body.profile, body.classification, body.conversation_id, body.agent
+    )
     result = await _gateway(request).chat(
         caller,
         ChatRequest(
@@ -146,7 +151,9 @@ async def chat(body: ChatIn, request: Request, ctx: Ctx) -> ChatOut:
 async def chat_stream(body: ChatIn, request: Request, ctx: Ctx) -> StreamingResponse:
     """Streamed chat as server-sent events: ``delta`` chunks, then ``done`` (route, usage, cost)
     or ``error``. Every check of /v1/chat applies before the first byte."""
-    caller = await _caller(request, ctx, body.profile, body.classification, body.conversation_id)
+    caller = await _caller(
+        request, ctx, body.profile, body.classification, body.conversation_id, body.agent
+    )
     gateway = _gateway(request)
     stream = gateway.chat_stream(
         caller,

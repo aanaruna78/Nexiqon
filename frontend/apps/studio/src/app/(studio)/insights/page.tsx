@@ -1,5 +1,5 @@
-import { ComingSoon } from "@/components/coming-soon";
+import { InsightsPage } from "@/components/operate/insights-page";
 
 export default function Page() {
-  return <ComingSoon section="insights" />;
+  return <InsightsPage />;
 }

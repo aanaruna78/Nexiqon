@@ -30,6 +30,7 @@ class UsageRecord(TenantScopedMixin, Base):
     model: Mapped[str] = mapped_column(String(200))
     classification: Mapped[str] = mapped_column(String(16))
     conversation_id: Mapped[str | None] = mapped_column(String(200), default=None, index=True)
+    agent: Mapped[str | None] = mapped_column(String(63), default=None, index=True)
     input_tokens: Mapped[int] = mapped_column(Integer, default=0)
     output_tokens: Mapped[int] = mapped_column(Integer, default=0)
     cost_usd: Mapped[Decimal] = mapped_column(Numeric(14, 6), default=Decimal(0))

@@ -123,8 +123,15 @@ class RunContext:
             total["provider"] = route_.get("provider")
             total["profile"] = route_.get("profile")
 
+    @property
+    def agent_name(self) -> str | None:
+        name = self.agent.get("agent")
+        return str(name) if name else None
+
     async def chat(self, **kwargs: Any) -> dict[str, Any]:
-        reply = await self.models.chat(self.token, conversation_id=self.thread_id, **kwargs)
+        reply = await self.models.chat(
+            self.token, conversation_id=self.thread_id, agent=self.agent_name, **kwargs
+        )
         self.track(reply)
         return reply
 
@@ -723,6 +730,7 @@ async def _generate(
         messages=messages,
         max_tokens=max_tokens,
         conversation_id=run.thread_id,
+        agent=run.agent_name,
     ):
         if piece.get("done"):
             route_ = piece.get("route")

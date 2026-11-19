@@ -39,9 +39,9 @@ export interface Contract {
 
 export interface StoredMessage {
   id: string;
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "staff";
   content: string;
-  contract: Contract;
+  contract: Contract & { author?: string };
 }
 
 export interface Conversation {

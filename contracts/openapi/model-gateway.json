@@ -3,6 +3,18 @@
     "schemas": {
       "ChatIn": {
         "properties": {
+          "agent": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent"
+          },
           "classification": {
             "default": "internal",
             "enum": [

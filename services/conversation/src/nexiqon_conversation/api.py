@@ -14,7 +14,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any, Literal
 
 import httpx
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -121,6 +121,9 @@ class ConversationOut(BaseModel):
     created_at: datetime
     last_message_at: datetime | None
     retain_until: datetime | None
+    queue_status: str | None = None
+    assignee: str | None = None
+    resolved_at: datetime | None = None
 
 
 class MessageOut(BaseModel):
@@ -173,17 +176,44 @@ async def create_conversation(body: ConversationIn, request: Request, ctx: Ctx) 
         s.add(c)
         await s.flush()
         await s.refresh(c)
+        add_event(
+            s,
+            Outbox,
+            ctx,
+            source=SERVICE,
+            type="nexiqon.conversation.started",
+            subject=str(c.id),
+            data={"conversation_id": str(c.id), "agent": c.agent, "channel": c.channel},
+        )
         return _c(c)
 
 
 @tenant_router.get("/conversations", response_model=list[ConversationOut])
 async def list_conversations(
-    request: Request, ctx: Ctx, mine: bool = False, limit: int = 50
+    request: Request,
+    ctx: Ctx,
+    mine: bool = False,
+    limit: int = 50,
+    agent: Annotated[str | None, Query(pattern=NAME)] = None,
+    status: Annotated[str | None, Query(pattern=r"^[a-z_]{1,24}$")] = None,
+    queue: Annotated[Literal["open", "claimed", "resolved", "waiting"] | None, Query()] = None,
+    before: datetime | None = None,
 ) -> list[ConversationOut]:
+    """Newest first. ``queue=waiting`` is the escalation queue: open or claimed (ST-16)."""
     await check_permission(request, "conversation.own.read", Resource(type="conversation"))
     query = (
         select(Conversation).order_by(Conversation.created_at.desc()).limit(min(max(limit, 1), 200))
     )
+    if agent:
+        query = query.where(Conversation.agent == agent)
+    if status:
+        query = query.where(Conversation.status == status)
+    if queue == "waiting":
+        query = query.where(Conversation.queue_status.in_(["open", "claimed"]))
+    elif queue:
+        query = query.where(Conversation.queue_status == queue)
+    if before:
+        query = query.where(Conversation.created_at < before)
     if mine or not await _sees_all(request):
         query = query.where(Conversation.actor_id == ctx.actor_id)
     if ctx.agents is not None:  # a broad role never widens a key's assistant scope (QA3-02)
@@ -408,6 +438,7 @@ async def _finish(
             stored.status = "escalated" if handoff else "active"
         if handoff:
             stored.handoff_summary = str(handoff.get("summary") or "")[:4000]
+            stored.queue_status, stored.resolved_at = "open", None
         stored.retain_until = now + timedelta(days=days)
         await s.flush()
         await s.refresh(reply)
@@ -610,7 +641,7 @@ async def feedback(message_id: uuid.UUID, body: FeedbackIn, request: Request, ct
         message = await s.get(Message, message_id)
         if message is None or message.role != "assistant":
             raise NotFound("Message not found")
-    await _load(request, ctx, message.conversation_id, write=True)
+    c = await _load(request, ctx, message.conversation_id, write=True)
     async with _db(request).session(ctx) as s:
         s.add(
             Feedback(
@@ -628,7 +659,12 @@ async def feedback(message_id: uuid.UUID, body: FeedbackIn, request: Request, ct
             source=SERVICE,
             type="nexiqon.conversation.feedback.given",
             subject=str(message_id),
-            data={"message_id": str(message_id), "rating": body.rating},
+            data={
+                "message_id": str(message_id),
+                "rating": body.rating,
+                "agent": c.agent,
+                "conversation_id": str(c.id),
+            },
         )
     return Response(status_code=204)
 
@@ -726,3 +762,183 @@ async def email_transcript(
             data={"conversation_id": str(conversation_id), "messages": len(rows)},
         )
     return TranscriptOut(sent=True, next_allowed_at=now + cooldown)
+
+
+# ===================================================================== escalation queue (ST-16)
+
+
+class QueueAction(BaseModel):
+    action: Literal["claim", "release", "resolve", "reopen"]
+
+
+@tenant_router.post("/conversations/{conversation_id}/queue", response_model=ConversationOut)
+async def queue_action(
+    conversation_id: uuid.UUID, body: QueueAction, request: Request, ctx: Ctx
+) -> ConversationOut:
+    """Claim a handed-over conversation, give it back, resolve it, or reopen it."""
+    await check_permission(
+        request, "conversation.queue.write", Resource(type="conversation", id=str(conversation_id))
+    )
+    await _load(request, ctx, conversation_id)
+    async with _db(request).session(ctx) as s:
+        c = await s.get(Conversation, conversation_id)
+        assert c is not None
+        if c.queue_status is None:
+            raise Conflict("This conversation was not handed over to a person")
+        if body.action == "claim":
+            if c.queue_status == "claimed" and c.assignee != ctx.actor_id:
+                raise Conflict(f"Already claimed by {c.assignee}")
+            c.queue_status, c.assignee = "claimed", ctx.actor_id
+        elif body.action == "release":
+            c.queue_status, c.assignee = "open", None
+        elif body.action == "resolve":
+            c.queue_status, c.resolved_at = "resolved", datetime.now(UTC)
+            c.assignee = c.assignee or ctx.actor_id
+        else:
+            c.queue_status, c.resolved_at = "open", None
+        await s.flush()
+        await s.refresh(c)
+        add_event(
+            s,
+            Outbox,
+            ctx,
+            source=SERVICE,
+            type=f"nexiqon.conversation.queue.{body.action}",
+            subject=str(c.id),
+            data={"conversation_id": str(c.id), "agent": c.agent},
+        )
+        return _c(c)
+
+
+class StaffMessageIn(BaseModel):
+    content: str = Field(min_length=1, max_length=8000)
+
+
+@tenant_router.post(
+    "/conversations/{conversation_id}/staff-messages", response_model=MessageOut, status_code=201
+)
+async def staff_reply(
+    conversation_id: uuid.UUID, body: StaffMessageIn, request: Request, ctx: Ctx
+) -> MessageOut:
+    """A person from the team answers in a handed-over conversation. The visitor sees it in the
+    widget; the assistant stays quiet in that conversation."""
+    await check_permission(
+        request, "conversation.queue.write", Resource(type="conversation", id=str(conversation_id))
+    )
+    await _load(request, ctx, conversation_id)
+    now = datetime.now(UTC)
+    async with _db(request).session(ctx) as s:
+        c = await s.get(Conversation, conversation_id)
+        assert c is not None
+        if c.status != "escalated":
+            raise Conflict("Only conversations handed over to a person take staff replies")
+        m = Message(
+            tenant_id=ctx.tenant_id,
+            conversation_id=c.id,
+            role="staff",
+            content=body.content,
+            contract={"kind": "human", "author": ctx.actor_id},
+        )
+        s.add(m)
+        c.last_message_at = now
+        if c.queue_status in (None, "open"):
+            c.queue_status, c.assignee = "claimed", ctx.actor_id
+        await s.flush()
+        await s.refresh(m)
+        add_event(
+            s,
+            Outbox,
+            ctx,
+            source=SERVICE,
+            type="nexiqon.conversation.staff.replied",
+            subject=str(c.id),
+            data={"conversation_id": str(c.id), "agent": c.agent},
+        )
+        return _m(m)
+
+
+# ===================================================================== content gaps (MT-02)
+
+
+class GapQuestion(BaseModel):
+    question: str
+    reason: Literal["unanswered", "escalated", "not_helpful"]
+    conversation_id: uuid.UUID
+    agent: str
+    locale: str
+    at: datetime
+
+
+@tenant_router.get("/insights/gap-questions", response_model=list[GapQuestion])
+async def gap_questions(
+    request: Request,
+    ctx: Ctx,
+    agent: Annotated[str | None, Query(pattern=NAME)] = None,
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
+    limit: Annotated[int, Query(ge=1, le=2000)] = 1000,
+) -> list[GapQuestion]:
+    """Questions the assistant could not answer, that were handed to a person, or whose answer
+    was rated unhelpful: the raw material for the content-gap report (insights). Question text
+    only, never the answers."""
+    await check_permission(request, "conversation.insights.read", Resource(type="conversation"))
+    since = datetime.now(UTC) - timedelta(days=days)
+    async with _db(request).session(ctx) as s:
+        cq = select(Conversation).where(Conversation.last_message_at >= since)
+        if agent:
+            cq = cq.where(Conversation.agent == agent)
+        if ctx.agents is not None:
+            cq = cq.where(Conversation.agent.in_(sorted(ctx.agents)))
+        convs = {c.id: c for c in await s.scalars(cq.limit(5000))}
+        if not convs:
+            return []
+        msgs = list(
+            await s.scalars(
+                select(Message)
+                .where(Message.conversation_id.in_(list(convs)), Message.created_at >= since)
+                .order_by(Message.conversation_id, Message.created_at, Message.id)
+            )
+        )
+        down = set(
+            await s.scalars(
+                select(Feedback.message_id).where(
+                    Feedback.rating == "down",
+                    Feedback.message_id.in_([m.id for m in msgs if m.role == "assistant"]),
+                )
+            )
+        )
+        found: list[GapQuestion] = []
+        last_question: dict[uuid.UUID, Message] = {}
+        for m in msgs:
+            c = convs[m.conversation_id]
+            if m.role == "user":
+                last_question[c.id] = m
+                continue
+            q = last_question.get(c.id)
+            if m.role != "assistant" or q is None:
+                continue
+            contract = m.contract or {}
+            reason: str | None = None
+            if contract.get("kind") == "handoff":
+                reason = "escalated"
+            elif contract.get("abstained") or (
+                # Too little evidence: it asked the person to rephrase instead of answering.
+                contract.get("kind") == "clarify" and contract.get("route") == "knowledge"
+            ):
+                reason = "unanswered"
+            elif m.id in down:
+                reason = "not_helpful"
+            if reason:
+                found.append(
+                    GapQuestion(
+                        question=q.content[:2000],
+                        reason=reason,
+                        conversation_id=c.id,
+                        agent=c.agent,
+                        locale=c.locale,
+                        at=m.created_at,
+                    )
+                )
+                last_question.pop(c.id, None)
+            if len(found) >= limit:
+                break
+        return found

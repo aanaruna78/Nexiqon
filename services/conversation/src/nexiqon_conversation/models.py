@@ -38,6 +38,10 @@ class Conversation(TenantScopedMixin, Base):
     transcript_sent_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), default=None
     )
+    # Escalation queue (ST-16): open when handed over, claimed by a person, then resolved.
+    queue_status: Mapped[str | None] = mapped_column(String(16), default=None, index=True)
+    assignee: Mapped[str | None] = mapped_column(String(200), default=None)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     last_message_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     retain_until: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), default=None, index=True

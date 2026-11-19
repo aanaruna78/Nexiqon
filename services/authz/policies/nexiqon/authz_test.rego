@@ -173,3 +173,17 @@ test_only_services_send_email if {
 	not authz.allow with input as {"actor": widget, "action": "notification.email.send", "resource": {"type": "email"}}
 	authz.allow with input as {"actor": widget, "action": "conversation.messages.create", "resource": {"type": "conversation"}}
 }
+
+test_metering_and_the_escalation_queue if {
+	svc := {"tenant_id": "t-a", "id": "service:metering", "type": "service", "roles": ["service:metering"], "groups": []}
+	authz.allow with input as {"actor": svc, "action": "conversation.insights.read", "resource": {"type": "conversation"}}
+	not authz.allow with input as {"actor": svc, "action": "conversation.all.read", "resource": {"type": "conversation"}}
+	authz.allow with input as {"actor": actor(["member"]), "action": "metering.usage.read", "resource": {"type": "usage"}}
+	not authz.allow with input as {"actor": actor(["member"]), "action": "metering.gaps.view", "resource": {"type": "insights"}}
+	authz.allow with input as {"actor": actor(["editor"]), "action": "metering.gaps.view", "resource": {"type": "insights"}}
+	not authz.allow with input as {"actor": actor(["editor"]), "action": "metering.budgets.write", "resource": {"type": "budget"}}
+	authz.allow with input as {"actor": actor(["admin"]), "action": "metering.budgets.write", "resource": {"type": "budget"}}
+	authz.allow with input as {"actor": actor(["member"]), "action": "conversation.queue.write", "resource": {"type": "conversation"}}
+	widget := {"tenant_id": "t-a", "id": "k-1", "type": "widget", "roles": ["end_user"], "groups": []}
+	not authz.allow with input as {"actor": widget, "action": "conversation.queue.write", "resource": {"type": "conversation"}}
+}

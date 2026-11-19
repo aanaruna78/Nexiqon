@@ -81,6 +81,7 @@ class Caller:
     token: str
     classification: Classification = "internal"
     conversation_id: str | None = None
+    agent: str | None = None
 
 
 @dataclass
@@ -231,6 +232,7 @@ class Gateway:
                 model=model,
                 classification=caller.classification,
                 conversation_id=caller.conversation_id,
+                agent=caller.agent,
                 input_tokens=usage.input_tokens,
                 output_tokens=usage.output_tokens,
                 cost_usd=cost,
@@ -255,6 +257,7 @@ class Gateway:
                     "model": model,
                     "classification": caller.classification,
                     "conversation_id": caller.conversation_id,
+                    "agent": caller.agent,
                     "input_tokens": usage.input_tokens,
                     "output_tokens": usage.output_tokens,
                     "cost_usd": str(cost),

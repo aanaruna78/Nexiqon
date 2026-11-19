@@ -29,7 +29,7 @@ groups:
     plane: control
     services: [evaluation, metering, governance, notification]
     replicas: 1
-    keyFiles: [secrets.yaml, service-keys.yaml, identity-evaluation.yaml]
+    keyFiles: [secrets.yaml, service-keys.yaml, identity-evaluation.yaml, identity-metering.yaml]
     # Outgoing email (notification): "memory" sends nothing; set smtp for a real relay and put
     # its password in the nexiqon-smtp Secret (key: password).
     settings:

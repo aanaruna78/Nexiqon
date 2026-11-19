@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Storybook build output (pnpm build-storybook).
     "storybook-static/**",
+    // The widget's build, copied in by `make studio` (linted in apps/widget).
+    "public/widget/**",
   ]),
 ]);
 

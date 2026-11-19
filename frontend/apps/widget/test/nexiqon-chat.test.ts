@@ -381,3 +381,33 @@ describe("W-01..W-04", () => {
     expect(isUnsure({ role: "assistant", contract: { abstained: false } })).toBe(false);
   });
 });
+
+describe("talking with the team (ST-16)", () => {
+  it("shows a team member's reply while the conversation is with a person", async () => {
+    const el = await mount();
+    let history = [
+      { id: "u1", role: "user", content: "I want a person", contract: {} },
+      { id: "m1", role: "assistant", content: "I'm passing this to a person.", contract: { kind: "handoff" } },
+    ];
+    wire(el, {
+      "/widget/": () => json(SETTINGS),
+      "/handoff": () => json(turn("I'm passing this to a person.", { kind: "handoff" }, "escalated")),
+      "/conversations/c1": () => json({ id: "c1", status: "escalated", messages: history }),
+      "/conversations": () => json({ id: "c1", status: "active" }, 201),
+    });
+    await el.toggle();
+    await el.askForPerson();
+    await flush(el);
+    history = [...history, { id: "s1", role: "staff", content: "Hi, Sam here. Let me check.", contract: { kind: "human" } }];
+    await el.refresh();
+    await flush(el);
+    const staff = root(el).querySelector(".msg.staff")!;
+    expect(staff.textContent).toContain("Team");
+    expect(staff.textContent).toContain("Hi, Sam here. Let me check.");
+    await el.refresh(); // nothing new: no duplicate
+    await flush(el);
+    expect(root(el).querySelectorAll(".msg.staff").length).toBe(1);
+    el.open = false;
+    await flush(el);
+  });
+});

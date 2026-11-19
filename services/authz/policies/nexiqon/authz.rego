@@ -24,6 +24,7 @@ role_permissions := {
 		"agent.**",
 		"conversation.**",
 		"evaluation.**",
+		"metering.gaps.view",
 		"tool.definitions.read",
 		"tool.definitions.test",
 		"tool.invoke.*",
@@ -78,6 +79,8 @@ role_permissions := {
 		"config.agent.read",
 		"tool.definitions.read",
 	],
+	# Reads packs (KPIs) and unanswered questions (content gaps) for insights (MT-02).
+	"service:metering": ["config.agent.read", "conversation.insights.read"],
 	# Sends a person a copy of their own conversation (W-03); nothing else.
 	"service:conversation": ["notification.email.send"],
 	# Reads the agent's pack (widget title, greeting, colour) to answer channel settings requests.

@@ -24,3 +24,4 @@
 | [0020](0020-streaming-channels-escalation-and-injection-defences.md) | Streaming, channels, escalation and prompt-injection defences | Accepted |
 | [0021](0021-evaluation-safe-publish-and-the-fix-loop.md) | Evaluation, safe publish and the fix loop | Accepted |
 | [0022](0022-widget-product-and-transcript-email.md) | Widget product and transcript email | Accepted |
+| [0023](0023-metering-insights-and-the-review-queue.md) | Metering, insights and the review queue | Accepted |

@@ -44,6 +44,7 @@ const en = {
   emailBad: "Please check the email address.",
   emailFailed: "The copy could not be sent right now.",
   emailNote: "We use this address only to send this copy.",
+  team: "Team",
 };
 
 export type Strings = typeof en;
@@ -89,6 +90,7 @@ const es: Strings = {
   emailBad: "Revisa la dirección de correo.",
   emailFailed: "No se pudo enviar la copia ahora.",
   emailNote: "Solo usamos esta dirección para enviar esta copia.",
+  team: "Equipo",
 };
 
 const fr: Strings = {
@@ -132,6 +134,7 @@ const fr: Strings = {
   emailBad: "Veuillez vérifier l’adresse e-mail.",
   emailFailed: "La copie n’a pas pu être envoyée pour le moment.",
   emailNote: "Cette adresse sert uniquement à envoyer cette copie.",
+  team: "Équipe",
 };
 
 const de: Strings = {
@@ -175,6 +178,7 @@ const de: Strings = {
   emailBad: "Bitte prüfen Sie die E-Mail-Adresse.",
   emailFailed: "Die Kopie konnte gerade nicht gesendet werden.",
   emailNote: "Wir verwenden diese Adresse nur für diese Kopie.",
+  team: "Team",
 };
 
 const ar: Strings = {
@@ -218,6 +222,7 @@ const ar: Strings = {
   emailBad: "يرجى التحقق من عنوان البريد الإلكتروني.",
   emailFailed: "تعذّر إرسال النسخة الآن.",
   emailNote: "نستخدم هذا العنوان فقط لإرسال هذه النسخة.",
+  team: "الفريق",
 };
 
 export const STRINGS: Record<string, Strings> = { en, es, fr, de, ar };
