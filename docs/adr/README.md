@@ -29,3 +29,4 @@
 | [0025](0025-security-hardening-alerting-and-signed-images.md) | Security hardening, alerting and signed images | Accepted |
 | [0026](0026-hybrid-data-plane-split-origin-and-region-cells.md) | Hybrid data plane, split-origin Studio and region cells | Accepted |
 | [0027](0027-single-node-air-gapped-licence-and-cloud-modules.md) | Single-node and air-gapped installs, offline licence, minimal footprint, cloud modules | Accepted |
+| [0028](0028-accessibility-languages-visual-regression-budgets-and-docs.md) | Accessibility audit, more languages, visual regression, budgets and the docs site | Accepted |

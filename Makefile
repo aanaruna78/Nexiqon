@@ -6,7 +6,7 @@ PNPM := npx --yes pnpm@12.15.0 --dir frontend
 comma := ,
 PROFILE_FLAGS := $(foreach p,$(subst $(comma), ,$(PROFILES)),--profile $(p))
 
-.PHONY: studio dev-secrets help setup lint format typecheck test test-unit arch contracts contracts-check eval-retrieval \
+.PHONY: studio docs docs-serve visual visual-update dev-secrets help setup lint format typecheck test test-unit arch contracts contracts-check eval-retrieval \
         fe-install fe-lint fe-test fe-build check new-service dev-up dev-down dev-logs run-group image
 
 help: ## Show targets
@@ -39,6 +39,7 @@ test-unit: ## Python tests without Docker
 
 contracts: ## Export OpenAPI contracts and regenerate TS types
 	uv run python -m tools.contracts.export_openapi
+	uv run python -m tools.docs.api_reference
 	$(PNPM) generate
 
 contracts-check: ## Fail if contracts are stale
@@ -82,6 +83,25 @@ dev-logs: ## Follow logs
 
 run-group: ## Run a group locally without Docker: make run-group GROUP=control-core
 	uv run nexiqon-run --group $(GROUP) --port $${PORT:-8000}
+
+VISUAL := docker run --rm -u $$(id -u):$$(id -g) -e HOME=/tmp -v $(CURDIR)/frontend:/w -w /w/apps/studio mcr.microsoft.com/playwright:v1.64.1-noble node node_modules/@playwright/test/cli.js test -c visual/playwright.config.ts
+
+visual: ## Visual regression (UX-11): Storybook and widget screenshots vs the baselines, in the pinned Playwright image
+	$(PNPM) --filter @nexiqon/widget build
+	$(PNPM) --filter @nexiqon/studio build-storybook
+	$(VISUAL)
+
+visual-update: ## Accept visual changes: regenerate the baselines (review the PNG diff before committing)
+	$(PNPM) --filter @nexiqon/widget build
+	$(PNPM) --filter @nexiqon/studio build-storybook
+	$(VISUAL) --update-snapshots
+
+docs: ## Build the docs site (D-01) into site/; strict: broken links or missing pages fail
+	uv run python -m tools.docs.api_reference
+	uv run --group docs mkdocs build
+
+docs-serve: ## Preview the docs site on localhost:8001
+	uv run --group docs mkdocs serve -a localhost:8001
 
 studio: ## Run Studio (admin UI) on :3100 against the local stack (needs make dev-up PROFILES=platform,apps)
 	npx --yes pnpm@12.15.0 --dir frontend/apps/widget build

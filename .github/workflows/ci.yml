@@ -31,6 +31,11 @@ jobs:
       - run: uv run python tools/lint/check_architecture.py
       - run: uv run python -m tools.contracts.export_openapi --check
       - run: uv run pytest --cov=libs --cov=services --cov-report=term-missing:skip-covered
+      - name: Docs site builds (D-01; strict, so a broken link fails)
+        run: uv run --group docs mkdocs build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
 
   policies:
     name: Authorization policies (OPA unit tests)
@@ -86,6 +91,19 @@ jobs:
       - run: pnpm build
       - name: Storybook builds (design-system catalog, a11y addon)
         run: pnpm --filter @nexiqon/studio build-storybook
+      # `pnpm build` above also enforces the performance budgets (Studio route JS and CSS, widget size).
+      - name: Visual regression (UX-11)
+        run: >
+          docker run --rm -u $(id -u):$(id -g) -e HOME=/tmp -v $PWD:/w -w /w/apps/studio
+          mcr.microsoft.com/playwright:v1.64.1-noble
+          node node_modules/@playwright/test/cli.js test -c visual/playwright.config.ts
+      - name: Visual differences (when the comparison fails)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diffs
+          path: frontend/node_modules/.cache/studio-visual
+          if-no-files-found: ignore
 
   helm:
     name: Deployment (Helm chart, OpenTofu)
@@ -265,3 +283,19 @@ jobs:
             docker run --rm -v "$HOME/.docker:/root/.docker:ro" aquasec/trivy:0.64.1 image --quiet --format cyclonedx "$ref" > sbom.json
             cosign attest --yes --type cyclonedx --predicate sbom.json "$ref"
           done
+
+  docs:
+    name: Publish the docs site
+    # Publishing is the owner's decision: off until the repository variable PUBLISH_DOCS is true.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PUBLISH_DOCS == 'true'
+    needs: [python]
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

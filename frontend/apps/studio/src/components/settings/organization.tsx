@@ -73,7 +73,7 @@ function OrganizationForm({ tenant }: { tenant: Tenant }) {
         <Select value={locale} onValueChange={setLocale} disabled={!isAdmin}>
           <SelectTrigger id="org-locale" className="w-full"><SelectValue /></SelectTrigger>
           <SelectContent>
-            {(["en", "ar"] as const).map((l) => <SelectItem key={l} value={l}>{localeNames[l]}</SelectItem>)}
+            {(["en", "fr", "es", "ar"] as const).map((l) => <SelectItem key={l} value={l}>{localeNames[l]}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>

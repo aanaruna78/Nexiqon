@@ -40,3 +40,6 @@ frontend/apps/studio/storybook-static/
 retrieval-eval.json
 # Built widget copied into Studio for local development (make studio)
 frontend/apps/studio/public/widget/
+
+# Docs site build (make docs)
+/site/

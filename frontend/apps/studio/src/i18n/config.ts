@@ -1,4 +1,4 @@
-export const locales = ["en", "ar", "en-XA"] as const;
+export const locales = ["en", "fr", "es", "ar", "en-XA"] as const;
 export type Locale = (typeof locales)[number];
 export const defaultLocale: Locale = "en";
 export const LOCALE_COOKIE = "NEXT_LOCALE";
@@ -6,6 +6,8 @@ export const LOCALE_COOKIE = "NEXT_LOCALE";
 /** en-XA is a pseudo-locale: accented, ~40% longer strings to catch truncation and hard-coded text. */
 export const localeNames: Record<Locale, string> = {
   en: "English",
+  fr: "Français",
+  es: "Español",
   ar: "العربية",
   "en-XA": "Ƥşḗḗŭḓǿǿ (test)",
 };

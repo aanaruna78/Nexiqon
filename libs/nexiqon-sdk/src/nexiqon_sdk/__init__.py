@@ -4,7 +4,7 @@ A plugin package exposes objects (or zero-argument factories) under the ``nexiqo
 point group; the ingestion service discovers them at start-up, so adding one needs no core change::
 
     [project.entry-points."nexiqon.plugins"]
-    my-connector = "my_package.plugin:MyConnector"
+    my-connector = "my_package.plugin:connector"   # an instance, or a function returning some
 
 Evaluators use their own group, ``nexiqon.evaluators``, and are loaded by the evaluation service.
 """

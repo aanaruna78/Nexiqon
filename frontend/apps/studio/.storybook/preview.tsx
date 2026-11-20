@@ -1,4 +1,5 @@
 import type { Preview } from "@storybook/nextjs-vite";
+import type { CSSProperties } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { Direction } from "radix-ui";
 
@@ -27,7 +28,8 @@ const preview: Preview = {
         <NextIntlClientProvider locale={dir === "rtl" ? "ar" : "en"} messages={dir === "rtl" ? ar : en}>
           <Direction.DirectionProvider dir={dir}>
             <TooltipProvider>
-              <div className="bg-background p-4 text-foreground">
+              {/* Studio's font comes from next/font (layout.tsx); stories use the system sans. */}
+              <div className="bg-background p-4 font-sans text-foreground" style={{ "--font-sans": "ui-sans-serif, system-ui, sans-serif" } as CSSProperties}>
                 <Story />
               </div>
             </TooltipProvider>

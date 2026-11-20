@@ -284,6 +284,7 @@ export class NexiqonChat extends LitElement {
       align-self: flex-end;
     }
     .notice {
+      white-space: normal;
       align-self: stretch;
       text-align: center;
       font-size: 13px;
@@ -296,6 +297,7 @@ export class NexiqonChat extends LitElement {
       opacity: 0.6;
     }
     .sources {
+      white-space: normal;
       margin: 6px 0 0;
       padding: 6px 0 0;
       border-top: 1px solid var(--nx-line);
@@ -806,20 +808,17 @@ export class NexiqonChat extends LitElement {
   private renderLine(l: Line) {
     const t = this.t;
     const cls = `msg ${l.role}${l.streaming ? " streaming" : ""}${l.unsure ? " unsure" : ""}`;
-    const bubble = html`<div class=${cls} aria-hidden=${l.streaming ? "true" : "false"}>
-      ${l.unsure ? html`<span class="badge">${t.notSure}</span><br />` : nothing}${l.text}
-      ${l.citations.length
-        ? html`<ul class="sources" aria-label=${t.sources}>
-            ${l.citations.map((c) => {
-              const href = safeLink(c.source_uri);
-              return html`<li>
-                [${c.marker}]
-                ${href ? html`<a href=${href} target="_blank" rel="noopener noreferrer">${c.citation}</a>` : c.citation}
-              </li>`;
-            })}
-          </ul>`
-        : nothing}
-    </div>`;
+    // No whitespace between the tags: .msg keeps the answer's own line breaks (pre-wrap), so any
+    // template indentation inside the bubble would show as blank space.
+    const sources = l.citations.length
+      ? html`<ul class="sources" aria-label=${t.sources}>${l.citations.map((c) => {
+          const href = safeLink(c.source_uri);
+          const label = href ? html`<a href=${href} target="_blank" rel="noopener noreferrer">${c.citation}</a>` : c.citation;
+          return html`<li>[${c.marker}] ${label}</li>`;
+        })}</ul>`
+      : nothing;
+    const badge = l.unsure ? html`<span class="badge">${t.notSure}</span><br />` : nothing;
+    const bubble = html`<div class=${cls} aria-hidden=${l.streaming ? "true" : "false"}>${badge}${l.text}${sources}</div>`;
     if (l.role === "staff") {
       return html`<div class="msg staff"><span class="who">${this.t.team}</span>${l.text}</div>`;
     }

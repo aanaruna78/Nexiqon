@@ -149,6 +149,10 @@ describe("<nexiqon-chat>", () => {
     const link = root(el).querySelector(".sources a") as HTMLAnchorElement;
     expect(link.href).toBe("https://docs.test/a");
     expect(link.rel).toContain("noopener");
+    // The bubble keeps the answer's line breaks (pre-wrap): no template whitespace may show.
+    const bubble = [...root(el).querySelectorAll(".msg.assistant")].at(-1)!;
+    expect(bubble.textContent!.startsWith("Open Settings")).toBe(true);
+    expect(root(el).querySelector(".sources li")!.textContent).toBe("[1] Admin Guide › Teammates");
     expect(calls.find((c) => c.url.endsWith("/messages/stream"))!.body).toEqual({ content: "How do I invite a teammate?" });
     expect(localStorage.getItem("nexiqon:conversation:support")).toBe("c1");
   });
