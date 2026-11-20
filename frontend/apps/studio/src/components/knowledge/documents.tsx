@@ -43,6 +43,7 @@ const FILTERS: ("all" | DocumentStatus)[] = ["all", "ready", "processing", "pend
 export function DocumentsTable({ collectionId }: { collectionId: string }) {
   const t = useTranslations("knowledge");
   const tc = useTranslations("common");
+  const tx = useTranslations("explain");
   const format = useFormatter();
   const now = useNow({ updateInterval: 30_000 });
   const docs = useDocuments(collectionId);
@@ -148,7 +149,7 @@ export function DocumentsTable({ collectionId }: { collectionId: string }) {
                     {d.error_code ? <FixHint doc={d} /> : null}
                   </TableCell>
                   <TableCell>
-                    <StatusBadge tone={documentTone(d.status)} live={isBusy(d.status)}>{t(`statuses.${d.status}`)}</StatusBadge>
+                    <StatusBadge tone={documentTone(d.status)} live={isBusy(d.status)} hint={tx.has(`docStatus.${d.status}`) ? tx(`docStatus.${d.status}`) : undefined}>{t(`statuses.${d.status}`)}</StatusBadge>
                   </TableCell>
                   <TableCell className="hidden tabular-nums md:table-cell">{d.status === "ready" ? d.chunk_count : "—"}</TableCell>
                   <TableCell className="hidden text-muted-foreground lg:table-cell">{format.relativeTime(new Date(d.updated_at), now)}</TableCell>

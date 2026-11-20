@@ -28,7 +28,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang={locale === "en-XA" ? "en" : locale} dir={dir} suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} min-h-dvh bg-background font-sans text-foreground antialiased`}>
-        <NextIntlClientProvider>
+        {/* A shared "now" for relative times ("5 minutes ago"): server and browser agree on it. */}
+        <NextIntlClientProvider now={new Date()}>
           <Providers dir={dir}>{children}</Providers>
         </NextIntlClientProvider>
       </body>

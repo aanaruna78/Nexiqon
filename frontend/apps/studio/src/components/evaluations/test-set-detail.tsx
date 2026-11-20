@@ -25,6 +25,7 @@ import { type CaseInput, type EvalResult, expectation, progress, runIsActive, ty
 import { useCases, useEvalResults, useEvalRun, useEvalRuns, useEvaluationActions, useTestSet } from "@/lib/evaluation-hooks";
 import { useErrorToast } from "@/lib/hooks";
 import { useObjects } from "@/lib/studio-hooks";
+import { Hint } from "@/components/visual/hint";
 
 import { RunList } from "./evaluations-page";
 import { RunStatus } from "./run-status";
@@ -150,12 +151,16 @@ function CasesEditor({ set }: { set: TestSet }) {
                   </p>
                 </div>
                 <span className="flex gap-1">
-                  <Button variant="ghost" size="icon" aria-label={t("editCase")} onClick={() => setEditing(c)}>
-                    <Pencil className="size-4" aria-hidden="true" />
-                  </Button>
-                  <Button variant="ghost" size="icon" aria-label={t("deleteCase")} onClick={() => deleteCase.mutate({ setId: set.id, caseId: c.id }, { onError })}>
-                    <Trash2 className="size-4" aria-hidden="true" />
-                  </Button>
+                  <Hint label={t("editCase")}>
+                    <Button variant="ghost" size="icon" aria-label={t("editCase")} onClick={() => setEditing(c)}>
+                      <Pencil className="size-4" aria-hidden="true" />
+                    </Button>
+                  </Hint>
+                  <Hint label={t("deleteCase")}>
+                    <Button variant="ghost" size="icon" aria-label={t("deleteCase")} onClick={() => deleteCase.mutate({ setId: set.id, caseId: c.id }, { onError })}>
+                      <Trash2 className="size-4" aria-hidden="true" />
+                    </Button>
+                  </Hint>
                 </span>
               </li>
             );

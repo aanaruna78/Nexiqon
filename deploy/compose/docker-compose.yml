@@ -95,6 +95,7 @@ services:
     ports: ["8080:8080"]
     volumes:
       - ./keycloak:/opt/keycloak/data/import:ro
+      - ./keycloak-theme/nexiqon:/opt/keycloak/themes/nexiqon:ro   # sign-in theme (loginTheme in the realm)
 
   openbao:
     image: openbao/openbao:2.1.0

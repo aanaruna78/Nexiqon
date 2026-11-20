@@ -269,9 +269,11 @@ function AddSourceDialog({
           <form onSubmit={submit} className="space-y-5" noValidate>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Button type="button" variant="ghost" size="icon" className="-ms-2 size-8" onClick={() => setPicked(null)} aria-label={tc("back")}>
-                  <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
-                </Button>
+                <Hint label={tc("back")}>
+                  <Button type="button" variant="ghost" size="icon" className="-ms-2 size-8" onClick={() => setPicked(null)} aria-label={tc("back")}>
+                    <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
+                  </Button>
+                </Hint>
                 {picked.title}
               </DialogTitle>
               <DialogDescription>{picked.description}</DialogDescription>

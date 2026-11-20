@@ -48,6 +48,20 @@ data:
     {{- .Files.Get "files/seaweedfs-s3.json" | nindent 4 }}
   nexiqon-realm.json: |
     {{- .Files.Get "files/keycloak-realm.json" | nindent 4 }}
+{{- if $b.keycloak.enabled }}
+---
+# The Nexiqon sign-in theme for the bundled Keycloak (source: deploy/compose/keycloak-theme).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nexiqon-keycloak-theme
+  labels: {{- include "nexiqon.labels" . | nindent 4 }}
+data:
+  {{- range $path, $_ := .Files.Glob "files/keycloak-theme/nexiqon/**" }}
+  {{ trimPrefix "files/keycloak-theme/nexiqon/" $path | replace "/" "--" }}: |
+    {{- $.Files.Get $path | nindent 4 }}
+  {{- end }}
+{{- end }}
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -178,9 +192,17 @@ spec:
             - { name: http, containerPort: 8080 }
           volumeMounts:
             - { name: realm, mountPath: /opt/keycloak/data/import, readOnly: true }
+            - { name: theme, mountPath: /opt/keycloak/themes/nexiqon, readOnly: true }
       volumes:
         - name: realm
           configMap: { name: nexiqon-bundled, items: [{ key: nexiqon-realm.json, path: nexiqon-realm.json }] }
+        - name: theme   # the Nexiqon sign-in theme (loginTheme in the realm)
+          configMap:
+            name: nexiqon-keycloak-theme
+            items:
+              {{- range $path, $_ := .Files.Glob "files/keycloak-theme/nexiqon/**" }}
+              - { key: {{ trimPrefix "files/keycloak-theme/nexiqon/" $path | replace "/" "--" | quote }}, path: {{ trimPrefix "files/keycloak-theme/nexiqon/" $path | quote }} }
+              {{- end }}
 ---
 apiVersion: v1
 kind: Service

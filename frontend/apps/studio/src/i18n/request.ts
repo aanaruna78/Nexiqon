@@ -22,5 +22,6 @@ export default getRequestConfig(async () => {
   return {
     locale,
     messages: locale === "en-XA" ? pseudoMessages(messages) : messages,
+    now: new Date(), // server-rendered relative times ("5 minutes ago") use one reference time
   };
 });

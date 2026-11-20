@@ -13,7 +13,7 @@ export default async function SignedOut({ searchParams }: PageProps<"/signed-out
       <div className="space-y-6 text-center">
         <h1 className="text-2xl font-semibold">{t("title")}</h1>
         <p className="text-muted-foreground">{reason === "expired" ? t("expired") : reason === "failed" ? t("failed") : t("body")}</p>
-        <Button asChild className="w-full">
+        <Button asChild className="h-11 w-full rounded-[10px] text-[15px] font-semibold">
           <Link href="/auth/login">
             <LogIn className="size-4" aria-hidden="true" />
             {t("signIn")}

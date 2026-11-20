@@ -216,6 +216,26 @@
     background-size: 18px 18px;
   }
 
+  /* Sign-in brand panel (the same look as the Keycloak sign-in theme, deploy/compose/keycloak-theme) */
+  .nx-auth-brand {
+    color: #e6edf5;
+    background:
+      radial-gradient(120% 80% at 0% 0%, rgba(43, 179, 163, 0.35), transparent 55%),
+      radial-gradient(90% 70% at 100% 100%, rgba(242, 198, 109, 0.14), transparent 60%),
+      linear-gradient(160deg, #0b1626 0%, #0d2a3a 55%, #0b4a46 100%);
+  }
+  .nx-auth-brand::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 36px 36px;
+    mask-image: radial-gradient(80% 70% at 30% 30%, black, transparent);
+  }
+
   /* Shimmering skeletons */
   .nx-shimmer {
     background: linear-gradient(90deg, var(--muted) 0%, color-mix(in srgb, var(--muted) 60%, var(--card)) 50%, var(--muted) 100%);

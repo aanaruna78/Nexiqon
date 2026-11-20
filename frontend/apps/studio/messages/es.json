@@ -1491,5 +1491,49 @@
       "export_requested": "Se está preparando tu exportación",
       "retention_errors": "La conservación no pudo alcanzar todos los servicios"
     }
+  },
+  "auth": {
+    "eyebrow": "Nexiqon Studio",
+    "headline": "Asistentes que responden a partir de tu conocimiento y muestran de dónde sale cada respuesta.",
+    "point1Title": "Respuestas fundamentadas",
+    "point1Body": "Cada afirmación cita su fuente, o el asistente dice que no lo sabe.",
+    "point2Title": "Tus datos siguen siendo tuyos",
+    "point2Body": "Aislados por organización, con tus reglas sobre qué modelos pueden verlos.",
+    "point3Title": "Cada cambio queda registrado",
+    "point3Body": "Un registro de auditoría a prueba de manipulaciones y activaciones seguras y revisadas.",
+    "foot": "El inicio de sesión único y la autenticación multifactor protegen cada cuenta."
+  },
+  "explain": {
+    "docStatus": {
+      "ready": "Indexado y usado en las respuestas.",
+      "pending": "En cola; el procesamiento empieza en breve.",
+      "processing": "Se está analizando, leyendo e indexando. Se actualiza solo.",
+      "failed": "No se pudo procesar. Ábrelo para ver por qué y cómo solucionarlo.",
+      "quarantined": "Marcado por el antivirus. Nunca se leyó ni se usa en las respuestas.",
+      "deleted": "Quitado de la búsqueda; el archivo almacenado se eliminó."
+    },
+    "queue": {
+      "open": "Esperando a que alguien de tu equipo la reclame.",
+      "claimed": "Un miembro del equipo la está atendiendo; el asistente ya no responde.",
+      "resolved": "Terminada. Reábrela si el visitante necesita más ayuda."
+    },
+    "risk": {
+      "read": "Solo lee datos. Se ejecuta sin preguntar al usuario.",
+      "write": "Cambia datos. El usuario debe confirmar cada llamada.",
+      "high": "Impacto alto. El usuario confirma y solo los administradores pueden permitirlo."
+    },
+    "level": {
+      "public": "Se puede compartir con cualquiera. Cualquier perfil de modelo puede verlo.",
+      "internal": "Solo para tu organización. Solo pueden verlo los perfiles permitidos para datos internos.",
+      "confidential": "Sensible. Solo pueden verlo los perfiles permitidos para datos confidenciales.",
+      "restricted": "Lo más sensible. Nunca se envía a un modelo en la nube."
+    },
+    "rate": {
+      "answer_rate": "Preguntas respondidas con tus fuentes en lugar de rechazadas.",
+      "citation_rate": "Respuestas que citan al menos una fuente verificada.",
+      "escalation_rate": "Conversaciones transferidas a una persona. Más bajo suele ser mejor.",
+      "satisfaction": "Respuestas valoradas que la gente marcó como útiles.",
+      "tool_error_rate": "Llamadas a herramientas que fallaron. Revisa Acciones si sube."
+    }
   }
 }

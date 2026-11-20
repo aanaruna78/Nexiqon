@@ -93,6 +93,7 @@ export function ConversationsPage() {
 
 function Row({ conversation: c, onOpen }: { conversation: Conversation; onOpen: () => void }) {
   const t = useTranslations("conversations");
+  const tx = useTranslations("explain");
   const format = useFormatter();
   return (
     <button type="button" onClick={onOpen} className="flex w-full flex-wrap items-center justify-between gap-3 p-3 text-start text-sm outline-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring" data-testid="conversation-row">
@@ -103,7 +104,7 @@ function Row({ conversation: c, onOpen }: { conversation: Conversation; onOpen: 
         </span>
       </span>
       <span className="flex items-center gap-2">
-        {c.queue_status ? <StatusBadge tone={QUEUE_TONE[c.queue_status]} live={c.queue_status === "open"}>{t(`queueStatus.${c.queue_status}`)}</StatusBadge> : null}
+        {c.queue_status ? <StatusBadge tone={QUEUE_TONE[c.queue_status]} live={c.queue_status === "open"} hint={tx(`queue.${c.queue_status}`)}>{t(`queueStatus.${c.queue_status}`)}</StatusBadge> : null}
         {c.assignee ? <span className="text-xs text-muted-foreground">{c.assignee}</span> : null}
       </span>
     </button>
@@ -156,6 +157,7 @@ function Reader({ id, onClose, onPrev, onNext, position }: { id: string | null; 
 
 function ReaderBody({ id }: { id: string }) {
   const t = useTranslations("conversations");
+  const tx = useTranslations("explain");
   const onError = useErrorToast();
   const detail = useConversation(id);
   const { act, reply } = useQueueActions(id);
@@ -186,7 +188,7 @@ function ReaderBody({ id }: { id: string }) {
               <UserRoundCheck className="size-4" aria-hidden="true" />
               {t("handedOver")}
             </h3>
-            <StatusBadge tone={QUEUE_TONE[c.queue_status]}>{t(`queueStatus.${c.queue_status}`)}{c.assignee ? ` · ${c.assignee}` : ""}</StatusBadge>
+            <StatusBadge tone={QUEUE_TONE[c.queue_status]} hint={tx(`queue.${c.queue_status}`)}>{t(`queueStatus.${c.queue_status}`)}{c.assignee ? ` · ${c.assignee}` : ""}</StatusBadge>
           </div>
           {c.handoff_summary ? <p className="text-sm whitespace-pre-line">{c.handoff_summary}</p> : null}
           <div className="flex flex-wrap gap-2">

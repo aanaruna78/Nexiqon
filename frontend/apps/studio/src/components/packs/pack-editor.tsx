@@ -27,6 +27,7 @@ import { useErrorToast } from "@/lib/hooks";
 import { accessibleAccent } from "@/lib/theme";
 import { type ConfigObject, type Intent, type Localised, type PackSpec, releaseState } from "@/lib/studio";
 import { useObject, useObjects, useRelease, useVersion } from "@/lib/studio-hooks";
+import { Hint } from "@/components/visual/hint";
 
 const TABS = ["overview", "vocabulary", "intents", "prompts", "safety", "widget", "workflow", "yaml", "versions"] as const;
 const ROUTES = ["knowledge", "action", "handoff", "smalltalk"] as const;
@@ -181,9 +182,11 @@ function Vocabulary({ spec, update, locale }: Part & { locale: string }) {
                 <Input aria-label={t("labelFor", { term: key })} value={value[locale] ?? ""} onChange={(e) => update({ vocabulary: { ...vocab, [key]: setLocalised(value, locale, e.target.value) } })} />
               </td>
               <td className="py-2">
-                <Button variant="ghost" size="icon" aria-label={t("removeTerm", { term: key })} onClick={() => update({ vocabulary: Object.fromEntries(Object.entries(vocab).filter(([k]) => k !== key)) })}>
-                  <Trash2 className="size-4" aria-hidden="true" />
-                </Button>
+                <Hint label={t("removeTerm", { term: key })}>
+                  <Button variant="ghost" size="icon" aria-label={t("removeTerm", { term: key })} onClick={() => update({ vocabulary: Object.fromEntries(Object.entries(vocab).filter(([k]) => k !== key)) })}>
+                    <Trash2 className="size-4" aria-hidden="true" />
+                  </Button>
+                </Hint>
               </td>
             </tr>
           ))}
@@ -228,9 +231,11 @@ function Intents({ spec, update }: Part) {
               </Select>
             </div>
             <div className="flex items-end">
-              <Button variant="ghost" size="icon" aria-label={t("removeIntent", { name: intent.name })} onClick={() => update({ intents: spec.intents.filter((_, j) => j !== i) })} disabled={spec.intents.length <= 1}>
-                <Trash2 className="size-4" aria-hidden="true" />
-              </Button>
+              <Hint label={t("removeIntent", { name: intent.name })}>
+                <Button variant="ghost" size="icon" aria-label={t("removeIntent", { name: intent.name })} onClick={() => update({ intents: spec.intents.filter((_, j) => j !== i) })} disabled={spec.intents.length <= 1}>
+                  <Trash2 className="size-4" aria-hidden="true" />
+                </Button>
+              </Hint>
             </div>
             <div className="space-y-2 md:col-span-3">
               <Label htmlFor={`in-desc-${i}`}>{t("description")}</Label>

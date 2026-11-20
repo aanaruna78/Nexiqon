@@ -20,6 +20,16 @@ private, from one codebase.
 | `tools/` | Architecture lint, contract export |
 | `docs/` | Plan, architecture, UX, ADRs, diagrams, design addendum |
 
+## Run everything locally (manual testing)
+
+```bash
+./start.sh                       # stack + Studio; waits until healthy, then prints every URL and login
+./start.sh --with observability  # also Grafana; --smoke also runs the gateway smoke test
+./stop.sh                        # stop everything (data kept); ./stop.sh --wipe deletes local data
+```
+
+What to test: `docs/qa/2026-11-20-phase-4-test-handoff.md`.
+
 ## Quick start
 
 Prerequisites: Docker, [uv](https://docs.astral.sh/uv/), Node 22.

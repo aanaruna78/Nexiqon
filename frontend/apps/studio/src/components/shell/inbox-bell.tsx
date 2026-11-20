@@ -8,6 +8,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { api } from "@/lib/api";
+import { Hint } from "@/components/visual/hint";
 
 interface InboxItem {
   id: string;
@@ -47,16 +48,18 @@ export function InboxBell() {
   };
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative rounded-full" aria-label={unread ? t("labelUnread", { count: unread }) : t("label")} data-testid="inbox-bell">
-          <Bell className="size-4" aria-hidden="true" />
-          {unread ? (
-            <span className="absolute -end-0.5 -top-0.5 grid min-w-4 place-items-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-white tabular-nums" aria-hidden="true">
-              {unread > 9 ? "9+" : unread}
-            </span>
-          ) : null}
-        </Button>
-      </PopoverTrigger>
+      <Hint label={unread ? t("labelUnread", { count: unread }) : t("label")}>
+        <PopoverTrigger asChild>
+          <Button variant="ghost" size="icon" className="relative rounded-full" aria-label={unread ? t("labelUnread", { count: unread }) : t("label")} data-testid="inbox-bell">
+            <Bell className="size-4" aria-hidden="true" />
+            {unread ? (
+              <span className="absolute -end-0.5 -top-0.5 grid min-w-4 place-items-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-white tabular-nums" aria-hidden="true">
+                {unread > 9 ? "9+" : unread}
+              </span>
+            ) : null}
+          </Button>
+        </PopoverTrigger>
+      </Hint>
       <PopoverContent align="end" className="w-80 p-0" data-testid="inbox">
         <div className="flex items-center justify-between border-b px-3 py-2">
           <p className="text-sm font-semibold">{t("title")}</p>

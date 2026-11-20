@@ -18,6 +18,11 @@ SOURCES = {
     "keycloak-realm.json": ROOT / "deploy/compose/keycloak/nexiqon-realm.json",
     "prometheus-rules.yaml": ROOT / "deploy/observability/prometheus-rules.yaml",
 }
+# The Keycloak sign-in theme, file by file (the bundled Keycloak mounts it from a ConfigMap).
+THEME = ROOT / "deploy/compose/keycloak-theme"
+SOURCES.update(
+    {f"keycloak-theme/{f.relative_to(THEME).as_posix()}": f for f in sorted(THEME.rglob("*")) if f.is_file()}
+)
 
 
 def stale() -> list[str]:

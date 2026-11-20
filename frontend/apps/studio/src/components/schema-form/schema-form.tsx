@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { Hint } from "@/components/visual/hint";
 
 import {
   fieldId,
@@ -336,9 +337,11 @@ function TagInput({ id, values, onChange, disabled, aria }: { id: string; values
             <li key={v}>
               <Badge variant="secondary" className="gap-1 ps-2.5">
                 {v}
-                <button type="button" className="rounded-full p-0.5 hover:bg-background/60" disabled={disabled} aria-label={t("removeItem", { item: v })} onClick={() => onChange(values.filter((x) => x !== v))}>
-                  <X className="size-3" aria-hidden="true" />
-                </button>
+                <Hint label={t("removeItem", { item: v })}>
+                  <button type="button" className="rounded-full p-0.5 hover:bg-background/60" disabled={disabled} aria-label={t("removeItem", { item: v })} onClick={() => onChange(values.filter((x) => x !== v))}>
+                    <X className="size-3" aria-hidden="true" />
+                  </button>
+                </Hint>
               </Badge>
             </li>
           ))}

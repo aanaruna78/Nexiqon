@@ -23,6 +23,7 @@ import { api, ApiError } from "@/lib/api";
 import { answerParts, type AnswerResponse, highlight, isWebUri, type Passage, type SearchResponse } from "@/lib/knowledge";
 import { useCollections } from "@/lib/knowledge-hooks";
 import { cn } from "@/lib/utils";
+import { Hint } from "@/components/visual/hint";
 
 type Mode = "answer" | "search";
 
@@ -317,10 +318,12 @@ function PassageCard({ passage: p, index, query, onOpen }: { passage: Passage; i
             </p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={onOpen} aria-label={`${t("viewSource")}: ${p.citation}`}>
-          <Quote className="size-3.5" aria-hidden="true" />
-          {t("viewSource")}
-        </Button>
+        <Hint label={`${t("viewSource")}: ${p.citation}`}>
+          <Button variant="outline" size="sm" onClick={onOpen} aria-label={`${t("viewSource")}: ${p.citation}`}>
+            <Quote className="size-3.5" aria-hidden="true" />
+            {t("viewSource")}
+          </Button>
+        </Hint>
       </div>
       <p className="line-clamp-4 text-sm whitespace-pre-line text-muted-foreground">
         <Highlighted text={p.text} query={query} />

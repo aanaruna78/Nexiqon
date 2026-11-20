@@ -17,6 +17,7 @@ import { useErrorToast } from "@/lib/hooks";
 import { type AgentSpec, embedSnippet, keysFor, type Localised, validOrigin, type WidgetKey } from "@/lib/studio";
 import { useApiKeys, usePublicConfig, useRelease } from "@/lib/studio-hooks";
 import { accessibleAccent } from "@/lib/theme";
+import { Hint } from "@/components/visual/hint";
 
 import { TagInput } from "./tag-input";
 
@@ -186,9 +187,11 @@ export function WidgetKeys({ agent }: { agent: string }) {
               </span>
               <span className="flex items-center gap-2">
                 {k.last_used_at ? <StatusBadge tone="teal">{t("inUse")}</StatusBadge> : <StatusBadge tone="slate">{t("unused")}</StatusBadge>}
-                <Button variant="ghost" size="icon" aria-label={t("revoke", { prefix: k.prefix })} onClick={() => revoke.mutate(k.id)}>
-                  <Trash2 className="size-4" aria-hidden="true" />
-                </Button>
+                <Hint label={t("revoke", { prefix: k.prefix })}>
+                  <Button variant="ghost" size="icon" aria-label={t("revoke", { prefix: k.prefix })} onClick={() => revoke.mutate(k.id)}>
+                    <Trash2 className="size-4" aria-hidden="true" />
+                  </Button>
+                </Hint>
               </span>
             </li>
           ))}

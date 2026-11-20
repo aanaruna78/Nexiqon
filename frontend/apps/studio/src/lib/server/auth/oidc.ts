@@ -37,7 +37,8 @@ export function oidcConfig(env: StudioEnv): Promise<client.Configuration> {
   return configuration;
 }
 
-export async function startLogin(env: StudioEnv, returnTo: string): Promise<{ url: URL; flow: LoginFlow }> {
+/** ``locale``: Studio's language, so the sign-in page opens in it too (OIDC ``ui_locales``). */
+export async function startLogin(env: StudioEnv, returnTo: string, locale?: string): Promise<{ url: URL; flow: LoginFlow }> {
   const config = await oidcConfig(env);
   const flow: LoginFlow = {
     verifier: client.randomPKCECodeVerifier(),
@@ -52,6 +53,7 @@ export async function startLogin(env: StudioEnv, returnTo: string): Promise<{ ur
     code_challenge_method: "S256",
     state: flow.state,
     nonce: flow.nonce,
+    ...(locale ? { ui_locales: locale } : {}),
   });
   return { url, flow };
 }

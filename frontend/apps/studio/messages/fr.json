@@ -1491,5 +1491,49 @@
       "export_requested": "Votre export est en préparation",
       "retention_errors": "La conservation n'a pas pu joindre tous les services"
     }
+  },
+  "auth": {
+    "eyebrow": "Nexiqon Studio",
+    "headline": "Des assistants qui répondent à partir de vos connaissances, et montrent la source de chaque réponse.",
+    "point1Title": "Des réponses étayées",
+    "point1Body": "Chaque affirmation cite sa source, ou l'assistant dit qu'il ne sait pas.",
+    "point2Title": "Vos données restent les vôtres",
+    "point2Body": "Isolées par organisation, avec vos règles sur les modèles autorisés à les voir.",
+    "point3Title": "Chaque modification tracée",
+    "point3Body": "Un journal d'audit infalsifiable et des mises en ligne relues et sûres.",
+    "foot": "L'authentification unique et multifacteur protège chaque compte."
+  },
+  "explain": {
+    "docStatus": {
+      "ready": "Indexé et utilisé dans les réponses.",
+      "pending": "En file d'attente ; le traitement commence bientôt.",
+      "processing": "En cours d'analyse, de lecture et d'indexation. Se met à jour tout seul.",
+      "failed": "N'a pas pu être traité. Ouvrez-le pour voir pourquoi et comment corriger.",
+      "quarantined": "Signalé par l'antivirus. Il n'a jamais été lu et n'est jamais utilisé dans les réponses.",
+      "deleted": "Retiré de la recherche ; le fichier stocké est supprimé."
+    },
+    "queue": {
+      "open": "En attente qu'une personne de votre équipe la prenne en charge.",
+      "claimed": "Un membre de l'équipe s'en occupe ; l'assistant ne répond plus.",
+      "resolved": "Terminée. Rouvrez-la si le visiteur a encore besoin d'aide."
+    },
+    "risk": {
+      "read": "Lit seulement des données. S'exécute sans demander à l'utilisateur.",
+      "write": "Modifie des données. L'utilisateur doit confirmer chaque appel.",
+      "high": "Impact élevé. L'utilisateur confirme, et seuls les administrateurs peuvent l'autoriser."
+    },
+    "level": {
+      "public": "Peut être partagé avec tout le monde. Tout profil de modèle peut le voir.",
+      "internal": "Réservé à votre organisation. Seuls les profils autorisés pour les données internes peuvent le voir.",
+      "confidential": "Sensible. Seuls les profils autorisés pour les données confidentielles peuvent le voir.",
+      "restricted": "Le plus sensible. Jamais envoyé à un modèle cloud."
+    },
+    "rate": {
+      "answer_rate": "Questions auxquelles l'assistant a répondu à partir de vos sources, sans refuser.",
+      "citation_rate": "Réponses qui citent au moins une source vérifiée.",
+      "escalation_rate": "Conversations transmises à une personne. Plus bas est généralement mieux.",
+      "satisfaction": "Réponses notées que les gens ont jugées utiles.",
+      "tool_error_rate": "Appels d'outils en échec. Vérifiez Actions si ce taux augmente."
+    }
   }
 }

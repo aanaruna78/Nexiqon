@@ -26,6 +26,7 @@ import { api, ApiError } from "@/lib/api";
 import { useErrorToast } from "@/lib/hooks";
 import { type AgentSpec, type ConfigObject, credentialName, riskTone, type ToolSpec, type VersionDetail } from "@/lib/studio";
 import { useApprovals, useCalls, useCredentials, useObjects } from "@/lib/studio-hooks";
+import { Hint } from "@/components/visual/hint";
 
 const TABS = ["tools", "connect", "credentials", "approvals", "calls"] as const;
 
@@ -63,6 +64,7 @@ function useSpecs(kind: string, objects: ConfigObject[] | undefined) {
 
 function Tools() {
   const t = useTranslations("actions");
+  const tx = useTranslations("explain");
   const tools = useObjects("tool");
   const agents = useObjects("agent");
   const credentials = useCredentials();
@@ -91,7 +93,7 @@ function Tools() {
                   <h2 className="truncate font-semibold">{tool.name}</h2>
                   <p className="text-sm text-muted-foreground">{spec?.description}</p>
                 </div>
-                {spec?.risk_level ? <StatusBadge tone={riskTone(spec.risk_level)}>{t(`risk.${spec.risk_level}`)}</StatusBadge> : null}
+                {spec?.risk_level ? <StatusBadge tone={riskTone(spec.risk_level)} hint={tx(`risk.${spec.risk_level}`)}>{t(`risk.${spec.risk_level}`)}</StatusBadge> : null}
               </div>
               <dl className="grid gap-1 text-xs">
                 <div className="flex gap-2"><dt className="text-muted-foreground">{t("calls")}</dt><dd className="truncate font-mono" dir="ltr">{spec?.request?.method} {spec?.request?.url_template}</dd></div>
@@ -188,6 +190,7 @@ interface Imported {
 
 function Connect() {
   const t = useTranslations("actions");
+  const tx = useTranslations("explain");
   const client = useQueryClient();
   const onError = useErrorToast();
   const existing = useObjects("tool");
@@ -279,7 +282,7 @@ function Connect() {
             <Label htmlFor={`op-${tool.name}`} className="flex flex-1 flex-col items-start gap-0.5 font-normal">
               <span className="flex flex-wrap items-center gap-2">
                 <span className="font-medium">{tool.name}</span>
-                <StatusBadge tone={riskTone(tool.spec.risk_level)}>{t(`risk.${tool.spec.risk_level ?? "high"}`)}</StatusBadge>
+                <StatusBadge tone={riskTone(tool.spec.risk_level)} hint={tx(`risk.${tool.spec.risk_level ?? "high"}`)}>{t(`risk.${tool.spec.risk_level ?? "high"}`)}</StatusBadge>
                 {taken.has(tool.name) ? <StatusBadge tone="slate">{t("exists")}</StatusBadge> : null}
               </span>
               <span className="text-xs text-muted-foreground">{tool.spec.description}</span>
@@ -353,9 +356,11 @@ function Credentials() {
                 <span className="font-medium" dir="ltr">{c.name}</span>
                 <span className="text-xs text-muted-foreground">{c.updated_at ? t("updated", { when: format.relativeTime(new Date(c.updated_at)) }) : t("valueHidden")}</span>
               </span>
-              <Button variant="ghost" size="icon" aria-label={t("deleteCredential", { name: c.name })} onClick={() => remove.mutate(c.name)}>
-                <Trash2 className="size-4" aria-hidden="true" />
-              </Button>
+              <Hint label={t("deleteCredential", { name: c.name })}>
+                <Button variant="ghost" size="icon" aria-label={t("deleteCredential", { name: c.name })} onClick={() => remove.mutate(c.name)}>
+                  <Trash2 className="size-4" aria-hidden="true" />
+                </Button>
+              </Hint>
             </li>
           ))}
           {list.data && !list.data.length ? <li className="py-2 text-sm text-muted-foreground">{t("noCredentials")}</li> : null}

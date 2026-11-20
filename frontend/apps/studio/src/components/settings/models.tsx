@@ -19,6 +19,7 @@ import { useModelProfiles, useObjects } from "@/lib/studio-hooks";
 /** Models & data policy (ST-12, UX G7): the same picker everywhere, in plain language. */
 export function ModelsPage() {
   const t = useTranslations("models");
+  const tx = useTranslations("explain");
   const profiles = useModelProfiles();
   const agents = useObjects("agent");
   const specs = useQueries({
@@ -61,7 +62,7 @@ export function ModelsPage() {
             <ol className="space-y-2" data-testid="data-flow">
               {dataFlow(focus, list).map((row) => (
                 <li key={row.level} className="grid grid-cols-[8rem_auto_1fr] items-center gap-3 rounded-lg border p-2 text-sm sm:grid-cols-[9rem_auto_10rem_1fr]">
-                  <StatusBadge tone={row.level === "restricted" ? "rose" : row.level === "confidential" ? "amber" : "slate"}>{t(`levels.${row.level}`)}</StatusBadge>
+                  <StatusBadge tone={row.level === "restricted" ? "rose" : row.level === "confidential" ? "amber" : "slate"} hint={tx(`level.${row.level}`)}>{t(`levels.${row.level}`)}</StatusBadge>
                   <ArrowRight className="size-4 text-muted-foreground rtl:rotate-180" aria-hidden="true" />
                   <span className="font-medium">{row.profile}</span>
                   <span className="col-span-3 flex flex-wrap items-center gap-2 sm:col-span-1">

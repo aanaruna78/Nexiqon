@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { StatusBadge } from "@/components/visual/status-badge";
 import { api } from "@/lib/api";
 import { useErrorToast } from "@/lib/hooks";
+import { Hint } from "@/components/visual/hint";
 
 import { TagInput } from "../assistants/tag-input";
 
@@ -135,9 +136,11 @@ function HookRow({ hook: h }: { hook: Hook }) {
             <Send className="size-4" aria-hidden="true" />
             {t("test")}
           </Button>
-          <Button variant="ghost" size="icon" aria-label={t("remove", { url: h.url })} onClick={() => remove.mutate()}>
-            <Trash2 className="size-4" aria-hidden="true" />
-          </Button>
+          <Hint label={t("remove", { url: h.url })}>
+            <Button variant="ghost" size="icon" aria-label={t("remove", { url: h.url })} onClick={() => remove.mutate()}>
+              <Trash2 className="size-4" aria-hidden="true" />
+            </Button>
+          </Hint>
         </span>
       </div>
       {deliveries.data?.length ? (

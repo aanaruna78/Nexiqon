@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/visual/status-badge";
+import { Hint } from "@/components/visual/hint";
 import { useErrorToast } from "@/lib/hooks";
 import { bars, budgetTone, currentMonth, pctOrDash, RATES, rateTone, usd } from "@/lib/operate";
 import { useBudgets, useGaps, useKpis, useQuality, useUsage } from "@/lib/operate-hooks";
@@ -104,6 +105,7 @@ function Bars({ label, series }: { label: string; series: { key: string; value: 
 
 function QualitySection({ agent, days }: { agent: string | null; days: number }) {
   const t = useTranslations("insights");
+  const tx = useTranslations("explain");
   const q = useQuality(agent, days);
   return (
     <Section id="quality" icon={ChartLine} title={t("quality")} help={t("qualityHelp")}>
@@ -116,7 +118,11 @@ function QualitySection({ agent, days }: { agent: string | null; days: number })
               const before = q.data.previous_rates[r];
               return (
                 <div key={r} className="nx-card space-y-1 p-3">
-                  <dt className="text-xs text-muted-foreground">{t(`rates.${r}`)}</dt>
+                  <dt className="text-xs text-muted-foreground">
+                    <Hint label={tx(`rate.${r}`)}>
+                      <span tabIndex={0} className="cursor-help rounded-sm underline decoration-dotted underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring">{t(`rates.${r}`)}</span>
+                    </Hint>
+                  </dt>
                   <dd className="text-xl font-semibold tabular-nums">{pctOrDash(now)}</dd>
                   <dd>
                     <StatusBadge tone={rateTone(r, now, before)}>{before === null ? t("noEarlier") : t("before", { value: pctOrDash(before) })}</StatusBadge>
@@ -270,9 +276,11 @@ function CostSection({ agent }: { agent: string | null }) {
                 <span className="font-medium">{b.agent ?? t("organization")}</span>
                 <span className="flex items-center gap-2">
                   <span className="tabular-nums">{t("spentOf", { spent: usd(b.spent_usd), limit: usd(b.monthly_usd) })}</span>
-                  <Button variant="ghost" size="icon" aria-label={t("removeBudget", { who: b.agent ?? t("organization") })} onClick={() => remove.mutate(b.id, { onError })}>
-                    <Trash2 className="size-4" aria-hidden="true" />
-                  </Button>
+                  <Hint label={t("removeBudget", { who: b.agent ?? t("organization") })}>
+                    <Button variant="ghost" size="icon" aria-label={t("removeBudget", { who: b.agent ?? t("organization") })} onClick={() => remove.mutate(b.id, { onError })}>
+                      <Trash2 className="size-4" aria-hidden="true" />
+                    </Button>
+                  </Hint>
                 </span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-muted" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(Math.min(1, b.used) * 100)} aria-label={t("budgetUse", { who: b.agent ?? t("organization") })}>

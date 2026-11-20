@@ -1,0 +1,411 @@
+/* Nexiqon sign-in theme: the same design language as Studio (colours, radius, type, focus rings).
+   Loaded after Keycloak's PatternFly styles and overrides them. No web fonts, no images: works
+   offline and air-gapped. Light and dark follow the system; right-to-left via logical properties. */
+
+:root {
+  --nx-bg: #f5f7fb;
+  --nx-card: #ffffff;
+  --nx-fg: #12233f;
+  --nx-muted: #4a5f78;
+  --nx-border: #d9e2ec;
+  --nx-input: #ffffff;
+  --nx-primary: #0b6f66;
+  --nx-primary-hover: #095c55;
+  --nx-primary-fg: #ffffff;
+  --nx-ring: #0e8a7e;
+  --nx-danger: #b42318;
+  --nx-danger-bg: #fef3f2;
+  --nx-success-bg: #ecfdf3;
+  --nx-info-bg: #eff8ff;
+  --nx-radius: 12px;
+  --nx-font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+  --pf-global--FontFamily--sans-serif: var(--nx-font);
+  --pf-global--FontFamily--heading--sans-serif: var(--nx-font);
+  --pf-global--primary-color--100: var(--nx-primary);
+  --pf-global--link--Color: var(--nx-primary);
+  --pf-global--link--Color--hover: var(--nx-primary-hover);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --nx-bg: #08121f;
+    --nx-card: #10203a;
+    --nx-fg: #e6edf5;
+    --nx-muted: #a9b8ca;
+    --nx-border: #22395c;
+    --nx-input: #0b1626;
+    --nx-primary: #2bb3a3;
+    --nx-primary-hover: #4cc6b7;
+    --nx-primary-fg: #0b1626;
+    --nx-ring: #2bb3a3;
+    --nx-danger: #f97066;
+    --nx-danger-bg: #2a1215;
+    --nx-success-bg: #0d2a1f;
+    --nx-info-bg: #0f2236;
+  }
+}
+
+/* ------------------------------------------------------------------ page shell */
+
+html.login-pf,
+.login-pf body {
+  background: var(--nx-bg);
+  color: var(--nx-fg);
+  font-family: var(--nx-font);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100%;
+}
+
+.nx-shell {
+  display: grid;
+  grid-template-columns: minmax(380px, 44%) 1fr;
+  min-height: 100vh;
+}
+
+/* Brand panel */
+.nx-brand {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 48px;
+  padding: 48px 56px;
+  overflow: hidden;
+  color: #e6edf5;
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(43, 179, 163, 0.35), transparent 55%),
+    radial-gradient(90% 70% at 100% 100%, rgba(242, 198, 109, 0.14), transparent 60%),
+    linear-gradient(160deg, #0b1626 0%, #0d2a3a 55%, #0b4a46 100%);
+}
+.nx-brand::before {
+  /* fine grid, fading out */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(80% 70% at 30% 30%, black, transparent);
+  -webkit-mask-image: radial-gradient(80% 70% at 30% 30%, black, transparent);
+  pointer-events: none;
+}
+.nx-brand-glow {
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  inset-inline-end: -140px;
+  top: 32%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(43, 179, 163, 0.28), transparent 65%);
+  filter: blur(8px);
+  pointer-events: none;
+}
+.nx-brand > :not(.nx-brand-glow) { position: relative; }
+.nx-brand-top { display: flex; align-items: center; gap: 12px; }
+.nx-mark { width: 40px; height: 40px; flex: none; filter: drop-shadow(0 6px 16px rgba(11, 111, 102, 0.45)); }
+.nx-wordmark { font-size: 20px; font-weight: 650; letter-spacing: -0.01em; }
+.nx-brand-copy { max-width: 470px; }
+.nx-eyebrow {
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7fdccf;
+}
+.nx-headline {
+  margin: 0 0 36px;
+  font-size: clamp(26px, 2.4vw, 34px);
+  line-height: 1.22;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+.nx-points { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px; }
+.nx-points li { display: flex; gap: 14px; align-items: flex-start; }
+.nx-points strong { display: block; font-size: 15px; font-weight: 600; color: #ffffff; margin-bottom: 2px; }
+.nx-points li > span:last-child > span { display: block; font-size: 14px; line-height: 1.5; color: #b9c8d8; }
+.nx-point-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(43, 179, 163, 0.16);
+  border: 1px solid rgba(127, 220, 207, 0.25);
+}
+.nx-point-icon svg { width: 18px; height: 18px; fill: none; stroke: #7fdccf; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.nx-brand-foot { margin: 0; font-size: 13px; color: #8ea3ba; }
+
+/* Form side */
+.nx-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+.login-pf-page {
+  width: 100%;
+  max-width: 440px;
+  padding: 0;
+}
+#kc-header { display: none; }  /* the brand panel carries the logo on wide screens */
+#kc-header-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 0 24px;
+  font-size: 18px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--nx-fg);
+}
+#kc-header-wrapper .nx-mark { width: 34px; height: 34px; }
+
+.login-pf-page .card-pf {
+  max-width: none;
+  margin: 0;
+  padding: 36px 36px 28px;
+  background: var(--nx-card);
+  border: 1px solid var(--nx-border);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(18, 35, 63, 0.04), 0 12px 40px -12px rgba(18, 35, 63, 0.18);
+  color: var(--nx-fg);
+}
+.login-pf-page .login-pf-header { margin-bottom: 24px; padding: 0; border: 0; }
+h1#kc-page-title {
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.25;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--nx-fg);
+  text-align: start;
+}
+.nx-subtitle { margin: -16px 0 24px; font-size: 15px; line-height: 1.5; color: var(--nx-muted); }
+#kc-content-wrapper { margin-top: 0; }
+
+/* ------------------------------------------------------------------ form controls */
+
+.login-pf-page .pf-c-form__label,
+.login-pf-page .pf-c-form__label-text,
+.login-pf-page label {
+  font-size: 14px;
+  font-weight: 550;
+  color: var(--nx-fg);
+}
+.login-pf-page .form-group { margin-bottom: 18px; }
+.login-pf-page .pf-c-form-control,
+.login-pf-page input[type="text"],
+.login-pf-page input[type="email"],
+.login-pf-page input[type="password"] {
+  height: 44px;
+  padding: 0 14px;
+  font-size: 15px;
+  color: var(--nx-fg);
+  background: var(--nx-input);
+  border: 1px solid var(--nx-border);
+  border-radius: 10px;
+  box-shadow: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.login-pf-page textarea.pf-c-form-control { height: auto; padding: 10px 14px; }
+.login-pf-page .pf-c-form-control::after { display: none; }  /* PatternFly's underline */
+.login-pf-page .pf-c-form-control:hover { border-color: color-mix(in srgb, var(--nx-ring) 45%, var(--nx-border)); }
+.login-pf-page .pf-c-form-control:focus,
+.login-pf-page .pf-c-form-control:focus-visible {
+  outline: none;
+  border-color: var(--nx-ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--nx-ring) 28%, transparent);
+}
+.login-pf-page .pf-c-form-control[aria-invalid="true"] { border-color: var(--nx-danger); }
+
+/* Password field with its show/hide button */
+.login-pf-page .pf-c-input-group { border-radius: 10px; }
+.login-pf-page .pf-c-input-group .pf-c-form-control { border-start-end-radius: 0; border-end-end-radius: 0; }
+.login-pf-page .pf-c-button.pf-m-control {
+  height: 44px;
+  min-width: 46px;
+  color: var(--nx-muted);
+  background: var(--nx-input);
+  border: 1px solid var(--nx-border);
+  border-inline-start: 0;
+  border-start-end-radius: 10px;
+  border-end-end-radius: 10px;
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+}
+.login-pf-page .pf-c-button.pf-m-control::after { display: none; }
+.login-pf-page .pf-c-button.pf-m-control:hover { color: var(--nx-fg); }
+.login-pf-page .pf-c-button.pf-m-control:focus-visible { outline: 3px solid color-mix(in srgb, var(--nx-ring) 45%, transparent); outline-offset: 1px; }
+
+/* Remember me / forgot password row */
+#kc-form-options,
+.login-pf-page .form-group.login-pf-settings {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+.login-pf-page .checkbox label { font-weight: 450; color: var(--nx-muted); display: inline-flex; align-items: center; gap: 8px; }
+.login-pf-page input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--nx-primary); margin: 0; }
+
+/* Buttons */
+.login-pf-page .pf-c-button.pf-m-primary,
+.login-pf-page input[type="submit"].pf-c-button,
+#kc-login {
+  height: 46px;
+  width: 100%;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--nx-primary-fg);
+  background: var(--nx-primary);
+  border: 0;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(11, 111, 102, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition: background 0.15s, transform 0.05s;
+}
+.login-pf-page .pf-c-button.pf-m-primary:hover,
+#kc-login:hover { background: var(--nx-primary-hover); }
+.login-pf-page .pf-c-button.pf-m-primary:active,
+#kc-login:active { transform: translateY(1px); }
+.login-pf-page .pf-c-button:focus-visible,
+#kc-login:focus-visible { outline: 3px solid color-mix(in srgb, var(--nx-ring) 45%, transparent); outline-offset: 2px; }
+.login-pf-page .pf-c-button.pf-m-secondary,
+.login-pf-page .btn-default {
+  height: 44px;
+  color: var(--nx-fg);
+  background: transparent;
+  border: 1px solid var(--nx-border);
+  border-radius: 10px;
+}
+.login-pf-page .pf-c-button.pf-m-secondary::after { display: none; }
+#kc-form-buttons { margin-top: 8px; }
+
+/* Links */
+.login-pf a,
+.login-pf-page a { color: var(--nx-primary); font-weight: 550; text-decoration: none; }
+.login-pf a:hover,
+.login-pf-page a:hover { color: var(--nx-primary-hover); text-decoration: underline; text-underline-offset: 3px; }
+.login-pf a:focus-visible { outline: 3px solid color-mix(in srgb, var(--nx-ring) 45%, transparent); outline-offset: 2px; border-radius: 4px; }
+
+/* Register / info area */
+#kc-info { padding: 0; margin: 0; }
+#kc-info-wrapper {
+  margin-top: 24px;
+  padding: 16px 0 0;
+  font-size: 14px;
+  color: var(--nx-muted);
+  background: none;
+  border-top: 1px solid var(--nx-border);
+  text-align: center;
+}
+#kc-registration { padding: 0; }
+#kc-registration span { color: var(--nx-muted); }
+
+/* Social / other providers */
+.kc-social-section hr { border-color: var(--nx-border); }
+.kc-social-gray h2 { color: var(--nx-muted); font-size: 13px; }
+.kc-social-item {
+  border-radius: 10px;
+  border: 1px solid var(--nx-border);
+  background: var(--nx-input);
+  color: var(--nx-fg);
+}
+
+/* Messages */
+.login-pf-page .pf-c-alert {
+  margin-bottom: 20px;
+  border: 1px solid var(--nx-border);
+  border-radius: 10px;
+  background: var(--nx-info-bg);
+  box-shadow: none;
+  color: var(--nx-fg);
+}
+.login-pf-page .pf-c-alert.pf-m-danger { background: var(--nx-danger-bg); border-color: color-mix(in srgb, var(--nx-danger) 35%, transparent); }
+.login-pf-page .pf-c-alert.pf-m-danger .pf-c-alert__icon,
+.login-pf-page .pf-c-alert.pf-m-danger .pf-c-alert__title { color: var(--nx-danger); }
+.login-pf-page .pf-c-alert.pf-m-success { background: var(--nx-success-bg); }
+.login-pf-page .pf-c-alert::before { display: none; }
+.login-pf-page .pf-m-error,
+.login-pf-page .kc-feedback-text.required { color: var(--nx-danger); }
+
+/* Signed-in-as row (password and MFA steps) */
+#kc-username { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--nx-border); border-radius: 10px; background: var(--nx-input); }
+#kc-attempted-username { font-size: 15px; font-weight: 600; color: var(--nx-fg); }
+
+/* Language menu */
+#kc-locale { position: absolute; inset-block-start: 20px; inset-inline-end: 24px; }
+#kc-locale-dropdown button {
+  height: 34px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--nx-muted);
+  background: var(--nx-card);
+  border: 1px solid var(--nx-border);
+  border-radius: 999px;
+}
+#kc-locale-dropdown button:hover { color: var(--nx-fg); }
+button#kc-current-locale-link::after { margin-inline-start: 6px; }
+#kc-locale ul {
+  background: var(--nx-card);
+  border: 1px solid var(--nx-border);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px -12px rgba(18, 35, 63, 0.3);
+  padding: 6px;
+  inset-inline-end: 0;
+}
+#kc-locale-dropdown a { color: var(--nx-fg); border-radius: 6px; padding: 6px 10px; font-weight: 450; }
+#kc-locale-dropdown a:hover { background: color-mix(in srgb, var(--nx-ring) 12%, transparent); text-decoration: none; }
+
+.nx-help { margin: 20px 0 0; font-size: 13px; color: var(--nx-muted); text-align: center; }
+
+/* Text and helpers PatternFly colours too lightly for our background */
+.login-pf-page .pf-c-form__helper-text,
+.login-pf-page p.instruction,
+.login-pf-page .subtitle { color: var(--nx-muted); }
+#kc-totp-secret-key { background: var(--nx-input); border: 1px solid var(--nx-border); border-radius: 8px; color: var(--nx-fg); }
+
+/* ------------------------------------------------------------------ smaller screens */
+
+@media (max-width: 960px) {
+  .nx-shell { grid-template-columns: 1fr; }
+  .nx-brand { display: none; }
+  #kc-header { display: block; float: none; padding: 0; }
+  .nx-main { align-items: flex-start; padding: 56px 20px 32px; }
+}
+@media (max-width: 767px) {
+  .login-pf body { background: var(--nx-bg); }
+  .login-pf-page .card-pf { padding: 28px 22px 22px; border-radius: 14px; }
+  #kc-header-wrapper { padding: 0 0 20px; color: var(--nx-fg); font-weight: 600; }
+  #kc-locale { inset-block-start: 14px; inset-inline-end: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+
+/* ------------------------------------------------------------------ refinements */
+
+/* Text follows the reading direction (right-to-left languages included). */
+.login-pf-page label,
+.login-pf-page .control-label,
+.login-pf-page .nx-subtitle,
+.login-pf-page .pf-c-form__helper-text,
+.login-pf-page .kc-feedback-text { text-align: start; }
+.login-pf-page p.nx-subtitle { color: var(--nx-muted); }
+
+/* An invalid password field: the show/hide button joins the error outline. */
+.login-pf-page .pf-c-input-group:has([aria-invalid="true"]) .pf-c-button.pf-m-control { border-color: var(--nx-danger); }
+.login-pf-page .pf-c-input-group:focus-within .pf-c-button.pf-m-control { border-color: var(--nx-ring); }
+.login-pf-page .pf-c-form__helper-text.pf-m-error { display: block; margin-top: 6px; font-size: 13px; }
+.login-pf-page .form-group,
+.login-pf-page .pf-c-form__group,
+.login-pf-page #kc-form-login > div { text-align: start; }
+.login-pf-page .pf-c-form__label,
+.login-pf-page .form-group > label { display: block; margin-bottom: 6px; }

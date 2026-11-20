@@ -43,3 +43,6 @@ frontend/apps/studio/public/widget/
 
 # Docs site build (make docs)
 /site/
+
+# start.sh / stop.sh state (Studio pid and log)
+/.local/

@@ -29,6 +29,7 @@ export function useDocuments(collectionId: string) {
   return useQuery({
     queryKey: ["documents", collectionId],
     queryFn: () => api<KnowledgeDocument[]>(`ingestion/v1/collections/${collectionId}/documents?limit=500`),
+    enabled: Boolean(collectionId), // the setup guide asks before any collection exists
     refetchInterval: (q) => (q.state.data?.some((d) => isBusy(d.status)) ? LIVE_MS : false),
   });
 }

@@ -2,6 +2,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
 import { NextIntlClientProvider } from "next-intl";
+
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
 
@@ -24,6 +26,7 @@ function Harness({ errors, onValue }: { errors?: FieldErrors; onValue?: (v: Reco
   const [value, setValue] = useState<Record<string, unknown>>({});
   return (
     <NextIntlClientProvider locale="en" messages={messages}>
+      <TooltipProvider>
       <SchemaForm
         schema={schema}
         value={value}
@@ -33,6 +36,7 @@ function Harness({ errors, onValue }: { errors?: FieldErrors; onValue?: (v: Reco
           onValue?.(v);
         }}
       />
+      </TooltipProvider>
     </NextIntlClientProvider>
   );
 }

@@ -1491,5 +1491,49 @@
       "export_requested": "Your export is being prepared",
       "retention_errors": "Retention could not reach every service"
     }
+  },
+  "auth": {
+    "eyebrow": "Nexiqon Studio",
+    "headline": "Assistants that answer from your knowledge, and show where every answer came from.",
+    "point1Title": "Grounded answers",
+    "point1Body": "Every claim cites its source, or the assistant says it does not know.",
+    "point2Title": "Your data stays yours",
+    "point2Body": "Isolated per organization, with your rules on which models may see it.",
+    "point3Title": "Every change on the record",
+    "point3Body": "A tamper-evident audit log and safe, reviewed releases.",
+    "foot": "Single sign-on and multi-factor authentication protect every account."
+  },
+  "explain": {
+    "docStatus": {
+      "ready": "Indexed and used in answers.",
+      "pending": "Queued for processing; it starts shortly.",
+      "processing": "Being scanned, read and indexed. This updates by itself.",
+      "failed": "Could not be processed. Open it to see why and how to fix it.",
+      "quarantined": "Flagged by the virus scan. It was never read and is never used in answers.",
+      "deleted": "Removed from search; the stored file is deleted."
+    },
+    "queue": {
+      "open": "Waiting for someone on your team to claim it.",
+      "claimed": "A team member is handling it; the assistant stays quiet.",
+      "resolved": "Done. Reopen it if the visitor needs more help."
+    },
+    "risk": {
+      "read": "Only reads data. Runs without asking the user.",
+      "write": "Changes data. The user must confirm every call.",
+      "high": "High impact. The user confirms, and only admins can allow it."
+    },
+    "level": {
+      "public": "Fine to share with anyone. Any model profile may see it.",
+      "internal": "For your organization only. Only model profiles allowed for internal data may see it.",
+      "confidential": "Sensitive. Only profiles allowed for confidential data may see it.",
+      "restricted": "Most sensitive. Never sent to a cloud model."
+    },
+    "rate": {
+      "answer_rate": "Questions answered from your sources rather than declined.",
+      "citation_rate": "Answers that cite at least one verified source.",
+      "escalation_rate": "Conversations handed over to a person. Lower is usually better.",
+      "satisfaction": "Rated answers that people marked helpful.",
+      "tool_error_rate": "Tool calls that failed. Check Actions if this rises."
+    }
   }
 }
