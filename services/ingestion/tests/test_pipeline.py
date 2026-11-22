@@ -140,12 +140,54 @@ async def test_formats_malware_and_failures(stack: Stack) -> None:
 
 async def test_restricted_collection_cannot_use_cloud_embeddings(stack: Stack) -> None:
     s = stack
+    # Refused when the collection is created: it could never index anything.
+    r = await s.api.post(
+        "/v1/collections",
+        json={"name": "secrets", "classification": "restricted", "model_profile": "cloud-frontier"},
+        headers=s.h,
+    )
+    assert r.status_code == 400
+    assert "cloud" in r.json()["detail"]
+    # And at indexing time, if the gateway's policy changes after the collection exists.
+    s.gateway.refuse_restricted_cloud = False
     c = await s.collection(classification="restricted")
+    s.gateway.refuse_restricted_cloud = True
     up = await s.upload(c["id"], "secret.md", b"# Secret\n\nText.", "text/markdown")
     await s.wait(await s.ok("GET", f"/v1/runs/{up['run_id']}"))
     doc = await s.ok("GET", f"/v1/documents/{up['document']['id']}")
     assert (doc["status"], doc["error_code"]) == ("failed", "embedding_failed")
     assert "cloud" in doc["error_detail"]
+
+
+async def test_a_model_profile_without_credentials_is_caught_before_and_during_indexing(
+    stack: Stack,
+) -> None:
+    s = stack
+    s.gateway.unconfigured = {"cloud-frontier"}
+    # Studio's check says why, and the collection is not created in a state where all fails.
+    check = await s.ok(
+        "POST", "/v1/model-profiles/cloud-frontier/check", json={"classification": "internal"}
+    )
+    assert (check["ok"], check["code"]) == (False, "model_not_configured")
+    assert "no API key" in check["detail"]
+    r = await s.api.post("/v1/collections", json={"name": "docs"}, headers=s.h)
+    assert r.status_code == 400
+    assert "no API key" in r.json()["detail"]
+    # A key removed after the collection exists: documents fail at once with the real reason,
+    # not as a temporary outage that is retried.
+    s.gateway.unconfigured = set()
+    c = await s.collection()
+    s.gateway.unconfigured = {"cloud-frontier"}
+    up = await s.upload(c["id"], "a.md", b"# A\n\nText.", "text/markdown")
+    await s.wait(await s.ok("GET", f"/v1/runs/{up['run_id']}"))
+    doc = await s.ok("GET", f"/v1/documents/{up['document']['id']}")
+    assert (doc["status"], doc["error_code"]) == ("failed", "model_not_configured")
+    assert len(s.gateway.calls) == 1  # tried once, not retried
+    # A working profile passes the check.
+    ok = await s.ok(
+        "POST", "/v1/model-profiles/on-prem-standard/check", json={"classification": "internal"}
+    )
+    assert ok["ok"] is True
 
 
 async def test_transient_failures_are_retried(stack: Stack) -> None:

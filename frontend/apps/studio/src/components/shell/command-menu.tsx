@@ -73,11 +73,11 @@ export function CommandMenu({ memberships }: { memberships: StudioMembership[] }
         </CommandGroup>
         <CommandSeparator />
         <CommandGroup heading={t("shell.quickActions")}>
-          <CommandItem value={t("members.invite")} onSelect={() => run(() => router.push("/settings/members?invite=1"))}>
+          <CommandItem value={t("members.invite")} onSelect={() => run(() => router.push("/admin/members?invite=1"))}>
             <UserPlus aria-hidden="true" />
             {t("members.invite")}
           </CommandItem>
-          <CommandItem value={t("apiKeys.create")} onSelect={() => run(() => router.push("/settings/api-keys?create=1"))}>
+          <CommandItem value={t("apiKeys.create")} onSelect={() => run(() => router.push("/admin/api-keys?create=1"))}>
             <KeyRound aria-hidden="true" />
             {t("apiKeys.create")}
           </CommandItem>

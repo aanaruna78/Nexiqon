@@ -81,17 +81,21 @@ test.describe.serial("Studio", () => {
     await signIn(page);
   });
 
-  test("onboarding creates an organization and lands on Home", async () => {
+  test("onboarding creates an organization and lands on the assistant", async () => {
     await page.goto("/onboarding");
     await a11y(page, "onboarding");
     await page.getByLabel("Organization name").fill(ORG);
     await expect(page.getByLabel("Address")).toHaveValue(SLUG);
     await page.getByRole("button", { name: "Create organization" }).click();
     await page.waitForURL("http://localhost:3100/");
-    await expect(page.getByRole("heading", { name: "Welcome to Nexiqon Studio" })).toBeVisible();
     await expect(page.getByTestId("org-switcher")).toContainText(ORG);
+    await expect(page.getByRole("heading", { name: "No assistant is ready yet" })).toBeVisible();
+    await a11y(page, "assistant (empty)");
+    await page.getByTestId("admin-button").click();
+    await page.waitForURL("http://localhost:3100/admin");
+    await expect(page.getByRole("heading", { name: "Welcome to Nexiqon Studio" })).toBeVisible();
     await expect(page.getByText(/of 5 done/)).toBeVisible();
-    await a11y(page, "home");
+    await a11y(page, "admin overview");
   });
 
   test("security headers: a strict content policy, no framing, no sniffing", async () => {
@@ -116,7 +120,7 @@ test.describe.serial("Studio", () => {
   });
 
   test("members: invite someone", async () => {
-    await page.goto("/settings/members");
+    await page.goto("/admin/members");
     await expect(page.getByTestId("member-dev@nexiqon.example.com")).toContainText("Owner");
     await page.getByTestId("invite-member").click();
     await page.getByLabel("Email").fill("teammate@example.com");
@@ -126,7 +130,7 @@ test.describe.serial("Studio", () => {
   });
 
   test("API keys: secret shown once, then revoked", async () => {
-    await page.goto("/settings/api-keys");
+    await page.goto("/admin/api-keys");
     await page.getByTestId("create-key").click();
     await page.getByLabel("Name").fill("ci-pipeline");
     await page.getByRole("button", { name: "Create API key" }).last().click();
@@ -142,7 +146,7 @@ test.describe.serial("Studio", () => {
   });
 
   test("configuration: create, publish and deploy via the schema form", async () => {
-    await page.goto("/settings/configuration/retention_profile/new");
+    await page.goto("/admin/configuration/retention_profile/new");
     await page.getByLabel("Name", { exact: true }).fill("short-retention");
     await page.getByLabel("Conversations days").fill("30");
     await page.getByLabel("Traces days").fill("7");
@@ -153,13 +157,13 @@ test.describe.serial("Studio", () => {
     await expect(page.getByText("v1 · Published")).toBeVisible();
     await page.getByTestId("deploy").click();
     await expect(page.getByText("dev v1")).toBeVisible();
-    await page.goto("/settings/configuration?kind=retention_profile");
+    await page.goto("/admin/configuration?kind=retention_profile");
     await expect(page.getByRole("link", { name: /short-retention/ })).toContainText("dev v1");
     await a11y(page, "configuration list");
   });
 
   test("configuration: client validation explains missing fields", async () => {
-    await page.goto("/settings/configuration/agent/new");
+    await page.goto("/admin/configuration/agent/new");
     await page.getByLabel("Name", { exact: true }).fill("broken-agent");
     await page.getByTestId("save-draft").click();
     const summary = page.getByRole("alert").filter({ hasText: "Some settings need attention" });
@@ -168,7 +172,7 @@ test.describe.serial("Studio", () => {
   });
 
   test("audit: events recorded and chain verifies", async () => {
-    await page.goto("/settings/audit");
+    await page.goto("/admin/audit");
     await expect(page.getByRole("row").filter({ hasText: "tenant.created" }).filter({ hasText: "identity" })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole("row").filter({ hasText: "deployment.changed" }).filter({ hasText: "config" })).toBeVisible();
     await expect(page.getByRole("row").filter({ hasText: "tenant.created" })).toContainText("Dev User");
@@ -178,17 +182,25 @@ test.describe.serial("Studio", () => {
   });
 
   test("knowledge: create a collection, upload files and watch them index", async () => {
-    await page.goto("/knowledge");
+    await page.goto("/admin/knowledge");
     await expect(page.getByRole("heading", { name: "Add your first collection" })).toBeVisible();
     await a11y(page, "knowledge empty");
     await page.getByTestId("create-collection").click();
     await page.getByLabel("Name", { exact: true }).fill("Product Docs");
     await expect(page.getByLabel("Name", { exact: true })).toHaveValue("product-docs");
+    // The default cloud profile has no API key on this stack: Studio says so before creating,
+    // holds back the button, and offers a profile that works.
+    const problem = page.getByTestId("profile-problem");
+    await expect(problem).toContainText("no API key");
+    await expect(page.getByRole("button", { name: "Create collection" })).toBeDisabled();
+    await a11y(page, "collection with an unusable model");
+    await problem.getByRole("button", { name: /Use .+ instead/ }).click();
+    await expect(page.getByTestId("profile-ok")).toBeVisible();
     await pick(page, "Model profile", /dev-offline/);
     await pick(page, "Retrieval profile", /dev-offline/);
     await a11y(page, "new collection dialog");
     await page.getByRole("button", { name: "Create collection" }).click();
-    await page.waitForURL(/\/knowledge\/[0-9a-f-]{36}$/);
+    await page.waitForURL(/\/admin\/knowledge\/[0-9a-f-]{36}$/);
     await page.getByTestId("upload-input").setInputFiles([
       { name: "guide.md", mimeType: "text/markdown", buffer: Buffer.from(GUIDE) },
       { name: "archive.zip", mimeType: "application/zip", buffer: Buffer.from("PK\u0003\u0004") },
@@ -200,6 +212,10 @@ test.describe.serial("Studio", () => {
     const blank = page.getByTestId("doc-blank.txt");
     await expect(blank).toContainText("Needs attention", { timeout: 60_000 });
     await expect(blank).toContainText("No text was found");
+    // The upload list follows each file to its outcome, and the summary counts them.
+    await expect(page.getByTestId("upload-guide.md")).toContainText("Ready");
+    await expect(page.getByTestId("upload-blank.txt")).toContainText("No text was found");
+    await expect(page.getByTestId("progress")).toContainText("1 needs attention");
     await a11y(page, "collection documents");
     await guide.getByRole("button", { name: /^Operations Guide/ }).click();
     const outline = page.getByTestId("outline");
@@ -226,7 +242,7 @@ test.describe.serial("Studio", () => {
 
   test("playground: grounded answer with citations and source preview", async () => {
     await page.getByRole("link", { name: "Try in Playground" }).click();
-    await page.waitForURL(/\/playground\?collection=/);
+    await page.waitForURL(/\/admin\/playground\?collection=/);
     await pick(page, "Retrieval profile", /dev-offline/);
     await page.getByTestId("playground-query").fill("How long is each backup kept?");
     await page.getByTestId("playground-run").click();
@@ -248,12 +264,12 @@ test.describe.serial("Studio", () => {
   });
 
   test("domain packs: create from the template, edit and release", async () => {
-    await page.goto("/domain-packs");
+    await page.goto("/admin/domain-packs");
     await a11y(page, "packs");
     await page.getByTestId("new-pack").click();
     await page.getByLabel("Title").fill("Ops desk");
     await page.getByTestId("create-pack").click();
-    await page.waitForURL(new RegExp(`/domain-packs/${PACK}$`));
+    await page.waitForURL(new RegExp(`/admin/domain-packs/${PACK}$`));
     await a11y(page, "pack overview");
     await page.getByTestId("pack-tab-intents").click();
     await page.getByLabel("Examples").first().fill("How long are backups kept?");
@@ -282,7 +298,7 @@ test.describe.serial("Studio", () => {
   });
 
   test("assistants: create, test with streaming and inspect an answer", async () => {
-    await page.goto("/assistants");
+    await page.goto("/admin/assistants");
     await page.getByTestId("new-assistant").click();
     await page.getByLabel("Name people see").fill("Ops Helper");
     await page.getByLabel("product-docs").check();
@@ -290,7 +306,7 @@ test.describe.serial("Studio", () => {
     await pick(page, "Retrieval profile", /dev-offline/);
     await a11y(page, "new assistant");
     await page.getByTestId("create-assistant").click();
-    await page.waitForURL(/\/assistants\/ops-helper\?tab=test/);
+    await page.waitForURL(/\/admin\/assistants\/ops-helper\?tab=test/);
     await page.getByTestId("test-input").fill("How long is each backup kept?");
     await page.getByTestId("test-send").click();
     const log = page.getByTestId("test-chat-log");
@@ -341,8 +357,57 @@ test.describe.serial("Studio", () => {
     await expect(page.getByRole("img", { name: /Workflow with 6 steps/ })).toBeVisible();
   });
 
+  test("assistant chat: ask from the home page, see sources, resume from history, delete", async () => {
+    test.setTimeout(120_000); // a streamed answer, the inspector, history and a delete
+    await page.goto("/");
+    await expect(page.getByTestId("assistant-picker")).toContainText(/Ops Helper/);
+    await a11y(page, "assistant (new chat)");
+    await page.getByTestId("chat-input").fill("How long is each backup kept?");
+    await page.keyboard.press("Enter");
+    const log = page.getByTestId("chat-log");
+    await expect(log).toContainText("35 days");
+    await expect(log.getByLabel("Sources")).toContainText("Backups");
+    await page.waitForURL(/\/c\/[0-9a-f-]{36}$/);
+    const address = page.url();
+    await a11y(page, "assistant (answer)");
+    // Admins can see why an answer was given.
+    await log.getByTestId("inspect").last().click();
+    await expect(page.getByTestId("inspector").getByTestId("why")).toContainText("verified citation");
+    await page.keyboard.press("Escape");
+    // The chat is in the history panel and resumes with its messages.
+    await page.getByTestId("new-chat").click();
+    await page.waitForURL("http://localhost:3100/");
+    await expect(page.getByTestId("chat-input")).toHaveValue("");
+    const history = page.getByRole("navigation", { name: "Your chats" });
+    await history.getByRole("link").first().click();
+    await page.waitForURL(address);
+    await expect(page.getByTestId("chat-log")).toContainText("35 days");
+    // Delete it.
+    await history.getByRole("listitem").first().hover();
+    await history.getByRole("button", { name: /^Delete chat/ }).first().click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Delete chat" }).click();
+    await page.waitForURL("http://localhost:3100/");
+    await expect(page.getByText("Chat deleted")).toBeVisible();
+  });
+
+  test("settings: personal preferences, apart from Admin", async () => {
+    await page.goto("/settings");
+    await expect(page.getByRole("heading", { name: "Settings", level: 1 })).toBeVisible();
+    await expect(page.getByText("dev@nexiqon.example.com")).toBeVisible();
+    await page.getByTestId("theme-dark").click();
+    await expect(page.locator("html")).toHaveClass(/dark/);
+    await a11y(page, "settings (dark)");
+    await page.getByTestId("theme-light").click();
+    await expect(page.locator("html")).not.toHaveClass(/dark/);
+    // Old addresses keep working.
+    await page.goto("/settings/members");
+    await page.waitForURL(/\/admin\/members$/);
+    await page.goto("/knowledge");
+    await page.waitForURL(/\/admin\/knowledge$/);
+  });
+
   test("actions: import an API from OpenAPI and dry-run it", async () => {
-    await page.goto("/actions?tab=connect");
+    await page.goto("/admin/actions?tab=connect");
     await page.getByTestId("openapi-spec").fill(OPENAPI);
     await page.getByTestId("openapi-read").click();
     await expect(page.getByText("Reads data")).toBeVisible();
@@ -365,14 +430,14 @@ test.describe.serial("Studio", () => {
   });
 
   test("models: plain-language trade-offs and where data goes", async () => {
-    await page.goto("/settings/models");
+    await page.goto("/admin/models");
     await expect(page.getByTestId("data-flow")).toContainText("Restricted");
     await expect(page.getByTestId("profiles")).toContainText("dev-offline");
     await a11y(page, "models");
   });
 
   test("setup guide: ready-made pack to an embeddable assistant", async () => {
-    await page.goto("/get-started");
+    await page.goto("/admin/get-started");
     await a11y(page, "setup guide");
     await page.getByTestId("use-pack-saas-knowledge-assistant").click();
     await expect(page.getByTestId("guide-step-pack")).toContainText("Done");
@@ -397,7 +462,7 @@ test.describe.serial("Studio", () => {
   });
 
   test("assistants: widget text and colour per assistant", async () => {
-    await page.goto("/assistants/guide-helper?tab=widget");
+    await page.goto("/admin/assistants/guide-helper?tab=widget");
     await page.getByLabel("Greeting").fill("Hello from the guide.");
     await expect(page.getByTestId("widget-preview")).toContainText("Hello from the guide.");
     await a11y(page, "widget settings");
@@ -408,7 +473,7 @@ test.describe.serial("Studio", () => {
 
   test("widget on a customer's site: answer, feedback, suggestions, email copy, accessible", async () => {
     // A widget key for the customer's site, made in Studio.
-    await page.goto("/assistants/ops-helper?tab=widget");
+    await page.goto("/admin/assistants/ops-helper?tab=widget");
     // The customer's site, served by the test on a loopback origin (browsers stop public pages
     // from reaching a local gateway; a real site and gateway are both public).
     await page.getByLabel("Allowed websites").fill(SITE);
@@ -474,10 +539,10 @@ test.describe.serial("Studio", () => {
   });
 
   test("conversations: a handover waits in the queue, is claimed, answered and resolved", async () => {
-    await page.goto("/assistants/ops-helper?tab=test");
+    await page.goto("/admin/assistants/ops-helper?tab=test");
     await page.getByRole("button", { name: "Ask for a person" }).click();
     await expect(page.getByTestId("test-chat-log")).toContainText(/person|team/i);
-    await page.goto("/conversations");
+    await page.goto("/admin/conversations");
     await a11y(page, "escalation queue");
     const row = page.getByTestId("conversation-list").getByTestId("conversation-row").first();
     await expect(row).toContainText("Waiting");
@@ -500,7 +565,7 @@ test.describe.serial("Studio", () => {
   });
 
   test("insights: quality, content gaps, cost and a budget", async () => {
-    await page.goto("/insights");
+    await page.goto("/admin/insights");
     await expect(page.getByTestId("quality-rates")).toContainText("Answered");
     await expect(page.getByTestId("month-cost")).toBeVisible();
     await a11y(page, "insights");
@@ -528,7 +593,7 @@ test.describe.serial("Studio", () => {
   });
 
   test("organization data: export everything, run retention, schedule and cancel deletion", async () => {
-    await page.goto("/settings/organization");
+    await page.goto("/admin/organization");
     await a11y(page, "organization data");
     await page.getByTestId("start-export").click();
     const download = page.getByTestId("download-export");
@@ -554,7 +619,7 @@ test.describe.serial("Studio", () => {
   });
 
   test("webhooks: only public HTTPS endpoints, explained", async () => {
-    await page.goto("/settings/webhooks");
+    await page.goto("/admin/webhooks");
     await a11y(page, "webhooks");
     await page.getByTestId("hook-url").fill("http://example.com/hook");
     await expect(page.getByTestId("create-hook")).toBeDisabled();
@@ -562,7 +627,7 @@ test.describe.serial("Studio", () => {
   });
 
   test("evaluations: a test set, a run and its scorecard", async () => {
-    await page.goto("/evaluations");
+    await page.goto("/admin/evaluations");
     await a11y(page, "evaluations empty");
     await page.getByTestId("new-test-set").click();
     await page.getByRole("button", { name: "Empty", exact: true }).click();
@@ -570,7 +635,7 @@ test.describe.serial("Studio", () => {
     await pick(page, "Assistant", /ops-helper/);
     await a11y(page, "new test set");
     await page.getByTestId("create-test-set").click();
-    await page.waitForURL(/\/evaluations\/[0-9a-f-]+$/);
+    await page.waitForURL(/\/admin\/evaluations\/[0-9a-f-]+$/);
     await page.getByTestId("add-case").click();
     await page.getByTestId("case-question").fill("How long is each backup kept?");
     await page.getByTestId("case-phrases").fill("35 days");
@@ -592,7 +657,7 @@ test.describe.serial("Studio", () => {
   });
 
   test("fix loop: teach the right answer, check a source, ask again and keep it fixed", async () => {
-    await page.goto("/assistants/ops-helper?tab=test");
+    await page.goto("/admin/assistants/ops-helper?tab=test");
     await page.getByTestId("test-input").fill("How long is each backup kept?");
     await page.getByTestId("test-send").click();
     const log = page.getByTestId("test-chat-log");
@@ -619,7 +684,7 @@ test.describe.serial("Studio", () => {
   });
 
   test("safe publish: a gated version is released only after it passes its evaluation", async () => {
-    await page.goto("/assistants/ops-helper?tab=quality");
+    await page.goto("/admin/assistants/ops-helper?tab=quality");
     await page.getByTestId("gate-enabled").click();
     await pick(page, "Test set", /ops-checks/);
     await page.getByLabel("Pass at least (%)").fill("0");
@@ -645,27 +710,27 @@ test.describe.serial("Studio", () => {
   });
 
   test("knowledge: delete shows the impact first", async () => {
-    await page.goto("/knowledge");
+    await page.goto("/admin/knowledge");
     await page.getByTestId("collection-product-docs").click();
     await page.getByRole("button", { name: "Delete: product-docs" }).click();
     const dialog = page.getByRole("alertdialog");
     await expect(dialog).toContainText("3 documents"); // two files and the reviewed answer
     await expect(dialog).toContainText("2 connected sources");
     await dialog.getByTestId("confirm-delete-collection").click();
-    await page.waitForURL(/\/knowledge$/);
+    await page.waitForURL(/\/admin\/knowledge$/);
     await expect(page.getByRole("heading", { name: "Add your first collection" })).toBeVisible();
   });
 
   test("command palette navigates from the keyboard", async () => {
-    await page.goto("/");
+    await page.goto("/admin");
     await openPalette(page);
     await page.keyboard.type("Audit log");
     await page.keyboard.press("Enter");
-    await page.waitForURL(/settings\/audit$/);
+    await page.waitForURL(/admin\/audit$/);
   });
 
   test("sidebar explains each section in a tooltip, and every section is live", async () => {
-    await page.goto("/");
+    await page.goto("/admin");
     await expect(page.getByRole("link", { name: /Conversations/ }).first()).not.toContainText("Soon");
     await expect(page.getByRole("link", { name: /Insights/ }).first()).not.toContainText("Soon");
     await expect(page.getByRole("link", { name: /Assistants/ }).first()).not.toContainText("Soon");
@@ -675,7 +740,7 @@ test.describe.serial("Studio", () => {
   });
 
   test("help dialog lists keyboard shortcuts", async () => {
-    await page.goto("/");
+    await page.goto("/admin");
     await page.getByRole("button", { name: /Help & shortcuts/ }).click();
     const dialog = page.getByRole("dialog", { name: "Keyboard shortcuts" });
     await expect(dialog).toContainText("Open the command palette");
@@ -685,23 +750,23 @@ test.describe.serial("Studio", () => {
   });
 
   test("Arabic switches the whole UI to right-to-left", async () => {
-    await page.goto("/");
+    await page.goto("/admin");
     await openPalette(page);
     await page.keyboard.type("العربية");
     await page.keyboard.press("Enter");
     await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
     await expect(page.locator("html")).toHaveAttribute("lang", "ar");
-    await expect(page.getByRole("link", { name: "الرئيسية" }).first()).toBeVisible();
-    await a11y(page, "home (ar)");
-    await page.goto("/knowledge");
+    await expect(page.getByRole("link", { name: "نظرة عامة" }).first()).toBeVisible();
+    await a11y(page, "admin overview (ar)");
+    await page.goto("/admin/knowledge");
     await expect(page.getByRole("heading", { name: "المعرفة" })).toBeVisible();
     await a11y(page, "knowledge (ar)");
-    await page.goto("/playground");
+    await page.goto("/admin/playground");
     await a11y(page, "playground (ar)");
-    await page.goto("/assistants");
+    await page.goto("/admin/assistants");
     await expect(page.getByRole("heading", { name: "المساعدون" })).toBeVisible();
     await a11y(page, "assistants (ar)");
-    await page.goto(`/domain-packs/${PACK}?tab=widget`);
+    await page.goto(`/admin/domain-packs/${PACK}?tab=widget`);
     await a11y(page, "pack widget (ar)");
     await openPalette(page);
     await page.keyboard.type("English");

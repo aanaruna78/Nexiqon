@@ -10,6 +10,9 @@ import httpx
 from nexiqon_core.service_auth import ServiceTokens
 from nexiqon_core.tenancy import CONTEXT_HEADER
 
+# The text of a model profile check (one short embedding); test doubles recognise it.
+PROFILE_CHECK_TEXT = "Nexiqon model profile check"
+
 
 class PermanentError(Exception):
     """Retrying will not help (bad input, refused by policy). ``code`` is shown to users."""
@@ -85,6 +88,10 @@ class Embedder(ServiceClient):
                 "classification": classification,
             },
         )
+        if response.status_code == 502 and "no API key" in _problem(response):
+            # The profile's provider has no credentials: retrying cannot help; the fix is a
+            # different model profile or an administrator adding the key.
+            raise PermanentError("model_not_configured", _problem(response))
         _raise_for(response, "embedding_failed")
         body = response.json()
         return body["vectors"], str(body["route"]["model"])

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import time
 import uuid
 from contextlib import suppress
 from datetime import UTC, datetime
@@ -19,6 +20,7 @@ from nexiqon_core.blobs import tenant_key
 from nexiqon_core.errors import BadRequest, Conflict, NexiqonError, NotFound, ServiceUnavailable
 from nexiqon_core.tenancy import TenantContext, require_current_context
 from nexiqon_core.workflows import TenantScope, workflow_id
+from nexiqon_ingestion.clients import PROFILE_CHECK_TEXT, PermanentError, TransientError
 from nexiqon_ingestion.downloads import DownloadSigner
 from nexiqon_ingestion.models import Collection, Document, Run, Source
 from nexiqon_ingestion.pipeline import Pipeline
@@ -141,9 +143,78 @@ def _collection_out(c: Collection, documents: int = 0) -> CollectionOut:
     )
 
 
+class ProfileCheckIn(BaseModel):
+    classification: Classification = "internal"
+
+
+class ProfileCheckOut(BaseModel):
+    profile: str
+    ok: bool
+    code: str | None = None
+    detail: str | None = None
+
+
+# (tenant, profile, classification) -> (expires at, result). Only a working profile is remembered
+# (two minutes); a failing one is checked again each time, so a newly added key works at once.
+_CHECKS: dict[tuple[uuid.UUID, str, str], tuple[float, ProfileCheckOut]] = {}
+
+
+async def check_model_profile(
+    request: Request, ctx: TenantContext, profile: str, classification: str
+) -> ProfileCheckOut:
+    """Can this model profile embed content of this classification for this tenant right now?
+    Answers with one short embedding through the model gateway, as the documents will."""
+    key = (ctx.tenant_id, profile, classification)
+    now = time.monotonic()
+    cached = _CHECKS.get(key)
+    if cached and cached[0] > now:
+        return cached[1]
+    try:
+        await _pipeline(request).d.embedder.embed(
+            ctx.tenant_id, profile, classification, [PROFILE_CHECK_TEXT]
+        )
+        result = ProfileCheckOut(profile=profile, ok=True)
+    except PermanentError as exc:
+        result = ProfileCheckOut(profile=profile, ok=False, code=exc.code, detail=exc.detail)
+    except TransientError as exc:
+        result = ProfileCheckOut(
+            profile=profile, ok=False, code="temporarily_unavailable", detail=str(exc)[:300]
+        )
+    if result.ok:
+        _CHECKS[key] = (now + 120, result)
+    return result
+
+
+@tenant_router.post("/model-profiles/{profile}/check", response_model=ProfileCheckOut)
+async def check_profile(
+    profile: Annotated[str, Field(pattern=NAME)],
+    body: ProfileCheckIn,
+    request: Request,
+    ctx: Ctx,
+) -> ProfileCheckOut:
+    """Whether documents could be indexed with this model profile now, and if not, why (for
+    example: its provider has no API key). Studio checks the profile before it is chosen."""
+    await _allow(request, "ingestion.collections.write", "collection")
+    return await check_model_profile(request, ctx, profile, body.classification)
+
+
+async def _require_usable_profile(
+    request: Request, ctx: TenantContext, profile: str, classification: str
+) -> None:
+    """Refuse a profile that cannot work at all (no credentials, refused for this data), so a
+    collection never starts in a state where every document fails. Outages do not block."""
+    result = await check_model_profile(request, ctx, profile, classification)
+    if not result.ok and result.code in ("model_not_configured", "embedding_failed"):
+        raise BadRequest(
+            f"The model profile {profile!r} cannot be used: {result.detail}. "
+            "Choose another model profile."
+        )
+
+
 @tenant_router.post("/collections", response_model=CollectionOut, status_code=201)
 async def create_collection(body: CollectionIn, request: Request, ctx: Ctx) -> CollectionOut:
     await _allow(request, "ingestion.collections.write", "collection")
+    await _require_usable_profile(request, ctx, body.model_profile, body.classification)
     try:
         async with _pipeline(request).d.db.session(ctx) as s:
             c = Collection(tenant_id=ctx.tenant_id, created_by=ctx.actor_id, **body.model_dump())
@@ -225,6 +296,14 @@ async def update_collection(
     """Changing the model profile, classification or access groups reindexes the collection."""
     await _allow(request, "ingestion.collections.write", "collection", collection_id)
     changes = body.model_dump(exclude_none=True)
+    if "model_profile" in changes or "classification" in changes:
+        current = await _get_collection(request, ctx, collection_id)
+        await _require_usable_profile(
+            request,
+            ctx,
+            changes.get("model_profile", current.model_profile),
+            changes.get("classification", current.classification),
+        )
     async with _pipeline(request).d.db.session(ctx) as s:
         c = await s.get(Collection, collection_id)
         if c is None:

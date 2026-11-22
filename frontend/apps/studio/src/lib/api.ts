@@ -70,3 +70,16 @@ export async function postJson<T>(url: string, json: unknown): Promise<T> {
   if (!response.ok) throw new ApiError(response.status, await response.json().catch(() => ({})));
   return (await response.json()) as T;
 }
+
+/** A POST answered with server-sent events (``service/v1/...``), routed like ``api`` (split origin). */
+export async function apiStream(path: string, json: unknown): Promise<ReadableStream<Uint8Array>> {
+  const route = routeFor(path, dataOrigin());
+  const response = await fetch(route.url, {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "text/event-stream", "x-nexiqon-csrf": "1" },
+    body: JSON.stringify(json),
+    credentials: route.crossOrigin ? "include" : "same-origin",
+  });
+  if (!response.ok || !response.body) throw new ApiError(response.status, (await response.json().catch(() => ({}))) as Problem);
+  return response.body;
+}

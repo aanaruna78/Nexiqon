@@ -248,6 +248,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/model-profiles/{profile}/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check Profile
+         * @description Whether documents could be indexed with this model profile now, and if not, why (for
+         *     example: its provider has no API key). Studio checks the profile before it is chosen.
+         */
+        post: operations["check_profile_v1_model_profiles__profile__check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/plugins": {
         parameters: {
             query?: never;
@@ -526,6 +547,26 @@ export interface components {
          * @enum {string}
          */
         PluginKind: "connector" | "parser" | "chunker" | "evaluator";
+        /** ProfileCheckIn */
+        ProfileCheckIn: {
+            /**
+             * Classification
+             * @default internal
+             * @enum {string}
+             */
+            classification: "public" | "internal" | "confidential" | "restricted";
+        };
+        /** ProfileCheckOut */
+        ProfileCheckOut: {
+            /** Code */
+            code?: string | null;
+            /** Detail */
+            detail?: string | null;
+            /** Ok */
+            ok: boolean;
+            /** Profile */
+            profile: string;
+        };
         /** RunOut */
         RunOut: {
             /**
@@ -1239,6 +1280,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_profile_v1_model_profiles__profile__check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                profile: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileCheckIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileCheckOut"];
                 };
             };
             /** @description Validation Error */

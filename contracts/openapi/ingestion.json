@@ -511,6 +511,63 @@
         "title": "PluginKind",
         "type": "string"
       },
+      "ProfileCheckIn": {
+        "properties": {
+          "classification": {
+            "default": "internal",
+            "enum": [
+              "public",
+              "internal",
+              "confidential",
+              "restricted"
+            ],
+            "title": "Classification",
+            "type": "string"
+          }
+        },
+        "title": "ProfileCheckIn",
+        "type": "object"
+      },
+      "ProfileCheckOut": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "profile": {
+            "title": "Profile",
+            "type": "string"
+          }
+        },
+        "required": [
+          "profile",
+          "ok"
+        ],
+        "title": "ProfileCheckOut",
+        "type": "object"
+      },
       "RunOut": {
         "properties": {
           "collection_id": {
@@ -1766,6 +1823,60 @@
           }
         },
         "summary": "Download",
+        "tags": [
+          "ingestion"
+        ]
+      }
+    },
+    "/v1/model-profiles/{profile}/check": {
+      "post": {
+        "description": "Whether documents could be indexed with this model profile now, and if not, why (for\nexample: its provider has no API key). Studio checks the profile before it is chosen.",
+        "operationId": "check_profile_v1_model_profiles__profile__check_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "profile",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+              "title": "Profile",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileCheckIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileCheckOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Check Profile",
         "tags": [
           "ingestion"
         ]

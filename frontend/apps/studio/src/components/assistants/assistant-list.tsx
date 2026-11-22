@@ -60,7 +60,7 @@ export function AssistantList() {
           tone="violet"
           title={t("needPack")}
           body={t("needPackBody")}
-          action={<Button asChild><Link href="/domain-packs">{t("goToPacks")}</Link></Button>}
+          action={<Button asChild><Link href="/admin/domain-packs">{t("goToPacks")}</Link></Button>}
         />
       ) : !list.length ? (
         <EmptyState icon={Bot} tone="violet" title={t("empty")} body={t("emptyBody")} action={<CreateAssistant packs={deployedPacks} />} />
@@ -81,7 +81,7 @@ function AssistantCard({ object, spec }: { object: ConfigObject; spec?: AgentSpe
   const t = useTranslations("assistants");
   const state = releaseState(object);
   return (
-    <Link href={`/assistants/${object.name}`} className="nx-card nx-lift flex h-full flex-col gap-3 p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+    <Link href={`/admin/assistants/${object.name}`} className="nx-card nx-lift flex h-full flex-col gap-3 p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
       <div className="flex items-start gap-3">
         <IconTile icon={Bot} tone="violet" />
         <div className="min-w-0 flex-1">
@@ -134,7 +134,7 @@ function CreateAssistant({ packs }: { packs: ConfigObject[] }) {
       toast.success(t("created", { name: display }));
       await client.invalidateQueries({ queryKey: ["objects", "agent"] });
       setOpen(false);
-      router.push(`/assistants/${slug}?tab=test`);
+      router.push(`/admin/assistants/${slug}?tab=test`);
     },
     onError,
   });

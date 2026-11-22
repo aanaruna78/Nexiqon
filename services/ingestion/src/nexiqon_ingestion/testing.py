@@ -11,6 +11,7 @@ from typing import Any, ClassVar
 import httpx
 
 from nexiqon_core.scanning import ScanResult
+from nexiqon_ingestion.clients import PROFILE_CHECK_TEXT
 from nexiqon_sdk import Content, Item, Manifest, PluginKind
 
 EICAR = b"X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"
@@ -40,7 +41,10 @@ class FakeModelGateway:
 
     def __init__(self) -> None:
         self.calls: list[dict[str, Any]] = []
+        self.checks: list[dict[str, Any]] = []  # model profile checks (kept apart from documents)
         self.fail_next: list[int] = []  # HTTP statuses to return before succeeding
+        self.unconfigured: set[str] = set()  # profiles whose provider has no API key
+        self.refuse_restricted_cloud = True  # the gateway's classification floor
         self.hold: asyncio.Event | None = None  # block calls until set (simulates a slow model)
         self.waiting = 0
 
@@ -49,10 +53,19 @@ class FakeModelGateway:
         if self.hold is not None:
             self.waiting += 1
             await self.hold.wait()
-        self.calls.append(body)
-        if self.fail_next:
-            return httpx.Response(self.fail_next.pop(0), json={"detail": "unavailable"})
-        if body.get("classification") == "restricted" and body["profile"] == "cloud-frontier":
+        if body.get("inputs") == [PROFILE_CHECK_TEXT]:
+            self.checks.append(body)
+        else:
+            self.calls.append(body)
+            if self.fail_next:
+                return httpx.Response(self.fail_next.pop(0), json={"detail": "unavailable"})
+        if body["profile"] in self.unconfigured:
+            return httpx.Response(502, json={"detail": "openai: no API key configured"})
+        if (
+            self.refuse_restricted_cloud
+            and body.get("classification") == "restricted"
+            and body["profile"] == "cloud-frontier"
+        ):
             return httpx.Response(
                 403, json={"detail": "restricted data may not be sent to cloud model profile"}
             )

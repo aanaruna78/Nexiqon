@@ -45,18 +45,18 @@ export function TestSetDetail({ id }: { id: string }) {
   return (
     <div className="space-y-8">
       <Button asChild variant="ghost" size="sm" className="-ms-2">
-        <Link href="/evaluations"><ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />{t("all")}</Link>
+        <Link href="/admin/evaluations"><ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />{t("all")}</Link>
       </Button>
       <PageHeader title={set.data.name} description={set.data.description || t("setSubtitle", { count: set.data.case_count })} icon={ListChecks} tone="amber" />
-      <RunLauncher set={set.data} onStarted={(runId) => router.replace(`/evaluations/${id}?run=${runId}`)} />
+      <RunLauncher set={set.data} onStarted={(runId) => router.replace(`/admin/evaluations/${id}?run=${runId}`)} />
       {runs.data?.length ? (
         <section aria-labelledby="set-runs" className="space-y-3">
           <h2 id="set-runs" className="font-semibold">{t("runs")}</h2>
-          <RunList runs={runs.data} sets={[set.data]} onOpen={(runId) => router.replace(`/evaluations/${id}?run=${runId}`)} />
+          <RunList runs={runs.data} sets={[set.data]} onOpen={(runId) => router.replace(`/admin/evaluations/${id}?run=${runId}`)} />
         </section>
       ) : null}
       <CasesEditor set={set.data} />
-      <RunSheet runId={openRun} onClose={() => router.replace(`/evaluations/${id}`)} />
+      <RunSheet runId={openRun} onClose={() => router.replace(`/admin/evaluations/${id}`)} />
     </div>
   );
 }

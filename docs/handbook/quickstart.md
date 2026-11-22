@@ -1,8 +1,16 @@
 # Quickstart
 
 This takes you from an empty organization to an assistant that answers questions on your website,
-with citations. It takes about fifteen minutes. Studio's **Get started** page walks you through the
-same four steps.
+with citations. It takes about fifteen minutes.
+
+**Where things are in Studio:**
+
+- **The home page is the assistant.** Everyone in your organization lands there: they pick an
+  assistant, ask, and get answers with their sources. Past chats are listed on the left.
+- **Admin** (top right; for owners, admins and editors) is where you build and run assistants
+  and administer the organization. The steps below all happen there, and **Admin → Get started**
+  walks you through the same four steps.
+- **Settings** (the account menu) holds your own preferences: theme and language.
 
 ## 1. Choose what your assistant is for
 
@@ -69,6 +77,8 @@ meets WCAG 2.2 AA.
 
 - **Release safely.** Changes are saved as drafts and released as versions. With **Safe publish**
   (the assistant's **Quality** tab), a version goes live only after it passes its test set.
+- **Ask it yourself.** Open the home page, pick the assistant and ask. Admins can open
+  **Inspect** on any answer.
 - **Review conversations.** **Conversations** shows what people asked. Handed-over conversations
   wait in a queue for your team.
 - **Watch quality and cost.** **Insights** shows the answer rate, content gaps (questions to write

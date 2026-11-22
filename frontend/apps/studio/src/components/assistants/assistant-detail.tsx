@@ -55,7 +55,7 @@ export function AssistantDetail({ name }: { name: string }) {
   return (
     <div className="space-y-6">
       <Button asChild variant="ghost" size="sm" className="-ms-2">
-        <Link href="/assistants"><ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />{t("all")}</Link>
+        <Link href="/admin/assistants"><ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />{t("all")}</Link>
       </Button>
       <PageHeader
         title={spec.display_name}
@@ -69,29 +69,29 @@ export function AssistantDetail({ name }: { name: string }) {
           </div>
         }
       />
-      <Tabs value={tab} onValueChange={(v) => router.replace(`/assistants/${name}?tab=${v}`)}>
+      <Tabs value={tab} onValueChange={(v) => router.replace(`/admin/assistants/${name}?tab=${v}`)}>
         <TabsList className="flex-wrap">
           {TABS.map((k) => (
             <TabsTrigger key={k} value={k} data-testid={`tab-${k}`}>{t(`tabs.${k}`)}</TabsTrigger>
           ))}
         </TabsList>
         <TabsContent value="setup" className="pt-4">
-          <SetupForm key={`${latest}-${version.dataUpdatedAt}`} object={object.data} spec={spec} onSaved={() => router.replace(`/assistants/${name}?tab=versions`)} />
+          <SetupForm key={`${latest}-${version.dataUpdatedAt}`} object={object.data} spec={spec} onSaved={() => router.replace(`/admin/assistants/${name}?tab=versions`)} />
         </TabsContent>
         <TabsContent value="test" className="pt-4">
           <TestChat agent={name} liveVersion={state.live} versions={object.data.versions} />
         </TabsContent>
         <TabsContent value="widget" className="pt-4">
-          <WidgetTab name={name} spec={spec} onSaved={() => router.replace(`/assistants/${name}?tab=versions`)} />
+          <WidgetTab name={name} spec={spec} onSaved={() => router.replace(`/admin/assistants/${name}?tab=versions`)} />
         </TabsContent>
         <TabsContent value="access" className="pt-4">
           <ViewAs collections={spec.knowledge?.collections ?? []} retrievalProfile={spec.retrieval_profile} modelProfile={spec.model_profile} />
         </TabsContent>
         <TabsContent value="quality" className="pt-4">
-          <QualityTab object={object.data} spec={spec} onSaved={() => router.replace(`/assistants/${name}?tab=quality`)} />
+          <QualityTab object={object.data} spec={spec} onSaved={() => router.replace(`/admin/assistants/${name}?tab=quality`)} />
         </TabsContent>
         <TabsContent value="versions" className="pt-4">
-          <VersionsPanel kind="agent" object={object.data} qualityHref={`/assistants/${name}?tab=quality`} />
+          <VersionsPanel kind="agent" object={object.data} qualityHref={`/admin/assistants/${name}?tab=quality`} />
         </TabsContent>
         <TabsContent value="workflow" className="pt-4">
           <Workflow name={name} pack={spec.pack.name} />
@@ -118,7 +118,7 @@ function Workflow({ name, pack }: { name: string; pack: string }) {
       <p className="text-sm text-muted-foreground">{t("workflowHelp")}</p>
       <GraphView graph={resolved.data.graph as Graph} />
       <Button asChild variant="outline" size="sm">
-        <Link href={`/domain-packs/${pack}?tab=workflow`}>{t("editInPack")}</Link>
+        <Link href={`/admin/domain-packs/${pack}?tab=workflow`}>{t("editInPack")}</Link>
       </Button>
     </div>
   );
@@ -219,7 +219,7 @@ function SetupForm({ object, spec: initial, onSaved }: { object: ConfigObject; s
           {(tools.data ?? []).map((tool) => (
             <ToolChoice key={tool.name} tool={tool} checked={allowed.includes(tool.name)} onChange={(on) => set({ tools: on ? [...allowed, tool.name] : allowed.filter((x) => x !== tool.name) })} />
           ))}
-          {!tools.data?.length ? <li className="text-sm text-muted-foreground">{t("noTools")} <Link className="underline" href="/actions">{t("goToActions")}</Link></li> : null}
+          {!tools.data?.length ? <li className="text-sm text-muted-foreground">{t("noTools")} <Link className="underline" href="/admin/actions">{t("goToActions")}</Link></li> : null}
         </ul>
       </section>
 

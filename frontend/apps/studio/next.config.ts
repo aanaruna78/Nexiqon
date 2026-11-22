@@ -20,6 +20,22 @@ const nextConfig: NextConfig = {
       "*.css": { loaders: ["@tailwindcss/turbopack"], as: "*.css" },
     },
   },
+  // The pages that moved when the chat became the home page (Admin and personal Settings split):
+  // old links and bookmarks keep working.
+  async redirects() {
+    const pages = ["assistants", "knowledge", "playground", "conversations", "insights", "evaluations", "domain-packs", "actions", "get-started"];
+    const settings = ["members", "api-keys", "audit", "configuration", "models", "organization", "webhooks"];
+    return [
+      ...pages.flatMap((p) => [
+        { source: `/${p}`, destination: `/admin/${p}`, permanent: true },
+        { source: `/${p}/:path*`, destination: `/admin/${p}/:path*`, permanent: true },
+      ]),
+      ...settings.flatMap((p) => [
+        { source: `/settings/${p}`, destination: `/admin/${p}`, permanent: true },
+        { source: `/settings/${p}/:path*`, destination: `/admin/${p}/:path*`, permanent: true },
+      ]),
+    ];
+  },
   async headers() {
     return [
       {

@@ -8,7 +8,9 @@ import {
   errorHintKey,
   formatBytes,
   highlight,
+  type KnowledgeDocument,
   type PluginManifest,
+  progressOf,
   type Run,
   runProgress,
   uploadRules,
@@ -98,5 +100,28 @@ describe("knowledge helpers", () => {
   it("slugifies collection names", () => {
     expect(slugify("Product Docs (EU)")).toBe("product-docs-eu");
     expect(slugify("--Ünïcode--")).toBe("unicode");
+  });
+});
+
+describe("processing progress", () => {
+  const doc = (id: string, status: KnowledgeDocument["status"]) => ({ id, status }) as KnowledgeDocument;
+  const run = (over: Partial<Run>) =>
+    ({ status: "running", started_at: "2026-11-22T10:00:00Z", processed: 0, unchanged: 0, failed: 0, quarantined: 0, ...over }) as Run;
+  const now = new Date("2026-11-22T10:01:00Z");
+
+  it("counts ready, busy and failed documents and the finished share", () => {
+    const p = progressOf([doc("a", "ready"), doc("b", "processing"), doc("c", "pending"), doc("d", "failed"), doc("e", "deleted")], [], now);
+    expect([p.total, p.ready, p.busy, p.attention, p.fraction]).toEqual([4, 1, 2, 1, 0.5]);
+  });
+
+  it("estimates the time left from the active runs' throughput", () => {
+    // 6 finished in 60 s (0.1 a second): 3 left take about 30 s.
+    const p = progressOf([doc("a", "ready"), doc("b", "pending"), doc("c", "pending"), doc("d", "processing")], [run({ processed: 5, failed: 1 })], now);
+    expect(p.etaSeconds).toBe(30);
+  });
+
+  it("does not guess before anything has finished, and is done when nothing is busy", () => {
+    expect(progressOf([doc("a", "pending")], [run({})], now).etaSeconds).toBeNull();
+    expect(progressOf([doc("a", "ready")], [], now).etaSeconds).toBe(0);
   });
 });

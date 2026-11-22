@@ -76,7 +76,7 @@ export function ConfigurationPage() {
                 <li key={k.kind} className="shrink-0">
                   <button
                     type="button"
-                    onClick={() => router.replace(`/settings/configuration?kind=${k.kind}`)}
+                    onClick={() => router.replace(`/admin/configuration?kind=${k.kind}`)}
                     aria-current={k.kind === kind ? "true" : undefined}
                     className={cn(
                       "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-sm transition-colors hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -102,7 +102,7 @@ export function ConfigurationPage() {
             </div>
             {kind ? (
               <Button asChild size="sm">
-                <Link href={`/settings/configuration/${kind}/new`}>
+                <Link href={`/admin/configuration/${kind}/new`}>
                   <Plus className="size-4" aria-hidden="true" />
                   {t("newObject", { kind: info?.title ?? kind })}
                 </Link>
@@ -117,7 +117,7 @@ export function ConfigurationPage() {
               body={info?.description}
               action={
                 <Button asChild size="sm">
-                  <Link href={`/settings/configuration/${kind}/new`}>
+                  <Link href={`/admin/configuration/${kind}/new`}>
                     <Plus className="size-4" aria-hidden="true" />
                     {t("newObject", { kind: info?.title ?? kind })}
                   </Link>
@@ -131,7 +131,7 @@ export function ConfigurationPage() {
                 const live = Object.entries(o.deployments);
                 return (
                   <li key={o.name}>
-                    <Link href={`/settings/configuration/${o.kind}/${o.name}`} className="nx-card nx-lift flex flex-wrap items-center gap-3 px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <Link href={`/admin/configuration/${o.kind}/${o.name}`} className="nx-card nx-lift flex flex-wrap items-center gap-3 px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring">
                       <span className="flex-1 font-medium" dir="ltr">{o.name}</span>
                       {latest ? <StatusBadge tone={latest.status === "published" ? "navy" : "amber"}>v{latest.version} · {t(`statuses.${latest.status}`)}</StatusBadge> : null}
                       {live.length ? live.map(([env, v]) => <StatusBadge key={env} tone="teal" live>{env} v{v}</StatusBadge>) : (

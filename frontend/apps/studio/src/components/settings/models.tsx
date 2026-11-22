@@ -116,7 +116,7 @@ function ProfileCard({ entry, usedBy }: { entry: ProfileEntry; usedBy: string[] 
       <p className="text-xs text-muted-foreground">{usedBy.length ? t("usedBy", { names: usedBy.join(", ") }) : t("unused")}</p>
       <div className="mt-auto">
         <Button asChild variant="outline" size="sm">
-          <Link href={builtin ? "/settings/configuration/model_profile/new" : `/settings/configuration/model_profile/${entry.name}`}>{builtin ? t("customise") : t("edit")}</Link>
+          <Link href={builtin ? "/admin/configuration/model_profile/new" : `/admin/configuration/model_profile/${entry.name}`}>{builtin ? t("customise") : t("edit")}</Link>
         </Button>
       </div>
     </li>

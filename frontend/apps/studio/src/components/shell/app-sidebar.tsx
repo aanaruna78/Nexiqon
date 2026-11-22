@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronsUpDown, CircleHelp, Languages, LogOut, Monitor, Moon, Plus, Search, Sun, Check } from "lucide-react";
+import { ChevronsUpDown, CircleHelp, Languages, LogOut, MessageSquare, Monitor, Moon, Plus, Search, Settings, Sun, Check } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -135,6 +135,22 @@ export function AppSidebar({
               <kbd aria-hidden="true" className="ms-auto rounded border border-sidebar-border px-1 font-mono text-[10px] opacity-80 group-data-[collapsible=icon]:hidden">
                 ⌘K
               </kbd>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+
+        {/* Back to the assistant (the home page for everyone) */}
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              tooltip={{ children: t("workspace.openAssistant"), side, hidden: !collapsed }}
+              className="h-9 bg-[#2bb3a3]/15 font-medium text-sidebar-foreground hover:bg-[#2bb3a3]/25"
+            >
+              <Link href="/" data-testid="open-assistant">
+                <MessageSquare aria-hidden="true" />
+                <span>{t("workspace.openAssistant")}</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -274,6 +290,13 @@ export function AppSidebar({
                 </DropdownMenuTrigger>
               </Hint>
               <DropdownMenuContent className="w-60" side="top" align="start">
+                <DropdownMenuItem asChild>
+                  <Link href="/" data-testid="assistant-link"><MessageSquare className="size-4" aria-hidden="true" />{t("workspace.assistant")}</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/settings"><Settings className="size-4" aria-hidden="true" />{t("workspace.settings")}</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
                     <Sun className="size-4" aria-hidden="true" />

@@ -239,7 +239,15 @@ async def test_http_errors_are_classified(status: int, retryable: bool) -> None:
 
 async def test_missing_keys_fail_before_any_request() -> None:
     seen: list[httpx.Request] = []
-    for adapter in (Anthropic(None, client({}, seen)), Gemini(None, client({}, seen))):
+    adapters = (
+        Anthropic(None, client({}, seen)),
+        Gemini(None, client({}, seen)),
+        OpenAICompatible("openai", None, client({}, seen)),
+    )
+    for adapter in adapters:
         with pytest.raises(ProviderError, match="no API key"):
             await adapter.chat(ChatCall(model="m", messages=[Message(role="user", content="x")]))
+    hosted = OpenAICompatible("openai", None, client({}, seen))
+    with pytest.raises(ProviderError, match="no API key"):
+        await hosted.embed(EmbedCall(model="m", inputs=["x"], dimensions=8))
     assert seen == []

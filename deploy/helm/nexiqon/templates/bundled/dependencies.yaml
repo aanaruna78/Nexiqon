@@ -82,6 +82,7 @@ spec:
       containers:
         - name: postgres
           image: {{ $b.postgres.image }}
+          args: ["-c", "max_connections=300"]   # every service pool plus Temporal's
           env:
             - { name: POSTGRES_DB, value: {{ $b.postgres.database | quote }} }
             - { name: POSTGRES_USER, value: nexiqon }
@@ -162,7 +163,7 @@ spec:
   ports:
     - { name: s3, port: 8333, targetPort: s3 }
 ---
-{{ include "nexiqon.bundled.simple" (list . "temporal" $b.temporal.image (list (dict "name" "grpc" "port" 7233)) nil (list (dict "name" "DB" "value" "postgres12") (dict "name" "DB_PORT" "value" "5432") (dict "name" "POSTGRES_USER" "value" "nexiqon") (dict "name" "POSTGRES_PWD" "value" $b.postgres.ownerPassword) (dict "name" "POSTGRES_SEEDS" "value" "postgres"))) }}
+{{ include "nexiqon.bundled.simple" (list . "temporal" $b.temporal.image (list (dict "name" "grpc" "port" 7233)) nil (list (dict "name" "DB" "value" "postgres12") (dict "name" "DB_PORT" "value" "5432") (dict "name" "POSTGRES_USER" "value" "nexiqon") (dict "name" "POSTGRES_PWD" "value" $b.postgres.ownerPassword) (dict "name" "POSTGRES_SEEDS" "value" "postgres") (dict "name" "SQL_MAX_CONNS" "value" "10") (dict "name" "SQL_MAX_IDLE_CONNS" "value" "5"))) }}
 {{- if $b.keycloak.enabled }}
 ---
 apiVersion: apps/v1

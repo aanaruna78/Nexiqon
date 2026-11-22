@@ -60,6 +60,9 @@ class OpenAICompatible:
         return base_url.rstrip("/")
 
     def _headers(self) -> dict[str, str]:
+        if self.name == "openai" and not self._key:
+            # Hosted OpenAI always needs a key: say so at once instead of sending the request.
+            raise ProviderError(self.name, "no API key configured")
         return {"Authorization": f"Bearer {self._key}"} if self._key else {}
 
     def _request(self, call: ChatCall) -> tuple[str, dict[str, Any], dict[str, str]]:

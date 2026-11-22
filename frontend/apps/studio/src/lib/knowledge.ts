@@ -169,6 +169,7 @@ export function runProgress(run: Run): { done: number; total: number; ratio: num
 
 /** Error codes with a written fix hint (messages: knowledge.errorHints.<code>). */
 export const KNOWN_ERRORS = [
+  "model_not_configured",
   "unsupported_type",
   "parse_failed",
   "empty_document",
@@ -256,4 +257,43 @@ export function answerParts(answer: string): ({ text: string } | { marker: strin
 
 export function isWebUri(uri: string | null): uri is string {
   return !!uri && /^https?:\/\//.test(uri);
+}
+
+// ------------------------------------------------------------------ progress
+
+export interface Progress {
+  total: number;
+  ready: number;
+  busy: number; // waiting or being processed
+  attention: number; // failed or quarantined
+  fraction: number; // finished (ready or needing attention) out of total, 0..1
+  etaSeconds: number | null; // null: not enough to estimate yet
+}
+
+/**
+ * Where a collection's documents stand, and roughly how long the rest will take: the active runs'
+ * throughput so far (items finished per second since they started) applied to what is left.
+ */
+export function progressOf(docs: KnowledgeDocument[], runs: Run[], now: Date): Progress {
+  const live = docs.filter((d) => d.status !== "deleted");
+  const ready = live.filter((d) => d.status === "ready").length;
+  const busy = live.filter((d) => isBusy(d.status)).length;
+  const attention = live.filter((d) => d.status === "failed" || d.status === "quarantined").length;
+  const total = live.length;
+  let finished = 0;
+  let seconds = 0;
+  for (const r of runs) {
+    if (r.status !== "running" || !r.started_at) continue;
+    finished += r.processed + r.unchanged + r.failed + r.quarantined;
+    seconds = Math.max(seconds, (now.getTime() - new Date(r.started_at).getTime()) / 1000);
+  }
+  const rate = finished > 0 && seconds > 0 ? finished / seconds : 0;
+  return {
+    total,
+    ready,
+    busy,
+    attention,
+    fraction: total ? (ready + attention) / total : 0,
+    etaSeconds: busy && rate ? Math.ceil(busy / rate) : busy ? null : 0,
+  };
 }

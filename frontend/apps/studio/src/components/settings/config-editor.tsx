@@ -112,7 +112,7 @@ function EditorBody({ kind, name, info, object, initialSpec }: { kind: string; n
     },
     onSuccess: async ({ version }) => {
       toast.success(isNew ? t("created", { name: newName }) : t("draftSaved", { version }));
-      if (isNew) router.replace(`/settings/configuration/${kind}/${newName}`);
+      if (isNew) router.replace(`/admin/configuration/${kind}/${newName}`);
       else await refresh();
     },
     onError: handle,

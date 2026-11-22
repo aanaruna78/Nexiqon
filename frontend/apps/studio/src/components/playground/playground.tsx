@@ -82,7 +82,7 @@ export function Playground() {
           tone="amber"
           title={t("noCollections")}
           body={t("noCollectionsBody")}
-          action={<Button asChild><Link href="/knowledge">{t("goToKnowledge")}</Link></Button>}
+          action={<Button asChild><Link href="/admin/knowledge">{t("goToKnowledge")}</Link></Button>}
         />
       </div>
     );
@@ -355,7 +355,7 @@ function SourcePreview({ passage: p, query, onClose }: { passage: Passage | null
                 ) : null}
                 {p.source_uri?.startsWith("upload://") ? <DownloadOriginal documentId={p.document_id} /> : null}
                 <Button asChild variant="outline" size="sm">
-                  <Link href={`/knowledge/${p.collection_id}`}>
+                  <Link href={`/admin/knowledge/${p.collection_id}`}>
                     <BookOpenText className="size-3.5" aria-hidden="true" />
                     {t("openCollection")}
                   </Link>

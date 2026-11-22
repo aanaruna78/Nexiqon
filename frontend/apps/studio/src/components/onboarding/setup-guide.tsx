@@ -9,7 +9,7 @@ import { toast } from "sonner";
 
 import { TestChat } from "@/components/assistants/test-chat";
 import { WidgetKeys } from "@/components/assistants/widget-settings";
-import { ProfileSelect } from "@/components/knowledge/profile-select";
+import { ProfileCheckNote, ProfileSelect, useProfileBlocked } from "@/components/knowledge/profile-select";
 import { UploadZone } from "@/components/knowledge/upload-zone";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -56,7 +56,7 @@ export function SetupGuide() {
   const go = (patch: Record<string, string>) => {
     const next = new URLSearchParams(params.toString());
     for (const [k, v] of Object.entries(patch)) next.set(k, v);
-    router.replace(`/get-started?${next.toString()}`);
+    router.replace(`/admin/get-started?${next.toString()}`);
   };
 
   const collections = useCollections();
@@ -151,6 +151,7 @@ function AddKnowledge({ collections, chosen, ready, onChosen }: { collections: C
   const onError = useErrorToast();
   const [name, setName] = useState("product-docs");
   const [model, setModel] = useState("cloud-frontier");
+  const modelBlocked = useProfileBlocked(model, "internal");
   const [retrieval, setRetrieval] = useState("standard");
   const [site, setSite] = useState("");
   const create = useMutation({
@@ -198,13 +199,14 @@ function AddKnowledge({ collections, chosen, ready, onChosen }: { collections: C
           <div className="space-y-2">
             <Label htmlFor="g-model">{t("modelProfile")}</Label>
             <ProfileSelect kind="model_profile" id="g-model" value={model} onChange={setModel} />
+            <ProfileCheckNote profile={model} classification="internal" onUse={setModel} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="g-retrieval">{t("retrievalProfile")}</Label>
             <ProfileSelect kind="retrieval_profile" id="g-retrieval" value={retrieval} onChange={setRetrieval} />
           </div>
           <div className="sm:col-span-3">
-            <Button type="submit" disabled={create.isPending || name.length < 2} data-testid="guide-create-collection">{t("createCollection")}</Button>
+            <Button type="submit" disabled={create.isPending || name.length < 2 || modelBlocked} data-testid="guide-create-collection">{t("createCollection")}</Button>
           </div>
         </form>
       </div>

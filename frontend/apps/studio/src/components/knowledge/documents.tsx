@@ -35,8 +35,10 @@ import {
   isWebUri,
   type KnowledgeDocument,
   type OutlineNode,
+  type Progress,
+  progressOf,
 } from "@/lib/knowledge";
-import { useDocuments } from "@/lib/knowledge-hooks";
+import { useDocuments, useRuns } from "@/lib/knowledge-hooks";
 
 const FILTERS: ("all" | DocumentStatus)[] = ["all", "ready", "processing", "pending", "failed", "quarantined"];
 
@@ -47,6 +49,7 @@ export function DocumentsTable({ collectionId }: { collectionId: string }) {
   const format = useFormatter();
   const now = useNow({ updateInterval: 30_000 });
   const docs = useDocuments(collectionId);
+  const runs = useRuns(collectionId);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("all");
   const [open, setOpen] = useState<KnowledgeDocument | null>(null);
   const [remove, setRemove] = useState<KnowledgeDocument | null>(null);
@@ -86,14 +89,16 @@ export function DocumentsTable({ collectionId }: { collectionId: string }) {
 
   if (docs.isLoading) return <Skeleton className="h-40" />;
   const all = docs.data ?? [];
+  const progress = progressOf(all, runs.data ?? [], now);
   const rows = filter === "all" ? all : all.filter((d) => d.status === filter);
   const counts = Object.fromEntries(FILTERS.map((f) => [f, f === "all" ? all.length : all.filter((d) => d.status === f).length]));
 
   return (
     <div className="space-y-3">
+      {progress.busy || progress.attention ? <ProgressPanel progress={progress} /> : null}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground" aria-live="polite">
-          {all.some((d) => isBusy(d.status)) ? t("processingLive") : t("documentCount", { count: all.length })}
+          {progress.busy ? t("processingLive") : t("documentCount", { count: all.length })}
         </p>
         <div className="flex items-center gap-2">
           <label htmlFor="doc-filter" className="text-sm text-muted-foreground">{t("show")}</label>
@@ -287,5 +292,38 @@ function DocumentSheet({ doc, onClose }: { doc: KnowledgeDocument | null; onClos
         ) : null}
       </SheetContent>
     </Sheet>
+  );
+}
+
+/** Overall progress while documents are processed: counts, a bar, and roughly how long is left. */
+function ProgressPanel({ progress }: { progress: Progress }) {
+  const t = useTranslations("knowledge.progress");
+  const pct = Math.round(progress.fraction * 100);
+  const minutes = progress.etaSeconds ? Math.ceil(progress.etaSeconds / 60) : 0;
+  return (
+    <div className="space-y-2 rounded-xl border bg-card px-4 py-3" data-testid="progress">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-sm">
+        <p className="font-medium">
+          {t("ready", { ready: progress.ready, total: progress.total })}
+          {progress.busy ? <span className="font-normal text-muted-foreground"> · {t("busy", { count: progress.busy })}</span> : null}
+          {progress.attention ? <span className="font-normal text-destructive"> · {t("attention", { count: progress.attention })}</span> : null}
+        </p>
+        {progress.busy ? (
+          <p className="text-xs text-muted-foreground" aria-live="polite">
+            {progress.etaSeconds === null ? t("estimating") : progress.etaSeconds < 60 ? t("soon") : t("eta", { minutes })}
+          </p>
+        ) : null}
+      </div>
+      <div
+        className="h-2 overflow-hidden rounded-full bg-muted"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={pct}
+        aria-label={t("label")}
+      >
+        <div className="h-full rounded-full bg-primary transition-[width] duration-500 motion-reduce:transition-none" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
   );
 }

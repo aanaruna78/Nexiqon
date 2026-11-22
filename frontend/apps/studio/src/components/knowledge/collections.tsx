@@ -24,7 +24,7 @@ import { useErrorToast } from "@/lib/hooks";
 import { type Classification, CLASSIFICATIONS, type Collection } from "@/lib/knowledge";
 import { useCollections } from "@/lib/knowledge-hooks";
 
-import { ProfileSelect } from "./profile-select";
+import { ProfileCheckNote, ProfileSelect, useProfileBlocked } from "./profile-select";
 
 export const CLASSIFICATION_TONE = { public: "teal", internal: "sky", confidential: "amber", restricted: "rose" } as const;
 
@@ -82,7 +82,7 @@ function CollectionCard({ collection: c }: { collection: Collection }) {
   const t = useTranslations("knowledge");
   return (
     <Link
-      href={`/knowledge/${c.id}`}
+      href={`/admin/knowledge/${c.id}`}
       data-testid={`collection-${c.name}`}
       className="nx-card nx-lift group flex h-full flex-col gap-4 p-5 outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
@@ -136,6 +136,7 @@ function CreateCollectionDialog({ open, onOpenChange }: { open: boolean; onOpenC
   const [retrievalProfile, setRetrievalProfile] = useState("standard");
   const [groups, setGroups] = useState("");
   const [nameError, setNameError] = useState<string | null>(null);
+  const profileBlocked = useProfileBlocked(modelProfile, classification);
 
   const create = useMutation({
     mutationFn: () =>
@@ -154,7 +155,7 @@ function CreateCollectionDialog({ open, onOpenChange }: { open: boolean; onOpenC
       toast.success(t("created", { name: c.name }));
       void queryClient.invalidateQueries({ queryKey: ["collections"] });
       onOpenChange(false);
-      router.push(`/knowledge/${c.id}`);
+      router.push(`/admin/knowledge/${c.id}`);
     },
     onError: (err) => {
       if (err instanceof ApiError && err.status === 409) setNameError(t("nameTaken"));
@@ -216,6 +217,7 @@ function CreateCollectionDialog({ open, onOpenChange }: { open: boolean; onOpenC
             <div className="space-y-2">
               <Label htmlFor="collection-model">{t("modelProfile")}</Label>
               <ProfileSelect kind="model_profile" id="collection-model" value={modelProfile} onChange={setModelProfile} />
+              <ProfileCheckNote profile={modelProfile} classification={classification} onUse={setModelProfile} />
             </div>
           </div>
           <div className="space-y-2">
@@ -232,7 +234,7 @@ function CreateCollectionDialog({ open, onOpenChange }: { open: boolean; onOpenC
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{tc("cancel")}</Button>
-            <Button type="submit" disabled={create.isPending || !name}>{t("createCollection")}</Button>
+            <Button type="submit" disabled={create.isPending || !name || profileBlocked}>{t("createCollection")}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

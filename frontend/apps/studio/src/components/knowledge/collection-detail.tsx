@@ -37,7 +37,7 @@ import { useCollection, useDocuments, useRuns, useSources } from "@/lib/knowledg
 
 import { CLASSIFICATION_TONE } from "./collections";
 import { DocumentsTable } from "./documents";
-import { ProfileSelect } from "./profile-select";
+import { ProfileCheckNote, ProfileSelect, useProfileBlocked } from "./profile-select";
 import { ActiveRuns, RunHistory } from "./runs";
 import { SourcesPanel } from "./sources";
 import { UploadZone } from "./upload-zone";
@@ -69,7 +69,7 @@ export function CollectionDetail({ id }: { id: string }) {
     onSuccess: () => {
       toast.success(t("collectionDeleted"));
       void queryClient.invalidateQueries({ queryKey: ["collections"] });
-      router.push("/knowledge");
+      router.push("/admin/knowledge");
     },
     onError,
   });
@@ -80,7 +80,7 @@ export function CollectionDetail({ id }: { id: string }) {
       <Alert>
         <AlertTitle>{t("notFound")}</AlertTitle>
         <AlertDescription>
-          <Link href="/knowledge" className="underline">{t("backToKnowledge")}</Link>
+          <Link href="/admin/knowledge" className="underline">{t("backToKnowledge")}</Link>
         </AlertDescription>
       </Alert>
     );
@@ -94,7 +94,7 @@ export function CollectionDetail({ id }: { id: string }) {
   return (
     <div className="space-y-6">
       <nav aria-label={t("breadcrumb")} className="text-sm text-muted-foreground">
-        <Link href="/knowledge" className="hover:text-foreground hover:underline">{t("title")}</Link>
+        <Link href="/admin/knowledge" className="hover:text-foreground hover:underline">{t("title")}</Link>
         <span aria-hidden="true"> / </span>
         <span className="text-foreground">{c.name}</span>
       </nav>
@@ -106,7 +106,7 @@ export function CollectionDetail({ id }: { id: string }) {
         actions={
           <>
             <Button asChild variant="outline">
-              <Link href={`/playground?collection=${c.id}`}>
+              <Link href={`/admin/playground?collection=${c.id}`}>
                 <FlaskConical className="size-4" aria-hidden="true" />
                 {t("tryInPlayground")}
               </Link>
@@ -183,6 +183,7 @@ function CollectionSettings({ collection: c, open, onOpenChange }: { collection:
   const [description, setDescription] = useState(c.description);
   const [classification, setClassification] = useState<Classification>(c.classification);
   const [modelProfile, setModelProfile] = useState(c.model_profile);
+  const profileBlocked = useProfileBlocked(modelProfile, classification);
   const [retrievalProfile, setRetrievalProfile] = useState(c.retrieval_profile);
   const [groups, setGroups] = useState(c.acl_groups.join(", "));
   const groupList = groups.split(",").map((g) => g.trim()).filter(Boolean);
@@ -241,6 +242,7 @@ function CollectionSettings({ collection: c, open, onOpenChange }: { collection:
             <div className="space-y-2">
               <Label htmlFor="settings-model">{t("modelProfile")}</Label>
               <ProfileSelect kind="model_profile" id="settings-model" value={modelProfile} onChange={setModelProfile} />
+              <ProfileCheckNote profile={modelProfile} classification={classification} onUse={setModelProfile} />
             </div>
           </div>
           <div className="space-y-2">
@@ -261,7 +263,7 @@ function CollectionSettings({ collection: c, open, onOpenChange }: { collection:
           ) : null}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{tc("cancel")}</Button>
-            <Button type="submit" disabled={save.isPending}>{tc("save")}</Button>
+            <Button type="submit" disabled={save.isPending || profileBlocked}>{tc("save")}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

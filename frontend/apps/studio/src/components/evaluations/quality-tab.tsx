@@ -82,7 +82,7 @@ function GateSettings({ object, spec, gate, onSaved }: { object: ConfigObject; s
           <ClipboardCheck className="size-4" aria-hidden="true" />
           <AlertTitle>{t("noSets")}</AlertTitle>
           <AlertDescription>
-            <Link href="/evaluations" className="text-primary underline-offset-4 hover:underline">{t("createSet")}</Link>
+            <Link href="/admin/evaluations" className="text-primary underline-offset-4 hover:underline">{t("createSet")}</Link>
           </AlertDescription>
         </Alert>
       ) : (
@@ -190,7 +190,7 @@ function ReleaseCheck({ object, gate }: { object: ConfigObject; gate: ReleaseGat
         </>
       ) : null}
       {result?.run_id && testSet ? (
-        <Link href={`/evaluations/${testSet.id}?run=${result.run_id}`} className="text-sm text-primary underline-offset-4 hover:underline">{t("openRun")}</Link>
+        <Link href={`/admin/evaluations/${testSet.id}?run=${result.run_id}`} className="text-sm text-primary underline-offset-4 hover:underline">{t("openRun")}</Link>
       ) : null}
     </section>
   );
@@ -216,7 +216,7 @@ function Scores({ agent, live, testSet }: { agent: string; live: number | null; 
                 <span className="text-muted-foreground">{r.test_set}</span>
                 {!r.current ? <StatusBadge tone="slate">{t("olderCases")}</StatusBadge> : null}
               </span>
-              <Link href={`/evaluations/${r.test_set_id}?run=${r.run_id}`} className="outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <Link href={`/admin/evaluations/${r.test_set_id}?run=${r.run_id}`} className="outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <StatusBadge tone={passTone(r.scorecard.pass_rate)}>{percent(r.scorecard.pass_rate)}</StatusBadge>
               </Link>
             </li>

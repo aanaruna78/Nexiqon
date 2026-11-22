@@ -27,18 +27,18 @@ async function settled<T>(p: Promise<T>, fallback: T): Promise<T> {
 }
 
 const STEPS = [
-  { key: "pack", href: "/get-started", icon: Package, tone: "teal" },
-  { key: "agent", href: "/assistants", icon: Bot, tone: "violet" },
-  { key: "deploy", href: "/assistants", icon: Rocket, tone: "amber" },
-  { key: "members", href: "/settings/members?invite=1", icon: Users, tone: "sky" },
-  { key: "keys", href: "/settings/api-keys?create=1", icon: KeyRound, tone: "rose" },
+  { key: "pack", href: "/admin/get-started", icon: Package, tone: "teal" },
+  { key: "agent", href: "/admin/assistants", icon: Bot, tone: "violet" },
+  { key: "deploy", href: "/admin/assistants", icon: Rocket, tone: "amber" },
+  { key: "members", href: "/admin/members?invite=1", icon: Users, tone: "sky" },
+  { key: "keys", href: "/admin/api-keys?create=1", icon: KeyRound, tone: "rose" },
 ] as const;
 
 const TILES: { key: "invite" | "key" | "configure" | "audit"; href: string; icon: typeof Users; tone: Tone; title: string }[] = [
-  { key: "invite", href: "/settings/members?invite=1", icon: Users, tone: "violet", title: "members.invite" },
-  { key: "key", href: "/settings/api-keys?create=1", icon: KeyRound, tone: "amber", title: "apiKeys.create" },
-  { key: "configure", href: "/settings/configuration", icon: Settings2, tone: "teal", title: "nav.configuration" },
-  { key: "audit", href: "/settings/audit", icon: ScrollText, tone: "sky", title: "nav.audit" },
+  { key: "invite", href: "/admin/members?invite=1", icon: Users, tone: "violet", title: "members.invite" },
+  { key: "key", href: "/admin/api-keys?create=1", icon: KeyRound, tone: "amber", title: "apiKeys.create" },
+  { key: "configure", href: "/admin/configuration", icon: Settings2, tone: "teal", title: "nav.configuration" },
+  { key: "audit", href: "/admin/audit", icon: ScrollText, tone: "sky", title: "nav.audit" },
 ];
 
 export function Home() {

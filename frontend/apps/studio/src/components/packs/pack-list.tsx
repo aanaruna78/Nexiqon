@@ -59,7 +59,7 @@ export function PackList() {
             const state = releaseState(p);
             return (
               <li key={p.name}>
-                <Link href={`/domain-packs/${p.name}`} className="nx-card nx-lift flex h-full flex-col gap-3 p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <Link href={`/admin/domain-packs/${p.name}`} className="nx-card nx-lift flex h-full flex-col gap-3 p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                   <div className="flex items-start gap-3">
                     <IconTile icon={Package} tone="teal" />
                     <div className="min-w-0 flex-1">
@@ -108,7 +108,7 @@ function NewPack({ packs }: { packs: ConfigObject[] }) {
       toast.success(t("created", { title }));
       await client.invalidateQueries({ queryKey: ["objects", "domain_pack"] });
       setOpen(false);
-      router.push(`/domain-packs/${name}`);
+      router.push(`/admin/domain-packs/${name}`);
     },
     onError,
   });
@@ -171,7 +171,7 @@ function ImportPack() {
     onSuccess: async ({ v, name }) => {
       toast.success(t("imported", { version: v.version }));
       await client.invalidateQueries({ queryKey: ["objects", "domain_pack"] });
-      if (name) router.push(`/domain-packs/${name}`);
+      if (name) router.push(`/admin/domain-packs/${name}`);
     },
     onError,
   });

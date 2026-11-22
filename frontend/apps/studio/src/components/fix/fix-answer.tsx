@@ -204,7 +204,7 @@ function SourceRow({ id, citation, cited }: { id: string; citation: string; cite
       <span className="flex items-center gap-1">
         {doc.data ? (
           <Button asChild variant="ghost" size="sm">
-            <Link href={`/knowledge/${doc.data.collection_id}`}>
+            <Link href={`/admin/knowledge/${doc.data.collection_id}`}>
               <SquareArrowOutUpRight className="size-4" aria-hidden="true" />
               {t("openSource")}
             </Link>
@@ -315,7 +315,7 @@ function KeepFixed({ target }: { target: FixTarget }) {
         <div className="flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={(!abstain && !phrases.trim()) || addCases.isPending || createSet.isPending} data-testid="fix-save-case">{t("saveCase")}</Button>
           {saved ? (
-            <Link href="/evaluations" className="text-sm text-primary underline-offset-4 hover:underline">
+            <Link href="/admin/evaluations" className="text-sm text-primary underline-offset-4 hover:underline">
               {t("savedIn", { name: saved })}
             </Link>
           ) : null}

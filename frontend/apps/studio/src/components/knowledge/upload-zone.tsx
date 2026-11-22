@@ -6,8 +6,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { type DragEvent, useId, useRef, useState } from "react";
 
 import { api, ApiError } from "@/lib/api";
-import { checkFile, formatBytes, type PluginManifest, uploadRules } from "@/lib/knowledge";
-import { usePlugins } from "@/lib/knowledge-hooks";
+import { checkFile, errorHintKey, formatBytes, isBusy, type PluginManifest, uploadRules } from "@/lib/knowledge";
+import { useDocuments, usePlugins } from "@/lib/knowledge-hooks";
 import { cn } from "@/lib/utils";
 
 interface Item {
@@ -16,6 +16,7 @@ interface Item {
   size: number;
   state: "queued" | "uploading" | "done" | "unchanged" | "error";
   message?: string;
+  documentId?: string; // once uploaded: its processing is followed live
 }
 
 /** Drag-and-drop or browse; files upload one at a time with per-file state. */
@@ -29,6 +30,9 @@ export function UploadZone({ collectionId, compact = false }: { collectionId: st
   const helpId = useId();
   const [dragging, setDragging] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
+  const tk = useTranslations("knowledge");
+  const docs = useDocuments(collectionId);
+  const byId = new Map((docs.data ?? []).map((d) => [d.id, d]));
 
   const update = (key: string, patch: Partial<Item>) => setItems((all) => all.map((i) => (i.key === key ? { ...i, ...patch } : i)));
 
@@ -49,11 +53,11 @@ export function UploadZone({ collectionId, compact = false }: { collectionId: st
       }
       update(key, { state: "uploading" });
       try {
-        const result = await api<{ unchanged: boolean }>(
+        const result = await api<{ unchanged: boolean; document?: { id: string } }>(
           `ingestion/v1/collections/${collectionId}/documents?filename=${encodeURIComponent(file.name)}`,
           { method: "POST", body: file, headers: { "content-type": file.type || "application/octet-stream" } },
         );
-        update(key, { state: result.unchanged ? "unchanged" : "done" });
+        update(key, { state: result.unchanged ? "unchanged" : "done", documentId: result.document?.id });
       } catch (err) {
         update(key, { state: "error", message: err instanceof ApiError ? err.message : t("failed") });
       }
@@ -112,17 +116,32 @@ export function UploadZone({ collectionId, compact = false }: { collectionId: st
         <ul className="space-y-1.5" aria-live="polite" aria-label={t("queue")}>
           {items.map((i) => (
             <li key={i.key} className="flex items-center gap-3 rounded-lg bg-muted/40 px-3 py-2 text-sm" data-testid={`upload-${i.name}`}>
-              {i.state === "done" || i.state === "unchanged" ? (
-                <CheckCircle2 className="size-4 shrink-0 text-teal-600 dark:text-teal-300" aria-hidden="true" />
-              ) : i.state === "error" ? (
-                <CircleAlert className="size-4 shrink-0 text-destructive" aria-hidden="true" />
-              ) : (
-                <LoaderCircle className="size-4 shrink-0 animate-spin text-muted-foreground motion-reduce:animate-none" aria-hidden="true" />
-              )}
-              <span className="min-w-0 flex-1 truncate">{i.name}</span>
-              <span className="shrink-0 text-xs text-muted-foreground">
-                {i.state === "error" ? i.message : t(`states.${i.state}`)}
-              </span>
+              {(() => {
+                // After upload, the document's own status: processing, ready, or why it failed.
+                const doc = i.documentId ? byId.get(i.documentId) : undefined;
+                const shown = doc ? (doc.status === "ready" ? "ready" : isBusy(doc.status) ? "processing" : "failed") : i.state;
+                const message =
+                  shown === "failed" && doc
+                    ? tk(`errorHints.${errorHintKey(doc.error_code)}`)
+                    : i.state === "error"
+                      ? i.message
+                      : t(`states.${shown === "failed" ? "error" : shown}`);
+                return (
+                  <>
+                    {shown === "ready" || shown === "unchanged" ? (
+                      <CheckCircle2 className="size-4 shrink-0 text-teal-600 dark:text-teal-300" aria-hidden="true" />
+                    ) : shown === "error" || shown === "failed" ? (
+                      <CircleAlert className="size-4 shrink-0 text-destructive" aria-hidden="true" />
+                    ) : (
+                      <LoaderCircle className="size-4 shrink-0 animate-spin text-muted-foreground motion-reduce:animate-none" aria-hidden="true" />
+                    )}
+                    <span className="min-w-0 flex-1 truncate">{i.name}</span>
+                    <span className={cn("max-w-[60%] shrink-0 text-end text-xs", shown === "failed" || shown === "error" ? "text-destructive" : "text-muted-foreground")}>
+                      {message}
+                    </span>
+                  </>
+                );
+              })()}
             </li>
           ))}
         </ul>

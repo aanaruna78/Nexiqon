@@ -24,7 +24,7 @@ export async function ComingSoon({ section }: { section: string }) {
           <div className="flex flex-col items-center gap-3">
             {item?.phase ? <span className="text-xs text-muted-foreground">{t("comingSoon.phase", { phase: item.phase })}</span> : null}
             <Button asChild variant="outline">
-              <Link href="/settings/members">{t("nav.settings")}</Link>
+              <Link href="/admin/members">{t("nav.settings")}</Link>
             </Button>
           </div>
         }

@@ -71,7 +71,7 @@ function Editor({ object, initial }: { object: ConfigObject; initial: PackSpec }
   return (
     <div className="space-y-6">
       <Button asChild variant="ghost" size="sm" className="-ms-2">
-        <Link href="/domain-packs"><ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />{t("all")}</Link>
+        <Link href="/admin/domain-packs"><ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />{t("all")}</Link>
       </Button>
       <PageHeader
         title={spec.metadata.title}
@@ -104,7 +104,7 @@ function Editor({ object, initial }: { object: ConfigObject; initial: PackSpec }
           </AlertDescription>
         </Alert>
       ) : null}
-      <Tabs value={tab} onValueChange={(v) => router.replace(`/domain-packs/${object.name}?tab=${v}`)}>
+      <Tabs value={tab} onValueChange={(v) => router.replace(`/admin/domain-packs/${object.name}?tab=${v}`)}>
         <TabsList className="h-auto flex-wrap">
           {TABS.map((k) => <TabsTrigger key={k} value={k} data-testid={`pack-tab-${k}`}>{t(`tabs.${k}`)}</TabsTrigger>)}
         </TabsList>

@@ -23,6 +23,7 @@ Base path: `https://<gateway>/ingestion`. Every call needs an API key or a Studi
 | `DELETE` | `/v1/documents/{document_id}` | Removes the document from the index first, then its file. |  | 204 |
 | `POST` | `/v1/documents/{document_id}/download-link` | A short-lived link to the original file, for the caller only. |  | 200 `DownloadLink` |
 | `GET` | `/v1/downloads/{token}` | Follow a download link. |  | 200 |
+| `POST` | `/v1/model-profiles/{profile}/check` | Whether documents could be indexed with this model profile now, and if not, why (for example. | `ProfileCheckIn` | 200 `ProfileCheckOut` |
 | `GET` | `/v1/plugins` | Installed connectors, parsers and chunkers with their configuration schemas. |  | 200 list of `Manifest` |
 | `GET` | `/v1/runs/{run_id}` | Get Run |  | 200 `RunOut` |
 | `PATCH` | `/v1/sources/{source_id}` | Change a source's settings (e.g. | `SourcePatch` | 200 `SourceOut` |

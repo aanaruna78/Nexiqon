@@ -88,7 +88,7 @@ export function EvaluationsPage() {
 function SetCard({ set: s, run }: { set: TestSet; run?: EvalRun }) {
   const t = useTranslations("evaluations");
   return (
-    <Link href={`/evaluations/${s.id}`} data-testid={`set-${s.name}`} className="nx-card nx-lift group flex h-full flex-col gap-4 p-5 outline-none focus-visible:ring-2 focus-visible:ring-ring">
+    <Link href={`/admin/evaluations/${s.id}`} data-testid={`set-${s.name}`} className="nx-card nx-lift group flex h-full flex-col gap-4 p-5 outline-none focus-visible:ring-2 focus-visible:ring-ring">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <IconTile icon={s.origin === "pack" ? Package : ListChecks} tone="amber" />
@@ -139,7 +139,7 @@ export function RunList({ runs, sets, onOpen }: { runs: EvalRun[]; sets: TestSet
             {onOpen ? (
               <button type="button" className={cls} onClick={() => onOpen(r.id)} data-testid="open-run">{body}</button>
             ) : (
-              <Link className={cls} href={`/evaluations/${r.test_set_id}?run=${r.id}`}>{body}</Link>
+              <Link className={cls} href={`/admin/evaluations/${r.test_set_id}?run=${r.id}`}>{body}</Link>
             )}
           </li>
         );
@@ -180,7 +180,7 @@ function NewSetDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
           ? await fromPack.mutateAsync({ pack: chosenPack, name: finalName, agent: forAgent })
           : await createSet.mutateAsync({ name: finalName, agent: forAgent, description });
       onOpenChange(false);
-      router.push(`/evaluations/${created.id}`);
+      router.push(`/admin/evaluations/${created.id}`);
     } catch (error) {
       onError(error);
     }

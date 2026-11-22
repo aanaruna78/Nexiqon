@@ -39,7 +39,7 @@ export function ActionsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title={t("title")} description={t("subtitle")} icon={Blocks} tone="rose" />
-      <Tabs value={tab} onValueChange={(v) => router.replace(`/actions?tab=${v}`)}>
+      <Tabs value={tab} onValueChange={(v) => router.replace(`/admin/actions?tab=${v}`)}>
         <TabsList className="h-auto flex-wrap">
           {TABS.map((k) => <TabsTrigger key={k} value={k} data-testid={`actions-tab-${k}`}>{t(`tabs.${k}`)}</TabsTrigger>)}
         </TabsList>

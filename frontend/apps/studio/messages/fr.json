@@ -52,7 +52,8 @@
     "operate": "Exploiter",
     "admin": "Administration",
     "models": "Modèles et politique de données",
-    "webhooks": "Webhooks"
+    "webhooks": "Webhooks",
+    "overview": "Vue d'ensemble"
   },
   "shell": {
     "skipToContent": "Aller au contenu principal",
@@ -304,7 +305,8 @@
     "audit": "Registre infalsifiable de chaque modification",
     "organization": "Nom et réglages par défaut de cette organisation",
     "models": "Quels modèles répondent, où vont vos données et ce que cela coûte",
-    "webhooks": "Événements de la plateforme envoyés à vos systèmes, signés"
+    "webhooks": "Événements de la plateforme envoyés à vos systèmes, signés",
+    "overview": "Progression de la configuration et actions rapides pour votre organisation"
   },
   "hints": {
     "removeMember": "Retirer ce membre",
@@ -420,7 +422,8 @@
       "embedding_model_changed": "Le profil de modèle a changé. Réindexez la collection pour utiliser le nouveau modèle.",
       "profile_unavailable": "Le profil de recherche n'a pas pu être chargé. Vérifiez-le dans Configuration.",
       "temporarily_unavailable": "Le service de modèles n'a pas répondu. Vérifiez les paramètres du fournisseur de modèles, puis réindexez.",
-      "unknown": "Le traitement a échoué."
+      "unknown": "Le traitement a échoué.",
+      "model_not_configured": "Le fournisseur du profil de modèle n'a pas de clé d'API configurée. Choisissez un autre profil de modèle dans Paramètres, ou demandez à un administrateur d'ajouter la clé, puis réindexez."
     },
     "sourcesIntro": "Les sources connectées se synchronisent à la demande ou selon un calendrier. Seul le contenu modifié est retraité.",
     "addSource": "Ajouter une source",
@@ -455,7 +458,9 @@
         "uploading": "Import…",
         "done": "Importé, en traitement",
         "unchanged": "Inchangé",
-        "error": "Échec"
+        "error": "Échec",
+        "ready": "Prêt",
+        "processing": "Traitement…"
       },
       "problems": {
         "too_large": "Plus de {max}",
@@ -495,7 +500,24 @@
     "editSource": "Modifier",
     "editSourceTitle": "Modifier {name}",
     "saveAndSync": "Enregistrer et synchroniser",
-    "sourceUpdated": "{name} mise à jour ; synchronisation en cours"
+    "sourceUpdated": "{name} mise à jour ; synchronisation en cours",
+    "profileCheck": {
+      "checking": "Vérification de ce modèle…",
+      "ok": "Prêt à l'emploi",
+      "noKey": "Ce modèle ne peut pas être utilisé : son fournisseur n'a pas de clé d'API ici.",
+      "refused": "Ce modèle ne peut pas être utilisé pour un contenu de cette sensibilité.",
+      "unavailable": "Le service de modèles ne répond pas pour le moment. Vous pouvez tout de même continuer.",
+      "use": "Utiliser {profile} à la place"
+    },
+    "progress": {
+      "ready": "{ready} sur {total} prêts",
+      "busy": "{count} en traitement",
+      "attention": "{count, plural, one {# à vérifier} other {# à vérifier}}",
+      "estimating": "Estimation du temps restant…",
+      "soon": "Moins d'une minute restante",
+      "eta": "Environ {minutes, plural, one {# minute} other {# minutes}} restantes",
+      "label": "Progression du traitement"
+    }
   },
   "playground": {
     "title": "Bac à sable",
@@ -1535,5 +1557,91 @@
       "satisfaction": "Réponses notées que les gens ont jugées utiles.",
       "tool_error_rate": "Appels d'outils en échec. Vérifiez Actions si ce taux augmente."
     }
+  },
+  "workspace": {
+    "home": "Nexiqon : retour à l'assistant",
+    "assistant": "Assistant",
+    "admin": "Administration",
+    "adminHint": "Créer des assistants, gérer les connaissances et les personnes, et suivre l'activité",
+    "settings": "Paramètres",
+    "openAssistant": "Ouvrir l'assistant"
+  },
+  "chat": {
+    "title": "Assistant",
+    "intro": "Les réponses proviennent des connaissances de votre organisation, avec leurs sources.",
+    "greeting": "Comment {name} peut-il vous aider ?",
+    "starters": "Questions suggérées",
+    "conversation": "Conversation",
+    "sources": "Sources",
+    "team": "Votre équipe",
+    "copy": "Copier la réponse",
+    "copied": "Copié",
+    "helpful": "Utile",
+    "notHelpful": "Pas utile",
+    "thanks": "Merci pour votre avis",
+    "inspect": "Inspecter",
+    "inspectHint": "Voir pourquoi cette réponse a été donnée : ce qui a été trouvé, utilisé et vérifié",
+    "confirmTitle": "L'assistant souhaite effectuer une action. Continuer ?",
+    "approve": "Oui, continuer",
+    "decline": "Non",
+    "withPerson": "Une personne de l'équipe va prendre le relais ici. Sa réponse apparaîtra dans cette conversation.",
+    "placeholder": "Posez une question à {name}…",
+    "escalatedPlaceholder": "Une personne de l'équipe s'occupe de cette conversation",
+    "send": "Envoyer (Entrée)",
+    "disclaimer": "Les réponses citent leurs sources. Vérifiez tout ce qui est important.",
+    "askPerson": "Parler à une personne",
+    "failed": "La réponse n'a pas pu être terminée.",
+    "streamEnded": "La réponse s'est interrompue. Veuillez réessayer.",
+    "noAssistantsTitle": "Aucun assistant n'est encore prêt",
+    "noAssistantsAdmin": "Créez un assistant et donnez-lui des connaissances ; il apparaîtra ici pour tout le monde.",
+    "noAssistantsMember": "Vos administrateurs n'ont pas encore publié d'assistant. Revenez bientôt.",
+    "setUp": "En configurer un",
+    "assistant": "Assistant",
+    "assistants": "Assistants",
+    "chooseAssistant": "Choisir un assistant",
+    "chooseHint": "Choisir l'assistant qui répond",
+    "lockedHint": "Cette conversation reste avec son assistant. Commencez une nouvelle conversation pour en utiliser un autre.",
+    "history": "Vos conversations",
+    "newChat": "Nouvelle conversation",
+    "noHistory": "Vos conversations apparaîtront ici.",
+    "untitled": "Nouvelle conversation",
+    "when": {
+      "today": "Aujourd'hui",
+      "week": "7 derniers jours",
+      "older": "Plus ancien"
+    },
+    "deleteChat": "Supprimer la conversation",
+    "deleteChatNamed": "Supprimer la conversation : {title}",
+    "deleteTitle": "Supprimer cette conversation ?",
+    "deleteBody": "La conversation et tout son contenu sont définitivement supprimés.",
+    "deleted": "Conversation supprimée",
+    "cancel": "Annuler",
+    "stages": {
+      "understanding": "Analyse de votre question…",
+      "searching": "Recherche dans les connaissances…",
+      "writing": "Rédaction de la réponse…",
+      "handing_over": "Préparation d'un résumé pour l'équipe…",
+      "tool": "Utilisation de {name}…",
+      "working": "En cours…"
+    },
+    "notFound": "Cette conversation n'existe pas ou ne vous appartient pas."
+  },
+  "personal": {
+    "title": "Paramètres",
+    "subtitle": "Vos préférences personnelles. Les paramètres de l'organisation sont dans Administration.",
+    "profile": "Profil",
+    "profileHelp": "Issu de votre compte de connexion. Modifiez-le auprès de votre fournisseur d'identité.",
+    "name": "Nom",
+    "email": "E-mail",
+    "appearance": "Apparence",
+    "appearanceHelp": "Clair, sombre ou selon votre appareil.",
+    "language": "Langue",
+    "languageHelp": "Pour les menus et les messages. Les assistants répondent dans la langue dans laquelle vous écrivez.",
+    "organizations": "Organisations",
+    "organizationsHelp": "Où vous êtes membre, et votre rôle dans chacune.",
+    "current": "Actuelle",
+    "switch": "Changer",
+    "session": "Session",
+    "sessionHelp": "Se déconnecter de Nexiqon sur cet appareil."
   }
 }

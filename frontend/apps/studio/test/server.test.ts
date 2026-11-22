@@ -17,7 +17,7 @@ describe("session cookie", () => {
   });
 
   it("only allows same-site return paths", () => {
-    expect(safeReturnTo("/settings/members?x=1")).toBe("/settings/members?x=1");
+    expect(safeReturnTo("/admin/members?x=1")).toBe("/admin/members?x=1");
     for (const bad of ["https://evil.example", "//evil.example", "/\\evil.example", "", null]) {
       expect(safeReturnTo(bad)).toBe("/");
     }

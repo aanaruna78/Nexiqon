@@ -52,7 +52,8 @@
     "operate": "Operate",
     "admin": "Administration",
     "models": "Models & data policy",
-    "webhooks": "Webhooks"
+    "webhooks": "Webhooks",
+    "overview": "Overview"
   },
   "shell": {
     "skipToContent": "Skip to main content",
@@ -304,7 +305,8 @@
     "audit": "Tamper-evident record of every change",
     "organization": "Name and defaults for this organization",
     "models": "Which models answer, where your data goes and what it costs",
-    "webhooks": "Platform events sent to your systems, signed"
+    "webhooks": "Platform events sent to your systems, signed",
+    "overview": "Setup progress and quick actions for your organization"
   },
   "hints": {
     "removeMember": "Remove this member",
@@ -420,7 +422,8 @@
       "embedding_model_changed": "The model profile changed. Reindex the collection to use the new model.",
       "profile_unavailable": "The retrieval profile could not be loaded. Check it in Configuration.",
       "temporarily_unavailable": "The model service did not respond. Check the model provider settings, then reindex.",
-      "unknown": "Processing failed."
+      "unknown": "Processing failed.",
+      "model_not_configured": "The model profile's provider has no API key configured. Choose another model profile in Settings, or ask an administrator to add the key, then reindex."
     },
     "sourcesIntro": "Connected sources sync on demand or on a schedule. Only changed content is processed again.",
     "addSource": "Add source",
@@ -455,7 +458,9 @@
         "uploading": "Uploading…",
         "done": "Uploaded, processing",
         "unchanged": "Unchanged",
-        "error": "Failed"
+        "error": "Failed",
+        "ready": "Ready",
+        "processing": "Processing…"
       },
       "problems": {
         "too_large": "Larger than {max}",
@@ -495,7 +500,24 @@
     "editSource": "Edit",
     "editSourceTitle": "Edit {name}",
     "saveAndSync": "Save and sync",
-    "sourceUpdated": "{name} updated; syncing now"
+    "sourceUpdated": "{name} updated; syncing now",
+    "profileCheck": {
+      "checking": "Checking this model…",
+      "ok": "Ready to use",
+      "noKey": "This model can't be used: its provider has no API key here.",
+      "refused": "This model can't be used for content of this sensitivity.",
+      "unavailable": "The model service isn't answering right now. You can still continue.",
+      "use": "Use {profile} instead"
+    },
+    "progress": {
+      "ready": "{ready} of {total} ready",
+      "busy": "{count} processing",
+      "attention": "{count, plural, one {# needs attention} other {# need attention}}",
+      "estimating": "Estimating time left…",
+      "soon": "Less than a minute left",
+      "eta": "About {minutes, plural, one {# minute} other {# minutes}} left",
+      "label": "Processing progress"
+    }
   },
   "playground": {
     "title": "Playground",
@@ -1535,5 +1557,91 @@
       "satisfaction": "Rated answers that people marked helpful.",
       "tool_error_rate": "Tool calls that failed. Check Actions if this rises."
     }
+  },
+  "workspace": {
+    "home": "Nexiqon: back to the assistant",
+    "assistant": "Assistant",
+    "admin": "Admin",
+    "adminHint": "Build assistants, manage knowledge and people, and see how it is going",
+    "settings": "Settings",
+    "openAssistant": "Open the assistant"
+  },
+  "chat": {
+    "title": "Assistant",
+    "intro": "Answers come from your organization's knowledge, with their sources.",
+    "greeting": "How can {name} help?",
+    "starters": "Suggested questions",
+    "conversation": "Conversation",
+    "sources": "Sources",
+    "team": "Your team",
+    "copy": "Copy answer",
+    "copied": "Copied",
+    "helpful": "Helpful",
+    "notHelpful": "Not helpful",
+    "thanks": "Thanks for the feedback",
+    "inspect": "Inspect",
+    "inspectHint": "See why this answer was given: what was found, used and checked",
+    "confirmTitle": "The assistant wants to take an action. Go ahead?",
+    "approve": "Yes, go ahead",
+    "decline": "No",
+    "withPerson": "A person from the team will continue here. You will see their reply in this chat.",
+    "placeholder": "Ask {name} anything…",
+    "escalatedPlaceholder": "A person from the team is handling this conversation",
+    "send": "Send (Enter)",
+    "disclaimer": "Answers cite their sources. Check anything important.",
+    "askPerson": "Talk to a person",
+    "failed": "The answer could not be completed.",
+    "streamEnded": "The answer stopped early. Please try again.",
+    "noAssistantsTitle": "No assistant is ready yet",
+    "noAssistantsAdmin": "Create an assistant and give it some knowledge; it will appear here for everyone.",
+    "noAssistantsMember": "Your administrators have not published an assistant yet. Check back soon.",
+    "setUp": "Set one up",
+    "assistant": "Assistant",
+    "assistants": "Assistants",
+    "chooseAssistant": "Choose an assistant",
+    "chooseHint": "Choose which assistant answers",
+    "lockedHint": "This conversation stays with its assistant. Start a new chat to use another.",
+    "history": "Your chats",
+    "newChat": "New chat",
+    "noHistory": "Your conversations will appear here.",
+    "untitled": "New conversation",
+    "when": {
+      "today": "Today",
+      "week": "Previous 7 days",
+      "older": "Older"
+    },
+    "deleteChat": "Delete chat",
+    "deleteChatNamed": "Delete chat: {title}",
+    "deleteTitle": "Delete this chat?",
+    "deleteBody": "The conversation and everything in it are removed for good.",
+    "deleted": "Chat deleted",
+    "cancel": "Cancel",
+    "stages": {
+      "understanding": "Understanding your question…",
+      "searching": "Searching the knowledge…",
+      "writing": "Writing the answer…",
+      "handing_over": "Preparing a summary for the team…",
+      "tool": "Using {name}…",
+      "working": "Working…"
+    },
+    "notFound": "This conversation does not exist, or it is not yours."
+  },
+  "personal": {
+    "title": "Settings",
+    "subtitle": "Your own preferences. Organization settings are in Admin.",
+    "profile": "Profile",
+    "profileHelp": "From your sign-in account. Change it with your identity provider.",
+    "name": "Name",
+    "email": "Email",
+    "appearance": "Appearance",
+    "appearanceHelp": "Light, dark, or follow your device.",
+    "language": "Language",
+    "languageHelp": "For menus and messages. Assistants answer in the language you write in.",
+    "organizations": "Organizations",
+    "organizationsHelp": "Where you are a member, and your role in each.",
+    "current": "Current",
+    "switch": "Switch",
+    "session": "Session",
+    "sessionHelp": "Sign out of Nexiqon on this device."
   }
 }

@@ -52,7 +52,8 @@
     "operate": "Operar",
     "admin": "Administración",
     "models": "Modelos y política de datos",
-    "webhooks": "Webhooks"
+    "webhooks": "Webhooks",
+    "overview": "Resumen"
   },
   "shell": {
     "skipToContent": "Ir al contenido principal",
@@ -304,7 +305,8 @@
     "audit": "Registro a prueba de manipulaciones de cada cambio",
     "organization": "Nombre y valores predeterminados de esta organización",
     "models": "Qué modelos responden, adónde van tus datos y cuánto cuesta",
-    "webhooks": "Eventos de la plataforma enviados a tus sistemas, firmados"
+    "webhooks": "Eventos de la plataforma enviados a tus sistemas, firmados",
+    "overview": "Progreso de la configuración y acciones rápidas de tu organización"
   },
   "hints": {
     "removeMember": "Quitar a este miembro",
@@ -420,7 +422,8 @@
       "embedding_model_changed": "El perfil de modelo cambió. Reindexa la colección para usar el nuevo modelo.",
       "profile_unavailable": "No se pudo cargar el perfil de recuperación. Revísalo en Configuración.",
       "temporarily_unavailable": "El servicio de modelos no respondió. Revisa los ajustes del proveedor de modelos y después reindexa.",
-      "unknown": "El procesamiento falló."
+      "unknown": "El procesamiento falló.",
+      "model_not_configured": "El proveedor del perfil de modelo no tiene una clave de API configurada. Elige otro perfil de modelo en Ajustes, o pide a un administrador que añada la clave, y luego reindexa."
     },
     "sourcesIntro": "Las fuentes conectadas se sincronizan a petición o según un calendario. Solo se vuelve a procesar el contenido que cambió.",
     "addSource": "Añadir fuente",
@@ -455,7 +458,9 @@
         "uploading": "Subiendo…",
         "done": "Subido, procesando",
         "unchanged": "Sin cambios",
-        "error": "Error"
+        "error": "Error",
+        "ready": "Listo",
+        "processing": "Procesando…"
       },
       "problems": {
         "too_large": "Supera {max}",
@@ -495,7 +500,24 @@
     "editSource": "Editar",
     "editSourceTitle": "Editar {name}",
     "saveAndSync": "Guardar y sincronizar",
-    "sourceUpdated": "{name} actualizada; sincronizando ahora"
+    "sourceUpdated": "{name} actualizada; sincronizando ahora",
+    "profileCheck": {
+      "checking": "Comprobando este modelo…",
+      "ok": "Listo para usar",
+      "noKey": "No se puede usar este modelo: su proveedor no tiene una clave de API aquí.",
+      "refused": "No se puede usar este modelo para contenido de esta sensibilidad.",
+      "unavailable": "El servicio de modelos no responde ahora mismo. Puedes continuar igualmente.",
+      "use": "Usar {profile} en su lugar"
+    },
+    "progress": {
+      "ready": "{ready} de {total} listos",
+      "busy": "{count} procesando",
+      "attention": "{count, plural, one {# requiere atención} other {# requieren atención}}",
+      "estimating": "Calculando el tiempo restante…",
+      "soon": "Menos de un minuto",
+      "eta": "Quedan unos {minutes, plural, one {# minuto} other {# minutos}}",
+      "label": "Progreso del procesamiento"
+    }
   },
   "playground": {
     "title": "Zona de pruebas",
@@ -1535,5 +1557,91 @@
       "satisfaction": "Respuestas valoradas que la gente marcó como útiles.",
       "tool_error_rate": "Llamadas a herramientas que fallaron. Revisa Acciones si sube."
     }
+  },
+  "workspace": {
+    "home": "Nexiqon: volver al asistente",
+    "assistant": "Asistente",
+    "admin": "Administración",
+    "adminHint": "Crea asistentes, gestiona el conocimiento y las personas, y sigue la actividad",
+    "settings": "Ajustes",
+    "openAssistant": "Abrir el asistente"
+  },
+  "chat": {
+    "title": "Asistente",
+    "intro": "Las respuestas salen del conocimiento de tu organización, con sus fuentes.",
+    "greeting": "¿Cómo puede ayudarte {name}?",
+    "starters": "Preguntas sugeridas",
+    "conversation": "Conversación",
+    "sources": "Fuentes",
+    "team": "Tu equipo",
+    "copy": "Copiar respuesta",
+    "copied": "Copiado",
+    "helpful": "Útil",
+    "notHelpful": "No es útil",
+    "thanks": "Gracias por tu opinión",
+    "inspect": "Inspeccionar",
+    "inspectHint": "Ver por qué se dio esta respuesta: qué se encontró, se usó y se comprobó",
+    "confirmTitle": "El asistente quiere realizar una acción. ¿Continuar?",
+    "approve": "Sí, continuar",
+    "decline": "No",
+    "withPerson": "Una persona del equipo continuará aquí. Verás su respuesta en este chat.",
+    "placeholder": "Pregunta a {name} lo que quieras…",
+    "escalatedPlaceholder": "Una persona del equipo está atendiendo esta conversación",
+    "send": "Enviar (Intro)",
+    "disclaimer": "Las respuestas citan sus fuentes. Comprueba lo importante.",
+    "askPerson": "Hablar con una persona",
+    "failed": "No se pudo completar la respuesta.",
+    "streamEnded": "La respuesta se detuvo antes de tiempo. Inténtalo de nuevo.",
+    "noAssistantsTitle": "Todavía no hay ningún asistente listo",
+    "noAssistantsAdmin": "Crea un asistente y dale algo de conocimiento; aparecerá aquí para todos.",
+    "noAssistantsMember": "Tus administradores aún no han publicado ningún asistente. Vuelve pronto.",
+    "setUp": "Configurar uno",
+    "assistant": "Asistente",
+    "assistants": "Asistentes",
+    "chooseAssistant": "Elige un asistente",
+    "chooseHint": "Elige qué asistente responde",
+    "lockedHint": "Esta conversación sigue con su asistente. Empieza un chat nuevo para usar otro.",
+    "history": "Tus chats",
+    "newChat": "Nuevo chat",
+    "noHistory": "Tus conversaciones aparecerán aquí.",
+    "untitled": "Nueva conversación",
+    "when": {
+      "today": "Hoy",
+      "week": "Últimos 7 días",
+      "older": "Anteriores"
+    },
+    "deleteChat": "Eliminar chat",
+    "deleteChatNamed": "Eliminar chat: {title}",
+    "deleteTitle": "¿Eliminar este chat?",
+    "deleteBody": "La conversación y todo su contenido se eliminan para siempre.",
+    "deleted": "Chat eliminado",
+    "cancel": "Cancelar",
+    "stages": {
+      "understanding": "Entendiendo tu pregunta…",
+      "searching": "Buscando en el conocimiento…",
+      "writing": "Escribiendo la respuesta…",
+      "handing_over": "Preparando un resumen para el equipo…",
+      "tool": "Usando {name}…",
+      "working": "Trabajando…"
+    },
+    "notFound": "Esta conversación no existe o no es tuya."
+  },
+  "personal": {
+    "title": "Ajustes",
+    "subtitle": "Tus preferencias personales. Los ajustes de la organización están en Administración.",
+    "profile": "Perfil",
+    "profileHelp": "De tu cuenta de inicio de sesión. Cámbialo en tu proveedor de identidad.",
+    "name": "Nombre",
+    "email": "Correo electrónico",
+    "appearance": "Apariencia",
+    "appearanceHelp": "Claro, oscuro o según tu dispositivo.",
+    "language": "Idioma",
+    "languageHelp": "Para menús y mensajes. Los asistentes responden en el idioma en que escribas.",
+    "organizations": "Organizaciones",
+    "organizationsHelp": "Dónde eres miembro y tu rol en cada una.",
+    "current": "Actual",
+    "switch": "Cambiar",
+    "session": "Sesión",
+    "sessionHelp": "Cerrar sesión en Nexiqon en este dispositivo."
   }
 }

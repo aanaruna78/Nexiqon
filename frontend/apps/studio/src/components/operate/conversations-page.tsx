@@ -42,7 +42,7 @@ export function ConversationsPage() {
     const q = new URLSearchParams();
     if (nextView === "all") q.set("view", "all");
     if (id) q.set("c", id);
-    router.replace(`/conversations${q.size ? `?${q}` : ""}`);
+    router.replace(`/admin/conversations${q.size ? `?${q}` : ""}`);
   };
 
   return (
